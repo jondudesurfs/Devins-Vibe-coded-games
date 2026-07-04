@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE LINE — coverage geometry</title>
+<style>
+  :root{
+    --set:#0E1419;        /* the set: deep slate */
+    --panel:#131c22;
+    --grid:#22323b;       /* blueprint steel */
+    --ink:#EDE8DE;        /* bone white */
+    --muted:#7d8c94;
+    --A:#3FB8C4;          /* character A — cool teal */
+    --B:#E8A33D;          /* character B — warm amber */
+    --rec:#FF3B30;        /* hot red, used sparingly */
+    --forbid:#C8443C;     /* no-go half-plane */
+    --ok:#5BD6A0;
+    --line:#cfd8dd;
+    --bezel:#05090b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#080c0f;color:var(--ink);
+    font-family:"Inter","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+  .wrap{max-width:1040px;margin:0 auto;padding:18px 18px 40px}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+    border-bottom:1px solid var(--grid);padding-bottom:12px;flex-wrap:wrap}
+  .brand h1{font-size:26px;letter-spacing:.22em;margin:0;font-weight:800}
+  .brand p{margin:4px 0 0;color:var(--muted);font-size:12.5px;letter-spacing:.04em;max-width:46ch}
+  .rec{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.14em;color:var(--muted)}
+  .recdot{width:9px;height:9px;border-radius:50%;background:var(--rec);box-shadow:0 0 10px var(--rec)}
+  @keyframes blink{50%{opacity:.25}}
+  .recdot{animation:blink 1.6s infinite}
+
+  .scenes{display:flex;gap:8px;margin:14px 0 16px;flex-wrap:wrap}
+  .scenes button{background:transparent;border:1px solid var(--grid);color:var(--muted);
+    padding:7px 12px;border-radius:2px;font-size:12px;letter-spacing:.08em;cursor:pointer;
+    text-transform:uppercase;transition:.15s}
+  .scenes button:hover{color:var(--ink);border-color:#3a4d57}
+  .scenes button.on{color:var(--set);background:var(--ink);border-color:var(--ink)}
+
+  .stage{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+  @media(max-width:840px){.stage{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--grid);border-radius:4px;overflow:hidden}
+  .eyebrow{font-size:10.5px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;
+    padding:11px 13px 0}
+  canvas{display:block;width:100%;touch-action:none}
+  #set{aspect-ratio:1/.92;background:var(--set)}
+
+  .vfbox{padding:13px}
+  .monitor{background:var(--bezel);border-radius:8px;padding:10px;border:1px solid #1b262c}
+  #vf{aspect-ratio:16/9;background:#0a0f12;border-radius:3px}
+  .status{display:flex;gap:14px;padding:11px 2px 2px;font-size:12px}
+  .status .row{display:flex;align-items:center;gap:7px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .dot.good{background:var(--ok)} .dot.bad{background:var(--rec)} .dot.neu{background:var(--B)}
+  .status .lab{color:var(--muted);letter-spacing:.1em;font-size:10.5px}
+  .status .val{letter-spacing:.04em}
+
+  .controls{padding:0 13px 14px}
+  .seg{display:flex;border:1px solid var(--grid);border-radius:3px;overflow:hidden;margin:4px 0 14px}
+  .seg button{flex:1;background:transparent;color:var(--muted);border:0;border-right:1px solid var(--grid);
+    padding:9px 4px;font-size:11.5px;letter-spacing:.1em;cursor:pointer;font-family:inherit}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:#1d2a31;color:var(--ink)}
+
+  .slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .slot{border:1px solid var(--grid);border-radius:3px;padding:9px 10px;cursor:pointer;
+    display:flex;flex-direction:column;gap:5px;background:transparent;text-align:left;
+    color:var(--ink);font-family:inherit;transition:.15s}
+  .slot:hover{border-color:#3a4d57}
+  .slot .nm{font-size:11.5px;letter-spacing:.08em}
+  .slot .st{font-size:10px;letter-spacing:.08em;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .slot.filled{background:#172127}
+  .slot .mini{width:8px;height:8px;border-radius:50%;background:#2a3a44}
+  .slot .mini.good{background:var(--ok)} .slot .mini.bad{background:var(--rec)} .slot .mini.neu{background:var(--B)}
+
+  .play{margin-top:14px;display:flex;gap:10px;align-items:center}
+  .play button{flex:1;background:var(--ink);color:var(--set);border:0;padding:11px;border-radius:3px;
+    font-size:12px;letter-spacing:.14em;cursor:pointer;font-weight:700;font-family:inherit}
+  .play button:disabled{opacity:.35;cursor:default}
+  .play .clr{flex:0 0 auto;background:transparent;color:var(--muted);border:1px solid var(--grid);font-weight:500}
+  .verdict{min-height:18px;margin-top:10px;font-size:12px;letter-spacing:.05em;color:var(--muted)}
+  .verdict b{color:var(--rec)}
+
+  .jump{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(200,68,60,.18);color:var(--rec);font-weight:800;letter-spacing:.3em;
+    font-size:30px;opacity:0;pointer-events:none}
+  @keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+  .jump.go{animation:flash .7s}
+  @media(prefers-reduced-motion:reduce){.jump.go{animation:none;opacity:.9}.recdot{animation:none}}
+
+  .hint{color:var(--muted);font-size:11.5px;margin-top:16px;letter-spacing:.03em;line-height:1.6}
+  .vfwrap{position:relative}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>THE&nbsp;LINE</h1>
+      <p>Stage the scene, place the camera, keep your coverage on one side of the axis. Drag the actors and the camera. Watch the viewfinder.</p>
+    </div>
+    <div class="rec mono"><span class="recdot"></span><span id="tc">REC&nbsp;&nbsp;00:00:00</span></div>
+  </header>
+
+  <div class="scenes" id="scenes">
+    <button data-s="0" class="on">Two-hander</button>
+    <button data-s="1">Angled</button>
+    <button data-s="2">Across a table</button>
+  </div>
+
+  <div class="stage">
+    <!-- SET -->
+    <div class="card">
+      <div class="eyebrow">Top-down set · drag to stage</div>
+      <canvas id="set"></canvas>
+    </div>
+
+    <!-- VIEWFINDER + COVERAGE -->
+    <div class="card">
+      <div class="vfbox">
+        <div class="eyebrow" style="padding:0 0 8px">Viewfinder</div>
+        <div class="monitor">
+          <div class="vfwrap">
+            <canvas id="vf"></canvas>
+            <div class="jump mono" id="jump">JUMP</div>
+          </div>
+        </div>
+        <div class="status mono">
+          <div class="row"><span class="dot" id="lineDot"></span><span><span class="lab">LINE</span><br><span class="val" id="lineVal">—</span></span></div>
+          <div class="row"><span class="dot" id="eyeDot"></span><span><span class="lab">EYELINE</span><br><span class="val" id="eyeVal">—</span></span></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="eyebrow" style="padding:6px 0 0">Camera is favouring</div>
+        <div class="seg" id="seg">
+          <button data-t="AB" class="on">BOTH · two-shot</button>
+          <button data-t="A">A</button>
+          <button data-t="B">B</button>
+        </div>
+
+        <div class="eyebrow" style="padding:0 0 8px">Coverage · tap to capture this camera</div>
+        <div class="slots" id="slots"></div>
+
+        <div class="play">
+          <button id="playBtn">▶ PLAY THE EDIT</button>
+          <button class="clr" id="clrBtn">Clear</button>
+        </div>
+        <div class="verdict mono" id="verdict"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="hint">The red half is the wrong side of the line — cameras there cross the axis and your actors swap places. Shooting straight <em>down</em> the axis is neutral (◐): the one legal way to step across in the edit. Capture a master plus reverse coverage, then play the cut.</p>
+</div>
+
+<script>
+(()=>{
+  // ---------- geometry helpers ----------
+  const sub=(p,q)=>({x:p.x-q.x,y:p.y-q.y});
+  const dot=(p,q)=>p.x*q.x+p.y*q.y;
+  const len=p=>Math.hypot(p.x,p.y)||1e-9;
+  const norm=p=>{const l=len(p);return{x:p.x/l,y:p.y/l}};
+  const cross=(A,B,P)=>(B.x-A.x)*(P.y-A.y)-(B.y-A.y)*(P.x-A.x); // sign = side of axis A->B
+  const sgn=v=>v>1e-6?1:(v<-1e-6?-1:0);
+
+  // ---------- state ----------
+  const SLOTS=[["master","Master"],["otsA","OTS · A"],["otsB","OTS · B"],["singleA","Single · A"],["singleB","Single · B"]];
+  const SCENES=[
+    // positions are fractions of the set canvas; cam picks a default valid side
+    {A:{x:.30,y:.42},B:{x:.70,y:.42},cam:{x:.50,y:.80}},
+    {A:{x:.28,y:.30},B:{x:.66,y:.62},cam:{x:.78,y:.20}},
+    {A:{x:.30,y:.50},B:{x:.70,y:.50},cam:{x:.50,y:.84}},
+  ];
+  const st={A:{x:0,y:0},B:{x:0,y:0},cam:{x:0,y:0},target:"AB",canonical:1,
+            slots:{},drag:null,playing:false};
+  SLOTS.forEach(([k])=>st.slots[k]=null);
+
+  // ---------- canvases ----------
+  const set=document.getElementById("set"), sx=set.getContext("2d");
+  const vf=document.getElementById("vf"), vx=vf.getContext("2d");
+  let W=0,H=0,VW=0,VH=0;
+  function fit(cv,ctx){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;
+    cv.width=r.width*d;cv.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);return[r.width,r.height]}
+  function sizeAll(){[W,H]=fit(set,sx);[VW,VH]=fit(vf,vx);draw();}
+
+  // ---------- scene load ----------
+  function loadScene(i){
+    const sc=SCENES[i];
+    st.A={x:sc.A.x*W,y:sc.A.y*H};
+    st.B={x:sc.B.x*W,y:sc.B.y*H};
+    st.cam={x:sc.cam.x*W,y:sc.cam.y*H};
+    st.canonical=sgn(cross(st.A,st.B,st.cam))||1; // the chosen side becomes "correct"
+    SLOTS.forEach(([k])=>st.slots[k]=null);
+    st.target="AB";
+    document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.t==="AB"));
+    renderSlots();draw();
+  }
+
+  // ---------- the camera "view": returns who is left/right + verdict ----------
+  function targetPoint(target){
+    if(target==="A")return st.A;
+    if(target==="B")return st.B;
+    return {x:(st.A.x+st.B.x)/2,y:(st.A.y+st.B.y)/2};
+  }
+  function viewFrom(cam,target){
+    const T=targetPoint(target);
+    const L=norm(sub(T,cam));
+    const R={x:-L.y,y:L.x};               // screen-right vector
+    const project=P=>{const rel=sub(P,cam);const depth=dot(rel,L);const off=dot(rel,R);
+      return{depth,ang:Math.atan2(off,Math.max(depth,1e-3)),behind:depth<=0,sign:Math.sign(off)||1}};
+    const side=sgn(cross(st.A,st.B,cam));
+    return{cam,target,L,R,a:project(st.A),b:project(st.B),side};
+  }
+  function verdict(side){
+    if(side===0)return{key:"neu",line:"ON AXIS · neutral",eye:"ambiguous — legal cut point"};
+    if(side===st.canonical)return{key:"good",line:"same side ✓",eye:"matches ✓"};
+    return{key:"bad",line:"CROSSED ✗",eye:"reversed ✗ — they swap"};
+  }
+
+  // ---------- draw the SET (top-down) ----------
+  function halfPlane(A,B,forbidSign){
+    // polygon of the canvas region where sign(cross)==forbidSign
+    const corners=[{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}];
+    const edges=[[corners[0],corners[1]],[corners[1],corners[2]],[corners[2],corners[3]],[corners[3],corners[0]]];
+    const hits=[];
+    for(const [p,q] of edges){
+      const cp=cross(A,B,p), cq=cross(A,B,q);
+      if((cp>0)!==(cq>0)&&Math.abs(cp-cq)>1e-9){const t=cp/(cp-cq);
+        hits.push({x:p.x+(q.x-p.x)*t,y:p.y+(q.y-p.y)*t});}
+    }
+    const pts=[...hits,...corners.filter(c=>sgn(cross(A,B,c))===forbidSign)];
+    if(pts.length<3)return null;
+    const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length, cy=pts.reduce((s,p)=>s+p.y,0)/pts.length;
+    pts.sort((p,q)=>Math.atan2(p.y-cy,p.x-cx)-Math.atan2(q.y-cy,q.x-cx));
+    return pts;
+  }
+  function head(ctx,p,color,faceTo,r){
+    const d=norm(sub(faceTo,p));
+    ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fill();
+    // facing nub
+    ctx.fillStyle="rgba(8,12,15,.85)";
+    ctx.beginPath();ctx.arc(p.x+d.x*r*.42,p.y+d.y*r*.42,r*.26,0,7);ctx.fill();
+  }
+  function draw(){
+    sx.clearRect(0,0,W,H);
+    // grid
+    sx.strokeStyle="rgba(34,50,59,.55)";sx.lineWidth=1;
+    for(let x=0;x<W;x+=34){sx.beginPath();sx.moveTo(x,0);sx.lineTo(x,H);sx.stroke();}
+    for(let y=0;y<H;y+=34){sx.beginPath();sx.moveTo(0,y);sx.lineTo(W,y);sx.stroke();}
+
+    const {A,B,cam}=st;
+    // forbidden half-plane
+    const forbid=halfPlane(A,B,-st.canonical);
+    if(forbid){
+      sx.save();sx.beginPath();forbid.forEach((p,i)=>i?sx.lineTo(p.x,p.y):sx.moveTo(p.x,p.y));sx.closePath();
+      sx.fillStyle="rgba(200,68,60,.10)";sx.fill();
+      sx.clip();sx.strokeStyle="rgba(200,68,60,.20)";sx.lineWidth=1;
+      for(let d=-H;d<W+H;d+=12){sx.beginPath();sx.moveTo(d,0);sx.lineTo(d+H,H);sx.stroke();}
+      sx.restore();
+    }
+    // axis line (extended)
+    const dir=norm(sub(B,A));
+    sx.strokeStyle="rgba(207,216,221,.5)";sx.lineWidth=1.4;sx.setLineDash([7,7]);
+    sx.beginPath();sx.moveTo(A.x-dir.x*2000,A.y-dir.y*2000);sx.lineTo(B.x+dir.x*2000,B.y+dir.y*2000);sx.stroke();
+    sx.setLineDash([]);
+
+    // characters (face each other)
+    head(sx,A,"#3FB8C4",B,14);
+    head(sx,B,"#E8A33D",A,14);
+    sx.font="11px ui-monospace,monospace";sx.fillStyle="#3FB8C4";sx.fillText("A",A.x-3,A.y-20);
+    sx.fillStyle="#E8A33D";sx.fillText("B",B.x-3,B.y-20);
+
+    // camera frustum toward current target
+    const T=targetPoint(st.target);const L=norm(sub(T,cam));const fov=21*Math.PI/180;
+    const rot=(v,a)=>({x:v.x*Math.cos(a)-v.y*Math.sin(a),y:v.x*Math.sin(a)+v.y*Math.cos(a)});
+    const l1=rot(L,fov),l2=rot(L,-fov),fl=Math.min(len(sub(T,cam))+30,420);
+    const v=verdict(st.side?st.side:sgn(cross(A,B,cam)));
+    const camCol=v.key==="bad"?"#C8443C":(v.key==="neu"?"#E8A33D":"#EDE8DE");
+    sx.beginPath();sx.moveTo(cam.x,cam.y);sx.lineTo(cam.x+l1.x*fl,cam.y+l1.y*fl);sx.lineTo(cam.x+l2.x*fl,cam.y+l2.y*fl);sx.closePath();
+    sx.fillStyle=hexA(camCol,.10);sx.fill();
+    sx.strokeStyle=hexA(camCol,.5);sx.lineWidth=1;sx.stroke();
+    // camera body
+    sx.save();sx.translate(cam.x,cam.y);sx.rotate(Math.atan2(L.y,L.x));
+    sx.fillStyle=camCol;sx.fillRect(-9,-7,16,14);sx.fillRect(7,-4,7,8);sx.restore();
+    sx.fillStyle="#080c0f";sx.font="9px ui-monospace,monospace";
+
+    drawVF(viewFrom(st.cam,st.target));
+    updateStatus(sgn(cross(A,B,cam)));
+  }
+  function hexA(hex,a){const h=hex.replace("#","");const n=parseInt(h,16);
+    return`rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`}
+
+  // ---------- draw the VIEWFINDER ----------
+  function drawVF(view){
+    vx.clearRect(0,0,VW,VH);
+    // thirds + frame
+    vx.strokeStyle="rgba(120,140,148,.18)";vx.lineWidth=1;
+    for(let i=1;i<3;i++){vx.beginPath();vx.moveTo(VW*i/3,0);vx.lineTo(VW*i/3,VH);vx.stroke();
+      vx.beginPath();vx.moveTo(0,VH*i/3);vx.lineTo(VW,VH*i/3);vx.stroke();}
+    // rec ticker
+    vx.fillStyle="#FF3B30";vx.beginPath();vx.arc(14,14,3.5,0,7);vx.fill();
+    vx.fillStyle="rgba(237,232,222,.6)";vx.font="10px ui-monospace,monospace";vx.fillText(view.target==="AB"?"WIDE":("CU "+view.target),24,17.5);
+
+    const fov=42*Math.PI/180, half=fov/2;
+    const mapX=ang=>VW/2 + (Math.max(-half,Math.min(half,ang))/half)*(VW*0.40);
+    const show=[];
+    const want = view.target==="AB"?["a","b"]:(view.target==="A"?["a","b"]:["b","a"]);
+    // subject first, partner second (partner may be off-frame)
+    const cfg={a:{p:view.a,col:"#3FB8C4",other:view.b},b:{p:view.b,col:"#E8A33D",other:view.a}};
+    want.forEach((k,idx)=>{
+      const c=cfg[k];const isSubject=(view.target==="AB")||idx===0;
+      const inFrame=!c.p.behind && Math.abs(c.p.ang)<=half+0.02;
+      show.push({k,col:c.col,ang:c.p.ang,sign:c.p.sign,behind:c.p.behind,inFrame,
+                 depth:c.p.depth,gaze:Math.sign(c.other.ang-c.p.ang)||c.other.sign,isSubject});
+    });
+    // draw partners' off-frame eyeline arrows first
+    show.forEach(s=>{
+      if(s.inFrame)return;
+      // off-frame: show edge arrow telling where they are
+      const edgeX=s.sign>0?VW-10:10, y=VH*0.5;
+      vx.fillStyle=hexA(s.col,.5);vx.beginPath();
+      const dir=s.sign>0?1:-1;
+      vx.moveTo(edgeX,y-7);vx.lineTo(edgeX+dir*9,y);vx.lineTo(edgeX,y+7);vx.closePath();vx.fill();
+    });
+    show.forEach(s=>{
+      if(!s.inFrame)return;
+      const x=mapX(s.ang);
+      const r=Math.max(14,Math.min(40, (s.isSubject?2400:2000)/Math.max(s.depth,40)));
+      const y=VH*0.52;
+      // head
+      vx.fillStyle=s.col;vx.beginPath();vx.arc(x,y,r,0,7);vx.fill();
+      // eyes looking toward partner (gaze sign)
+      vx.fillStyle="#0a0f12";
+      const ex=r*0.30, ey=-r*0.12, pup=s.gaze*r*0.14;
+      [-1,1].forEach(side=>{
+        vx.beginPath();vx.arc(x+side*ex,y+ey,r*0.16,0,7);vx.fill();
+      });
+      vx.fillStyle=hexA(s.col,.9);
+      [-1,1].forEach(side=>{
+        vx.beginPath();vx.arc(x+side*ex+pup,y+ey,r*0.07,0,7);vx.fill();
+      });
+      // shoulders
+      vx.fillStyle=hexA(s.col,.85);
+      vx.beginPath();vx.moveTo(x-r*1.1,VH);vx.quadraticCurveTo(x,y+r*0.7,x+r*1.1,VH);vx.fill();
+    });
+  }
+
+  // ---------- status + slots ----------
+  function updateStatus(side){
+    const v=verdict(side);
+    const ld=document.getElementById("lineDot"),ed=document.getElementById("eyeDot");
+    ld.className="dot "+(v.key);ed.className="dot "+(v.key);
+    document.getElementById("lineVal").textContent=v.line;
+    document.getElementById("eyeVal").textContent=v.eye;
+  }
+  function renderSlots(){
+    const wrap=document.getElementById("slots");wrap.innerHTML="";
+    SLOTS.forEach(([k,name])=>{
+      const s=st.slots[k];const b=document.createElement("button");
+      b.className="slot"+(s?" filled":"");
+      const v=s?verdict(s.side):null;
+      b.innerHTML=`<span class="nm">${name}</span>
+        <span class="st"><span class="mini ${v?v.key:''}"></span>${s?(v.key==='bad'?'crossed':v.key==='neu'?'on axis':'clean'):'empty'}</span>`;
+      b.onclick=()=>{ if(st.playing)return;
+        st.slots[k]={cam:{...st.cam},target:st.target,side:sgn(cross(st.A,st.B,st.cam))};
+        renderSlots();};
+      wrap.appendChild(b);
+    });
+  }
+
+  // ---------- play the edit ----------
+  function playEdit(){
+    const filled=SLOTS.map(([k])=>({k,...({slot:st.slots[k]})})).filter(o=>o.slot);
+    if(!filled.length||st.playing)return;
+    st.playing=true;document.getElementById("playBtn").disabled=true;
+    const verdictEl=document.getElementById("verdict");verdictEl.innerHTML="";
+    let i=0,breaks=0;
+    const jump=document.getElementById("jump");
+    const step=()=>{
+      if(i>=filled.length){
+        st.playing=false;document.getElementById("playBtn").disabled=false;
+        draw();
+        verdictEl.innerHTML = breaks
+          ? `Edit plays with <b>${breaks} jump${breaks>1?'s':''}</b> — coverage crosses the line.`
+          : `Clean edit. Screen direction holds across every cut. ✓`;
+        return;
+      }
+      const o=filled[i], sc=o.slot;
+      drawVF(viewFrom(sc.cam,sc.target));
+      const v=verdict(sc.side);
+      // mini set highlight of which cam is live
+      draw_live(sc);
+      if(v.key==="bad"){breaks++;jump.classList.remove("go");void jump.offsetWidth;jump.classList.add("go");}
+      verdictEl.innerHTML=`<span style="color:var(--ink)">${SLOTS[SLOTS.findIndex(s=>s[0]===o.k)][1]}</span> — ${v.key==='bad'?'<b>JUMP</b>':v.key==='neu'?'neutral':'clean'}`;
+      i++;setTimeout(step,820);
+    };
+    step();
+  }
+  // redraw set with a specific live camera (during playback)
+  function draw_live(sc){
+    const keep={cam:st.cam,target:st.target};
+    st.cam=sc.cam;st.target=sc.target;draw();st.cam=keep.cam;st.target=keep.target;
+  }
+
+  // ---------- input ----------
+  function pos(e){const r=set.getBoundingClientRect();const t=e.touches?e.touches[0]:e;
+    return{x:t.clientX-r.left,y:t.clientY-r.top}};
+  function pick(p){
+    const cand=[["A",st.A,16],["B",st.B,16],["cam",st.cam,20]];
+    for(const [k,o,rad] of cand) if(Math.hypot(p.x-o.x,p.y-o.y)<rad) return k;
+    return null;
+  }
+  function down(e){if(st.playing)return;const p=pos(e);const k=pick(p);if(k){st.drag=k;e.preventDefault();}}
+  function move(e){if(!st.drag)return;const p=pos(e);
+    p.x=Math.max(8,Math.min(W-8,p.x));p.y=Math.max(8,Math.min(H-8,p.y));
+    st[st.drag]={x:p.x,y:p.y};
+    if(st.drag!=="cam"){ // re-anchor canonical side to current camera so the "correct" side follows the master intent
+      // keep canonical fixed relative to where camera currently sits if it's on a side
+      const s=sgn(cross(st.A,st.B,st.cam)); if(s) st.canonical=st.canonical; // canonical stays; user must keep cam valid
+    }
+    draw();e.preventDefault();}
+  function up(){st.drag=null;}
+  set.addEventListener("mousedown",down);window.addEventListener("mousemove",move);window.addEventListener("mouseup",up);
+  set.addEventListener("touchstart",down,{passive:false});set.addEventListener("touchmove",move,{passive:false});set.addEventListener("touchend",up);
+
+  document.getElementById("seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+    st.target=b.dataset.t;document.querySelectorAll("#seg button").forEach(x=>x.classList.toggle("on",x===b));draw();});
+  document.getElementById("scenes").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+    document.querySelectorAll("#scenes button").forEach(x=>x.classList.toggle("on",x===b));loadScene(+b.dataset.s);});
+  document.getElementById("playBtn").addEventListener("click",playEdit);
+  document.getElementById("clrBtn").addEventListener("click",()=>{if(st.playing)return;
+    SLOTS.forEach(([k])=>st.slots[k]=null);document.getElementById("verdict").innerHTML="";renderSlots();});
+
+  // ---------- timecode ----------
+  let frames=0;setInterval(()=>{frames++;const ff=frames%24,ss=Math.floor(frames/24)%60,mm=Math.floor(frames/24/60)%60;
+    document.getElementById("tc").textContent=`REC  ${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}:${String(ff).padStart(2,"0")}`;},1000/24);
+
+  // ---------- boot ----------
+  window.addEventListener("resize",sizeAll);
+  requestAnimationFrame(()=>{sizeAll();loadScene(0);renderSlots();});
+})();
+</script>
+</body>
+</html>
