@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Pet Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#3a2e4d;--panel:#fff7ef;--panel-2:#ffe9d6;--shadow:rgba(74,46,80,.22);
+    --c-common:#aeb6c2;--c-uncommon:#52c46a;--c-rare:#3f9bff;--c-epic:#b06bf2;--c-legendary:#ffb020;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:"Fredoka",system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%, #ffd9a8 0%, #ffb6c1 38%, #b39ddb 78%, #7e6bb5 100%);
+    color:var(--ink);display:flex;align-items:center;justify-content:center;
+    min-height:100%;padding:10px;overflow:hidden;
+  }
+  #wrap{
+    position:relative;width:100%;max-width:960px;border-radius:22px;overflow:hidden;
+    box-shadow:0 18px 44px rgba(60,30,70,.45), inset 0 0 0 4px rgba(255,255,255,.5);
+    aspect-ratio:16/9;background:#bfe3ff;touch-action:none;
+  }
+  canvas{display:block;width:100%;height:100%;}
+  .hud{position:absolute;inset:0;pointer-events:none;}
+  .badge{position:absolute;display:flex;align-items:center;gap:8px;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));border:3px solid #fff;border-radius:16px;
+    padding:6px 12px;box-shadow:0 6px 0 var(--shadow);font-weight:600;}
+  #petBadge{top:12px;left:12px;max-width:64%;}
+  #petBadge .emoji{font-size:26px;line-height:1;}
+  #petBadge .pname{font-size:15px;font-weight:700;}
+  #petBadge .sub{font-size:11px;opacity:.85;line-height:1.15;}
+  .stat{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+  .chip{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:3px solid #fff;border-radius:14px;
+    padding:4px 10px;font-size:13px;font-weight:700;box-shadow:0 5px 0 var(--shadow);display:flex;align-items:center;gap:6px;}
+  .barwrap{width:120px;height:9px;background:#e7d3c2;border-radius:99px;overflow:hidden;margin-top:3px;}
+  .bar{height:100%;width:0%;background:linear-gradient(90deg,#ffd56b,#ff9e3d);transition:width .25s;}
+  .biomeName{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+    background:rgba(58,46,77,.78);color:#fff;padding:4px 14px;border-radius:12px;font-size:12px;font-weight:700;}
+  .topbtns{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;pointer-events:auto;}
+  .btn{font-family:inherit;font-weight:700;cursor:pointer;border:3px solid #fff;border-radius:14px;
+    background:linear-gradient(180deg,#fff,#ffe3cf);color:var(--ink);padding:8px 14px;font-size:14px;
+    box-shadow:0 5px 0 var(--shadow);transition:transform .05s, box-shadow .05s;}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--shadow);}
+  .btn.primary{background:linear-gradient(180deg,#ffd56b,#ff9e3d);color:#5a3210;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .touch{position:absolute;inset:0;pointer-events:none;}
+  .tbtn{position:absolute;bottom:14px;pointer-events:auto;width:64px;height:64px;border-radius:50%;
+    background:rgba(255,255,255,.42);border:3px solid rgba(255,255,255,.85);display:flex;align-items:center;
+    justify-content:center;font-size:26px;color:#3a2e4d;box-shadow:0 5px 0 var(--shadow);user-select:none;backdrop-filter:blur(2px);}
+  .tbtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--shadow);}
+  #tLeft{left:14px;}#tRight{left:88px;}
+  #tJump{right:18px;width:78px;height:78px;font-size:14px;font-weight:700;background:rgba(255,210,120,.62);}
+  @media (hover:hover) and (pointer:fine){ .touch .tbtn{opacity:.5;} }
+  .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(40,22,55,.62);pointer-events:auto;padding:16px;z-index:5;backdrop-filter:blur(3px);}
+  .overlay.show{display:flex;}
+  .card{background:linear-gradient(180deg,#fffaf4,#ffeede);border:4px solid #fff;border-radius:22px;padding:18px;
+    max-width:580px;width:100%;box-shadow:0 16px 0 rgba(74,46,80,.3);max-height:94%;overflow:auto;}
+  .card h2{margin:2px 0 4px;font-size:22px;text-align:center;}
+  .card .tagline{text-align:center;font-size:12.5px;opacity:.8;margin-bottom:14px;}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;}
+  @media(max-width:560px){.grid{grid-template-columns:repeat(4,1fr);}}
+  .slot{aspect-ratio:1;border-radius:14px;border:3px solid #e9dccd;background:#fff;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1px;cursor:pointer;position:relative;transition:transform .08s;padding:2px;}
+  .slot:active{transform:scale(.94);}
+  .slot .e{font-size:25px;line-height:1;}
+  .slot .n{font-size:9px;font-weight:700;text-align:center;line-height:1.02;}
+  .slot .ab{font-size:7.5px;font-weight:600;opacity:.7;text-align:center;line-height:1;}
+  .slot.locked{filter:grayscale(1);opacity:.45;cursor:default;}
+  .slot.active-pet{box-shadow:0 0 0 3px #ffb020, 0 6px 12px rgba(0,0,0,.18);}
+  .tag{position:absolute;top:3px;right:4px;font-size:8px;font-weight:800;padding:1px 4px;border-radius:6px;color:#fff;}
+  .hatch-stage{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;}
+  .hatch-emoji{font-size:84px;line-height:1;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));}
+  .raritytext{font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:13px;}
+  .center-msg{text-align:center;}.center-msg .big{font-size:25px;font-weight:700;margin-bottom:6px;}
+  .row{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+  .legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;font-size:10px;font-weight:700;}
+  .legend span{padding:2px 7px;border-radius:8px;color:#fff;}
+  .biomes{display:flex;flex-direction:column;gap:10px;}
+  .biome{display:flex;align-items:center;gap:12px;border:3px solid #eaddcd;border-radius:16px;padding:10px 12px;
+    cursor:pointer;background:#fff;transition:transform .08s;position:relative;}
+  .biome:active{transform:scale(.98);}
+  .biome.locked{opacity:.55;cursor:default;}
+  .biome .bigemoji{font-size:34px;}
+  .biome .bname{font-weight:700;font-size:16px;}
+  .biome .bdesc{font-size:11.5px;opacity:.8;}
+  .biome .done{position:absolute;right:12px;top:10px;font-size:16px;}
+  .hint{position:absolute;left:50%;top:60px;transform:translateX(-50%);background:rgba(58,46,77,.85);color:#fff;
+    padding:6px 14px;border-radius:12px;font-size:12.5px;font-weight:600;pointer-events:none;opacity:0;
+    transition:opacity .4s;text-align:center;max-width:78%;}
+  .hint.show{opacity:1;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+
+  <div class="hud">
+    <div class="badge" id="petBadge">
+      <span class="emoji" id="petEmoji">🐱</span>
+      <div>
+        <div class="pname" id="petName">Cat</div>
+        <div class="sub" id="petSub">Common · Balanced</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="chip">💪 <span id="strVal">0</span> STR<div class="barwrap"><div class="bar" id="strBar"></div></div></div>
+      <div class="chip">🥚 <span id="eggVal">0</span></div>
+      <div class="chip">📒 <span id="dexVal">1</span>/25</div>
+    </div>
+    <div class="hint" id="hint"></div>
+    <div class="biomeName" id="biomeName">Sunny Meadow</div>
+  </div>
+
+  <div class="topbtns">
+    <button class="btn" id="dexBtn">📒 Pets</button>
+    <button class="btn" id="mapBtn">🗺️</button>
+    <button class="btn" id="resetBtn">↻</button>
+  </div>
+
+  <div class="touch">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tJump">JUMP</div>
+  </div>
+
+  <div class="overlay show" id="mapOverlay">
+    <div class="card">
+      <h2>🐾 Pet Quest</h2>
+      <div class="tagline">Explore biomes, gather eggs to grow, and hatch all 25 pets. Each pet has its own way to move — and each biome hides different eggs.</div>
+      <div class="biomes" id="biomeList"></div>
+      <div class="row"><button class="btn" id="mapDex">📒 View pets</button></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="dexOverlay">
+    <div class="card">
+      <h2>📒 Pet Collection</h2>
+      <div class="tagline" id="dexTag">Tap an owned pet to make it your active explorer.</div>
+      <div class="grid" id="dexGrid"></div>
+      <div class="legend" id="legend"></div>
+      <div class="row"><button class="btn" id="dexClose">Close</button></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="hatchOverlay"><div class="card"><div class="hatch-stage" id="hatchStage"></div></div></div>
+
+  <div class="overlay" id="winOverlay">
+    <div class="card"><div class="center-msg">
+      <div class="big">🏁 Biome Cleared!</div>
+      <div id="winStats"></div>
+      <div class="row" id="winRow"></div>
+    </div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ CONSTANTS ============ */
+const VW=960, VH=540;
+const GRAVITY=0.8, FRICTION=0.80, ACCEL=1.0;
+const COYOTE=7, JUMP_BUFFER=7;
+const EGG_W=30, EGG_H=38, PLAYER_W=42, PLAYER_H=42;
+
+/* ============ ABILITIES ============ */
+const ABIL={
+  base:   {speedMul:1.00,jumpMul:1.00,doubleJump:false,glideFall:null,desc:"Balanced all-rounder"},
+  swift:  {speedMul:1.32,jumpMul:1.00,doubleJump:false,glideFall:null,desc:"Fast runner"},
+  hopper: {speedMul:1.05,jumpMul:1.12,doubleJump:true, glideFall:null,desc:"Double jump"},
+  leaper: {speedMul:1.05,jumpMul:1.34,doubleJump:true, glideFall:null,desc:"High double jump"},
+  glider: {speedMul:1.00,jumpMul:1.05,doubleJump:false,glideFall:2.6, desc:"Hold jump to glide"},
+  flyer:  {speedMul:1.12,jumpMul:1.08,doubleJump:true, glideFall:2.4, desc:"Double jump + glide"},
+  floater:{speedMul:1.00,jumpMul:1.05,doubleJump:false,glideFall:2.0, alwaysFloat:true, desc:"Hovers, slow fall"},
+  jumper: {speedMul:1.05,jumpMul:1.28,doubleJump:false,glideFall:null,desc:"Powerful high jump"},
+};
+
+/* ============ PETS (25) ============ */
+const RAR={common:{label:"Common",color:"#aeb6c2"},uncommon:{label:"Uncommon",color:"#52c46a"},
+  rare:{label:"Rare",color:"#3f9bff"},epic:{label:"Epic",color:"#b06bf2"},legendary:{label:"Legendary",color:"#ffb020"}};
+const PETS=[
+  {id:"cat",     name:"Cat",          e:"🐱",r:"common",   power:1.0, ab:"base"},
+  {id:"dog",     name:"Dog",          e:"🐶",r:"common",   power:1.05,ab:"swift"},
+  {id:"bunny",   name:"Bunny",        e:"🐰",r:"common",   power:1.1, ab:"hopper"},
+  {id:"mouse",   name:"Mouse",        e:"🐭",r:"common",   power:1.0, ab:"swift"},
+  {id:"chick",   name:"Chick",        e:"🐤",r:"common",   power:1.05,ab:"glider"},
+  {id:"fox",     name:"Fox",          e:"🦊",r:"uncommon", power:1.2, ab:"swift"},
+  {id:"raccoon", name:"Raccoon",      e:"🦝",r:"uncommon", power:1.2, ab:"hopper"},
+  {id:"hedgehog",name:"Hedgehog",     e:"🦔",r:"uncommon", power:1.25,ab:"swift"},
+  {id:"duck",    name:"Duck",         e:"🦆",r:"uncommon", power:1.15,ab:"glider"},
+  {id:"frog",    name:"Frog",         e:"🐸",r:"uncommon", power:1.3, ab:"leaper"},
+  {id:"owl",     name:"Owl",          e:"🦉",r:"rare",     power:1.4, ab:"glider"},
+  {id:"wolf",    name:"Wolf",         e:"🐺",r:"rare",     power:1.45,ab:"swift"},
+  {id:"panda",   name:"Panda",        e:"🐼",r:"rare",     power:1.4, ab:"jumper"},
+  {id:"penguin", name:"Penguin",      e:"🐧",r:"rare",     power:1.35,ab:"swift"},
+  {id:"turtle",  name:"Turtle",       e:"🐢",r:"rare",     power:1.5, ab:"jumper"},
+  {id:"dragon",  name:"Dragon",       e:"🐉",r:"epic",     power:1.7, ab:"flyer"},
+  {id:"unicorn", name:"Unicorn",      e:"🦄",r:"epic",     power:1.75,ab:"hopper"},
+  {id:"tiger",   name:"Tiger",        e:"🐯",r:"epic",     power:1.7, ab:"swift"},
+  {id:"lion",    name:"Lion",         e:"🦁",r:"epic",     power:1.7, ab:"swift"},
+  {id:"falcon",  name:"Falcon",       e:"🦅",r:"epic",     power:1.65,ab:"flyer"},
+  {id:"trex",    name:"T-Rex",        e:"🦖",r:"legendary",power:2.1, ab:"jumper"},
+  {id:"kraken",  name:"Kraken",       e:"🦑",r:"legendary",power:2.0, ab:"swift"},
+  {id:"whale",   name:"Cosmic Whale", e:"🐋",r:"legendary",power:2.2, ab:"floater"},
+  {id:"peacock", name:"Celestial",    e:"🦚",r:"legendary",power:2.3, ab:"glider"},
+  {id:"golddrg", name:"Golden Dragon",e:"🐲",r:"legendary",power:2.5, ab:"flyer"},
+];
+const PET_BY_ID={}; PETS.forEach(p=>PET_BY_ID[p.id]=p);
+
+/* ============ BIOMES / LEVELS ============ */
+function gnd(x,w,y){return {x,y:y||470,w,h:90};}
+function plat(x,y,w){return {x,y,w:w||160,h:24};}
+function cEgg(x,y){return {x,y,w:EGG_W,h:EGG_H,got:false,special:false};}
+function sEgg(x,y){return {x,y,w:EGG_W+4,h:EGG_H+4,got:false,special:true};}
+
+const LEVELS=[
+  {
+    id:0,name:"Sunny Meadow",theme:"grass",eggType:"grass",eggName:"Grass Egg",
+    sky:["#aee4ff","#cdf3ff","#eafbf0"],hills:["#bfe9c8","#9bd9ae"],
+    weights:{common:40,uncommon:35,rare:18,epic:6,legendary:1},
+    width:5300,
+    build(){
+      const plats=[gnd(0,1180),gnd(1320,940),gnd(2400,980),gnd(3520,1780)];
+      [[520,360,170],[770,300,150],[300,400,120],[1500,360,170],[1740,278,150],
+       [1980,360,150],[2520,350,170],[2780,262,170],[3040,190,170],
+       [3700,350,170],[3980,278,160],[4250,360,160],[4520,250,190]].forEach(p=>plats.push(plat(p[0],p[1],p[2])));
+      const eggs=[[200,432],[345,366],[565,326],[815,266],[980,432],[1095,432],[1545,326],[1790,244],
+        [2030,326],[2180,432],[2470,432],[2570,316],[3300,432],[3440,432],[3745,316],
+        [4030,244],[4300,326],[4820,432],[5020,432]].map(c=>cEgg(c[0],c[1]));
+      [[1820,206],[3110,118],[4600,178]].forEach(s=>eggs.push(sEgg(s[0],s[1])));
+      return {plats,eggs,goalX:this.width-180};
+    }
+  },
+  {
+    id:1,name:"Crystal Cliffs",theme:"stone",eggType:"crystal",eggName:"Crystal Egg",
+    sky:["#b9c9e8","#d6c2e2","#f3dcc2"],hills:["#8e7bb0","#6f5d97"],
+    weights:{common:10,uncommon:26,rare:38,epic:21,legendary:5},
+    width:5600,
+    build(){
+      const plats=[gnd(0,760),gnd(980,520),gnd(1700,360),gnd(2300,420),gnd(3060,560),gnd(3900,560),gnd(4760,840)];
+      [[300,360,150],[560,250,140],[820,160,150],[1200,330,150],[1460,230,150],
+       [1900,300,150],[2120,200,140],[2520,300,150],[2760,210,150],[3000,120,150],
+       [3300,330,160],[3560,230,150],[4100,300,150],[4360,200,150],[4600,300,150],
+       [5000,250,170],[5240,160,160]].forEach(p=>plats.push(plat(p[0],p[1],p[2])));
+      const eggs=[[120,432],[360,326],[620,216],[1050,432],[1260,296],[1520,196],
+        [1900,432],[1960,266],[2360,432],[2580,266],[3140,432],[3360,296],
+        [3960,432],[4160,266],[4820,432],[5060,216],[5300,126]].map(c=>cEgg(c[0],c[1]));
+      [[880,118],[3060,78],[4420,156]].forEach(s=>eggs.push(sEgg(s[0],s[1])));
+      return {plats,eggs,goalX:this.width-200};
+    }
+  },
+  {
+    id:2,name:"Starfall Drift",theme:"cosmic",eggType:"star",eggName:"Star Egg",
+    sky:["#1c1346","#2c1c60","#46307e"],hills:["#3a2a66","#2a1e52"],
+    weights:{common:0,uncommon:6,rare:22,epic:40,legendary:32},
+    width:5800,
+    build(){
+      const plats=[gnd(0,520),
+        plat(640,420,150),plat(900,330,140),plat(1180,420,150),plat(1460,330,150),plat(1740,250,150),
+        plat(2060,360,150),plat(2360,270,150),plat(2660,360,150),plat(2980,260,160),
+        plat(3320,360,150),plat(3620,260,150),plat(3920,360,150),plat(4240,270,160),
+        plat(4560,360,160),plat(4880,260,160),
+        gnd(5180,620)];
+      const eggs=[[80,432],[690,386],[950,296],[1230,386],[1510,296],[1790,216],
+        [2110,326],[2410,236],[2710,326],[3030,226],[3370,326],[3670,226],
+        [3970,326],[4290,236],[4610,326],[4930,226],[5260,432],[5460,432]].map(c=>cEgg(c[0],c[1]));
+      [[1790,150],[2980,140],[4880,160]].forEach(s=>eggs.push(sEgg(s[0],s[1])));
+      return {plats,eggs,goalX:this.width-200};
+    }
+  },
+];
+
+/* ============ STATE ============ */
+let state;
+function freshState(){return {owned:{cat:true},active:"cat",strength:0,eggsCollected:0,unlocked:{0:true},cleared:{},currentLevel:0};}
+state=freshState();
+let level=null, biome=null;
+
+/* ============ PLAYER ============ */
+const player={x:90,y:300,vx:0,vy:0,w:PLAYER_W,h:PLAYER_H,onGround:false,facing:1,
+  coyote:0,jumpBuf:0,jumpsUsed:0,squash:0,bob:0,safeX:90,safeY:300,gliding:false};
+
+function loadLevel(i){
+  state.currentLevel=i; biome=LEVELS[i]; level=biome.build();
+  player.x=90;player.y=300;player.vx=0;player.vy=0;player.onGround=false;player.facing=1;
+  player.coyote=0;player.jumpBuf=0;player.jumpsUsed=0;player.safeX=90;player.safeY=300;
+  camX=0; won=false;
+  document.getElementById("biomeName").textContent=biome.name;
+  updateHUD();
+}
+
+/* ============ MOVEMENT (ability-aware) ============ */
+function curPet(){return PET_BY_ID[state.active];}
+function curAb(){return ABIL[curPet().ab];}
+function statMult(){return Math.min(2.4,1+state.strength*0.0045);}
+function maxSpeed(){const p=curPet(),a=curAb();return clamp(4.3*a.speedMul*(0.92+0.08*p.power)*statMult(),3.8,10.5);}
+function jumpVel(){const p=curPet(),a=curAb();return clamp(13.6*a.jumpMul*(0.94+0.06*p.power)*Math.min(statMult(),1.55),12,21);}
+
+/* ============ INPUT ============ */
+const keys={left:false,right:false,jump:false};
+let jumpPressedThisFrame=false;
+function setKey(dir,val){ if(dir==="jump"&&val&&!keys.jump)jumpPressedThisFrame=true; keys[dir]=val; }
+addEventListener("keydown",e=>{
+  if(["ArrowLeft","a","A"].includes(e.key))setKey("left",true);
+  else if(["ArrowRight","d","D"].includes(e.key))setKey("right",true);
+  else if(["ArrowUp","w","W"," ","Spacebar"].includes(e.key)){setKey("jump",true);e.preventDefault();}
+});
+addEventListener("keyup",e=>{
+  if(["ArrowLeft","a","A"].includes(e.key))setKey("left",false);
+  else if(["ArrowRight","d","D"].includes(e.key))setKey("right",false);
+  else if(["ArrowUp","w","W"," ","Spacebar"].includes(e.key))setKey("jump",false);
+});
+function bindTouch(el,dir){
+  const on=e=>{e.preventDefault();setKey(dir,true);},off=e=>{e.preventDefault();setKey(dir,false);};
+  el.addEventListener("touchstart",on,{passive:false});el.addEventListener("touchend",off,{passive:false});
+  el.addEventListener("touchcancel",off,{passive:false});el.addEventListener("mousedown",on);
+  el.addEventListener("mouseup",off);el.addEventListener("mouseleave",off);
+}
+bindTouch(document.getElementById("tLeft"),"left");
+bindTouch(document.getElementById("tRight"),"right");
+bindTouch(document.getElementById("tJump"),"jump");
+
+/* ============ CANVAS ============ */
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+let dpr=1;
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);cv.width=VW*dpr;cv.height=VH*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);}
+resize();addEventListener("resize",resize);
+
+/* ============ HELPERS ============ */
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function aabb(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function emojiText(em,size,x,y){ctx.font=size+'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(em,x,y);}
+const particles=[],floaters=[];
+function burst(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,life:1,color});}}
+function floatText(x,y,txt,color){floaters.push({x,y,txt,color,life:1});}
+let camX=0,screenShake=0;
+
+/* ============ LOOP ============ */
+let won=false,paused=true,time=0,acc=0,last=performance.now();
+function frame(now){let dt=(now-last)/1000;last=now;if(dt>0.1)dt=0.1;acc+=dt;
+  while(acc>=1/60){if(!paused&&level)step();acc-=1/60;jumpPressedThisFrame=false;} render(); requestAnimationFrame(frame);}
+function step(){
+  time++;
+  const a=curAb(), maxJumps=a.doubleJump?2:1;
+  if(keys.left){player.vx-=ACCEL;player.facing=-1;}
+  if(keys.right){player.vx+=ACCEL;player.facing=1;}
+  if(!keys.left&&!keys.right)player.vx*=FRICTION;
+  player.vx=clamp(player.vx,-maxSpeed(),maxSpeed());
+
+  if(jumpPressedThisFrame)player.jumpBuf=JUMP_BUFFER;
+  if(player.jumpBuf>0)player.jumpBuf--;
+  if(player.coyote>0)player.coyote--;
+  if(!player.onGround&&player.coyote<=0&&player.jumpsUsed===0)player.jumpsUsed=1;
+  if(player.jumpBuf>0){
+    if(player.onGround||player.coyote>0){player.vy=-jumpVel();player.jumpsUsed=1;player.onGround=false;player.coyote=0;player.jumpBuf=0;player.squash=-0.5;burst(player.x+player.w/2,player.y+player.h,"#fff",6);}
+    else if(player.jumpsUsed<maxJumps){player.vy=-jumpVel()*0.92;player.jumpsUsed++;player.jumpBuf=0;player.squash=-0.45;burst(player.x+player.w/2,player.y+player.h/2,"#cfeaff",8);}
+  }
+  if(!keys.jump&&player.vy<-5)player.vy*=0.86;
+
+  player.vy+=GRAVITY; if(player.vy>20)player.vy=20;
+  player.gliding=false;
+  if(a.glideFall!=null&&player.vy>0&&(a.alwaysFloat||keys.jump)){ if(player.vy>a.glideFall){player.vy=a.glideFall;player.gliding=true;} }
+
+  player.x+=player.vx;
+  for(const p of level.plats){if(aabb(player,p)){if(player.vx>0)player.x=p.x-player.w;else if(player.vx<0)player.x=p.x+p.w;player.vx=0;}}
+  player.x=clamp(player.x,0,biome.width-player.w);
+
+  const wasOn=player.onGround; player.onGround=false; player.y+=player.vy;
+  for(const p of level.plats){if(aabb(player,p)){
+    if(player.vy>0){player.y=p.y-player.h;player.vy=0;player.onGround=true;if(!wasOn&&player.squash>-0.2)player.squash=0.5;}
+    else if(player.vy<0){player.y=p.y+p.h;player.vy=0;}
+  }}
+  if(player.onGround){player.coyote=COYOTE;player.jumpsUsed=0;if(player.vx===0||time%6===0){player.safeX=player.x;player.safeY=player.y-2;}}
+
+  if(player.y>VH+140){screenShake=10;player.x=clamp(player.safeX,0,biome.width-player.w);player.y=player.safeY-60;player.vx=0;player.vy=0;player.jumpsUsed=0;floatText(player.x+player.w/2,player.y-20,"Whoops!","#ff8a8a");}
+
+  for(const egg of level.eggs){
+    if(egg.got)continue;
+    if(aabb(player,egg)){
+      egg.got=true;
+      if(egg.special)hatchEgg(egg);
+      else{const g=3;state.strength+=g;state.eggsCollected++;burst(egg.x+egg.w/2,egg.y+egg.h/2,"#ffd56b",14);floatText(egg.x+egg.w/2,egg.y,"+"+g+" STR","#ff9e3d");updateHUD();}
+    }
+  }
+  if(!won&&player.x+player.w>level.goalX)winLevel();
+
+  player.squash*=0.82;player.bob+=0.15;if(screenShake>0)screenShake-=0.6;
+  for(let i=particles.length-1;i>=0;i--){const pt=particles[i];pt.x+=pt.vx;pt.y+=pt.vy;pt.vy+=0.25;pt.life-=0.03;if(pt.life<=0)particles.splice(i,1);}
+  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.y-=0.6;f.life-=0.015;if(f.life<=0)floaters.splice(i,1);}
+  const target=clamp(player.x+player.w/2-VW/2,0,biome.width-VW); camX+=(target-camX)*0.12;
+}
+
+/* ============ RENDER ============ */
+function render(){
+  ctx.clearRect(0,0,VW,VH);
+  if(!biome){ctx.fillStyle="#cdf3ff";ctx.fillRect(0,0,VW,VH);return;}
+  let sx=0,sy=0;if(screenShake>0){sx=(Math.random()-0.5)*screenShake;sy=(Math.random()-0.5)*screenShake;}
+  ctx.save();ctx.translate(sx,sy);
+  drawSky();drawParallax();
+  ctx.save();ctx.translate(-camX,0);
+  drawPlatforms();drawGoal();drawEggs();drawParticles();drawPlayer();drawFloaters();
+  ctx.restore();ctx.restore();
+}
+function drawSky(){
+  const g=ctx.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,biome.sky[0]);g.addColorStop(0.55,biome.sky[1]);g.addColorStop(1,biome.sky[2]);
+  ctx.fillStyle=g;ctx.fillRect(0,0,VW,VH);
+  if(biome.theme==="cosmic"){
+    for(let i=0;i<70;i++){const sxp=(i*137.5)%VW,syp=(i*71.3)%VH*0.8;const tw=0.4+0.6*Math.abs(Math.sin(time*0.03+i));
+      ctx.globalAlpha=tw;ctx.fillStyle="#fff";ctx.fillRect(sxp,syp,2,2);}ctx.globalAlpha=1;
+    ctx.fillStyle="rgba(255,240,200,.9)";ctx.beginPath();ctx.arc(VW-120,90,30,0,7);ctx.fill();
+  } else {
+    ctx.save();ctx.globalAlpha=.9;ctx.fillStyle=biome.theme==="stone"?"#ffe6c0":"#fff3c4";
+    ctx.beginPath();ctx.arc(VW-110,90,46,0,7);ctx.fill();
+    ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(VW-110,90,66,0,7);ctx.fill();ctx.restore();
+  }
+}
+function hill(off,baseY,h,color,speed){const o=-(camX*speed)%VW;ctx.fillStyle=color;
+  for(let k=-1;k<=2;k++){const bx=o+k*VW+off;ctx.beginPath();ctx.moveTo(bx-40,VH);
+    ctx.quadraticCurveTo(bx+VW*0.25,baseY-h,bx+VW*0.5,baseY);ctx.quadraticCurveTo(bx+VW*0.75,baseY-h,bx+VW+40,VH);
+    ctx.closePath();ctx.fill();}}
+function drawParallax(){hill(0,430,150,biome.hills[0],0.15);hill(260,470,120,biome.hills[1],0.28);
+  if(biome.theme!=="cosmic"){ctx.fillStyle="rgba(255,255,255,.85)";
+    [[120,80,1],[430,130,.8],[720,70,1.1],[900,150,.7]].forEach(c=>{const cx=((c[0]-camX*0.1)%(VW+200)+VW+200)%(VW+200)-100;puff(cx,c[1],c[2]);});}}
+function puff(x,y,s){ctx.beginPath();ctx.arc(x,y,22*s,0,7);ctx.arc(x+26*s,y+6*s,18*s,0,7);ctx.arc(x-24*s,y+8*s,16*s,0,7);ctx.arc(x+6*s,y-10*s,18*s,0,7);ctx.fill();}
+function drawPlatforms(){
+  for(const p of level.plats){
+    const isGround=p.h>=80;
+    if(biome.theme==="grass"){
+      ctx.fillStyle=isGround?"#caa06a":"#cf8f5b";roundRect(p.x,p.y,p.w,p.h,isGround?0:10);ctx.fill();
+      ctx.fillStyle="#7cc86a";roundRect(p.x,p.y,p.w,isGround?20:12,isGround?0:8);ctx.fill();
+      ctx.fillStyle="#94d77f";ctx.fillRect(p.x,p.y+(isGround?16:9),p.w,3);
+    } else if(biome.theme==="stone"){
+      ctx.fillStyle=isGround?"#7d8aa6":"#8e9bbb";roundRect(p.x,p.y,p.w,p.h,isGround?0:8);ctx.fill();
+      ctx.fillStyle="#aab6d4";roundRect(p.x,p.y,p.w,isGround?14:8,isGround?0:6);ctx.fill();
+      ctx.strokeStyle="rgba(255,255,255,.25)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x+10,p.y+4);ctx.lineTo(p.x+p.w-10,p.y+4);ctx.stroke();
+    } else {
+      ctx.save();ctx.shadowColor="#a36bff";ctx.shadowBlur=14;
+      ctx.fillStyle=isGround?"#4a3a82":"#5c47a6";roundRect(p.x,p.y,p.w,p.h,isGround?0:10);ctx.fill();ctx.restore();
+      ctx.fillStyle="#9b7bff";roundRect(p.x,p.y,p.w,isGround?12:7,isGround?0:6);ctx.fill();
+    }
+  }
+}
+function drawGoal(){const gx=level.goalX;ctx.strokeStyle=biome.theme==="cosmic"?"#cbb6ff":"#5a4633";ctx.lineWidth=6;
+  ctx.beginPath();ctx.moveTo(gx,180);ctx.lineTo(gx,470);ctx.stroke();
+  ctx.fillStyle="#ff5d73";ctx.beginPath();ctx.moveTo(gx,186);ctx.lineTo(gx+74,210);ctx.lineTo(gx,234);ctx.closePath();ctx.fill();
+  emojiText("🏁",28,gx+36,212);}
+function drawEggs(){
+  for(const egg of level.eggs){
+    if(egg.got)continue;
+    const cx=egg.x+egg.w/2,cy=egg.y+egg.h/2+Math.sin(time*0.06+egg.x)*3;
+    if(egg.special){
+      ctx.save();const hue=(time*4+egg.x)%360;
+      let c1,c2,mark;
+      if(biome.eggType==="grass"){c1="#bff0a8";c2="#7fcf6a";mark="🌿";ctx.shadowColor="#7fd36a";}
+      else if(biome.eggType==="crystal"){c1="#bfe0ff";c2="#5aa0ff";mark="💎";ctx.shadowColor="#6fb0ff";}
+      else {c1="hsl("+hue+",85%,75%)";c2="hsl("+((hue+50)%360)+",85%,62%)";mark="✨";ctx.shadowColor="hsl("+hue+",90%,65%)";}
+      ctx.shadowBlur=18;drawEggShape(cx,cy,egg.w,egg.h,c1,c2);ctx.restore();
+      ctx.font='13px "Apple Color Emoji","Segoe UI Emoji",sans-serif';ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(mark,cx,cy-egg.h/2-9);
+    } else {
+      let t="#fff6e9",b="#ffd9a8";
+      if(biome.theme==="stone"){t="#eef3ff";b="#c3d2f0";}else if(biome.theme==="cosmic"){t="#efe6ff";b="#c9b3f5";}
+      drawEggShape(cx,cy,egg.w,egg.h,t,b);
+      ctx.fillStyle="rgba(150,110,70,.35)";ctx.beginPath();ctx.arc(cx-5,cy,3,0,7);ctx.arc(cx+5,cy+6,2.4,0,7);ctx.arc(cx+3,cy-7,2,0,7);ctx.fill();
+    }
+  }
+}
+function drawEggShape(cx,cy,w,h,top,bot){const g=ctx.createLinearGradient(0,cy-h/2,0,cy+h/2);g.addColorStop(0,top);g.addColorStop(1,bot);
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,cy,w/2,h/2,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="rgba(120,80,40,.18)";ctx.lineWidth=2;ctx.stroke();}
+function drawParticles(){for(const pt of particles){ctx.globalAlpha=Math.max(0,pt.life);ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,3.2,0,7);ctx.fill();}ctx.globalAlpha=1;}
+function drawFloaters(){ctx.textAlign="center";ctx.textBaseline="middle";for(const f of floaters){ctx.globalAlpha=Math.max(0,f.life);
+  ctx.font='700 16px Fredoka, sans-serif';ctx.lineWidth=4;ctx.strokeStyle="rgba(255,255,255,.9)";ctx.strokeText(f.txt,f.x,f.y);
+  ctx.fillStyle=f.color;ctx.fillText(f.txt,f.x,f.y);}ctx.globalAlpha=1;}
+function drawPlayer(){
+  const cx=player.x+player.w/2,cy=player.y+player.h/2;
+  ctx.fillStyle="rgba(40,20,40,.18)";ctx.beginPath();ctx.ellipse(cx,player.y+player.h+4,player.w*0.45,7,0,0,7);ctx.fill();
+  if(player.gliding){ctx.globalAlpha=.5;ctx.fillStyle="#fff";ctx.beginPath();ctx.ellipse(cx,cy+4,player.w*0.7,player.h*0.4,0,0,7);ctx.fill();ctx.globalAlpha=1;}
+  const sq=player.squash,bob=player.onGround?Math.sin(player.bob)*1.5:0;
+  ctx.save();ctx.translate(cx,cy+bob);ctx.scale(player.facing*(1-sq*0.5),1+sq*0.5);
+  emojiText(curPet().e,player.h+8,0,0);ctx.restore();
+}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+/* ============ HATCH ============ */
+function rollPet(){
+  const w=biome.weights;let total=0;for(const k in w)total+=w[k];
+  let roll=Math.random()*total,chosenR="common";
+  for(const k in w){if(roll<w[k]){chosenR=k;break;}roll-=w[k];}
+  let pool=PETS.filter(p=>p.r===chosenR);
+  if(!pool.length)pool=PETS.filter(p=>p.r==="rare");
+  const news=pool.filter(p=>!state.owned[p.id]);
+  if(news.length&&Math.random()<0.72)pool=news;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+const hatchOverlay=document.getElementById("hatchOverlay"),hatchStage=document.getElementById("hatchStage");
+function hatchEgg(egg){
+  burst(egg.x+egg.w/2,egg.y+egg.h/2,"#ffd56b",20);
+  const pet=rollPet(),isNew=!state.owned[pet.id];
+  state.owned[pet.id]=true;state.eggsCollected++;paused=true;
+  const col=RAR[pet.r].color, ab=ABIL[pet.ab];
+  hatchStage.innerHTML=`
+    <div class="raritytext" style="color:${col}">${isNew?"✦ New Pet! ✦":"Hatched again!"}</div>
+    <div style="font-size:11px;opacity:.7">${biome.eggName}</div>
+    <div class="hatch-emoji" id="hatchE" style="filter:drop-shadow(0 0 18px ${col})">🥚</div>
+    <div class="pname" style="font-size:20px;font-weight:700">${pet.name}</div>
+    <div class="sub" style="font-size:12px;opacity:.85">${RAR[pet.r].label} · ${ab.desc}</div>
+    <div class="row">
+      <button class="btn primary" id="equipBtn">Explore as ${pet.name}</button>
+      <button class="btn" id="keepBtn">Keep current</button>
+    </div>`;
+  hatchOverlay.classList.add("show");
+  const eEl=document.getElementById("hatchE");let t=0;
+  const iv=setInterval(()=>{t++;eEl.style.transform="rotate("+(Math.sin(t)*12)+"deg)";if(t>9){clearInterval(iv);eEl.textContent=pet.e;eEl.style.transform="scale(1.1)";}},70);
+  document.getElementById("equipBtn").onclick=()=>{state.active=pet.id;closeHatch();};
+  document.getElementById("keepBtn").onclick=closeHatch;
+  updateHUD();
+}
+function closeHatch(){hatchOverlay.classList.remove("show");paused=false;updateHUD();last=performance.now();}
+
+/* ============ WIN ============ */
+const winOverlay=document.getElementById("winOverlay");
+function winLevel(){
+  won=true;paused=true;state.cleared[biome.id]=true;
+  const next=biome.id+1; if(next<LEVELS.length)state.unlocked[next]=true;
+  const owned=Object.keys(state.owned).length;
+  document.getElementById("winStats").innerHTML=`Eggs gathered: <b>${state.eggsCollected}</b> · Strength: <b>${state.strength}</b> · Pets: <b>${owned}/25</b>`;
+  const row=document.getElementById("winRow");row.innerHTML="";
+  if(next<LEVELS.length){const b=document.createElement("button");b.className="btn primary";b.textContent="Next biome ▶";b.onclick=()=>{winOverlay.classList.remove("show");loadLevel(next);paused=false;last=performance.now();showHint("Welcome to "+LEVELS[next].name+"!");};row.appendChild(b);}
+  else{const d=document.createElement("div");d.style.cssText="font-weight:700;color:#b06bf2;width:100%";d.textContent="🎉 You cleared every biome!";row.appendChild(d);}
+  const m=document.createElement("button");m.className="btn";m.textContent="🗺️ World map";m.onclick=()=>{winOverlay.classList.remove("show");openMap();};row.appendChild(m);
+  const r=document.createElement("button");r.className="btn";r.textContent="↻ Replay";r.onclick=()=>{winOverlay.classList.remove("show");loadLevel(biome.id);paused=false;last=performance.now();};row.appendChild(r);
+  winOverlay.classList.add("show");
+}
+
+/* ============ MAP ============ */
+const mapOverlay=document.getElementById("mapOverlay"),biomeList=document.getElementById("biomeList");
+function openMap(){buildMap();mapOverlay.classList.add("show");paused=true;}
+function closeMap(){mapOverlay.classList.remove("show");paused=false;last=performance.now();}
+function buildMap(){
+  biomeList.innerHTML="";
+  LEVELS.forEach((L,i)=>{
+    const unlocked=!!state.unlocked[i],cleared=!!state.cleared[i];
+    const emoji=L.theme==="grass"?"🌳":L.theme==="stone"?"⛰️":"🌌";
+    const d=document.createElement("div");d.className="biome"+(unlocked?"":" locked");
+    d.innerHTML=`<div class="bigemoji">${unlocked?emoji:"🔒"}</div>
+      <div><div class="bname">${L.name}</div><div class="bdesc">Hatches the ${L.eggName} — ${i===0?"common & uncommon":i===1?"rarer":"epic & legendary"} pets</div></div>
+      ${cleared?'<div class="done">✅</div>':''}`;
+    if(unlocked)d.onclick=()=>{closeMap();loadLevel(i);showHint(i===0?"Arrows / A-D move · Space jumps · grab 🥚, find the glowing eggs!":"New biome — new egg type to hatch!");};
+    biomeList.appendChild(d);
+  });
+}
+document.getElementById("mapBtn").onclick=openMap;
+document.getElementById("mapDex").onclick=()=>{openDex();};
+
+/* ============ DEX ============ */
+const dexOverlay=document.getElementById("dexOverlay"),dexGrid=document.getElementById("dexGrid");
+function openDex(){buildDex();dexOverlay.classList.add("show");paused=true;}
+function closeDex(){dexOverlay.classList.remove("show");if(!mapOverlay.classList.contains("show")){paused=false;last=performance.now();}}
+function buildDex(){
+  dexGrid.innerHTML="";
+  for(const p of PETS){
+    const owned=!!state.owned[p.id],col=RAR[p.r].color;
+    const d=document.createElement("div");
+    d.className="slot"+(owned?"":" locked")+(state.active===p.id?" active-pet":"");
+    d.style.borderColor=owned?col:"#e9dccd";
+    d.innerHTML=`<span class="tag" style="background:${col}">${RAR[p.r].label[0]}</span>
+      <span class="e">${owned?p.e:"❓"}</span><span class="n">${owned?p.name:"???"}</span>
+      <span class="ab">${owned?ABIL[p.ab].desc:""}</span>`;
+    if(owned)d.onclick=()=>{state.active=p.id;buildDex();updateHUD();};
+    dexGrid.appendChild(d);
+  }
+  document.getElementById("legend").innerHTML=Object.keys(RAR).map(k=>`<span style="background:${RAR[k].color}">${RAR[k].label}</span>`).join("");
+}
+document.getElementById("dexBtn").onclick=openDex;
+document.getElementById("dexClose").onclick=closeDex;
+document.getElementById("resetBtn").onclick=()=>{if(biome&&confirm("Restart this biome? (Pets & strength are kept)"))loadLevel(biome.id);};
+[dexOverlay].forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeDex();}));
+
+/* ============ HUD ============ */
+function updateHUD(){
+  const p=curPet(),a=curAb();
+  document.getElementById("petEmoji").textContent=p.e;
+  document.getElementById("petName").textContent=p.name;
+  document.getElementById("petSub").textContent=RAR[p.r].label+" · "+a.desc;
+  document.getElementById("strVal").textContent=state.strength;
+  document.getElementById("eggVal").textContent=state.eggsCollected;
+  document.getElementById("dexVal").textContent=Object.keys(state.owned).length;
+  document.getElementById("strBar").style.width=Math.min(100,(state.strength%60)/60*100)+"%";
+}
+const hintEl=document.getElementById("hint");let hintT=0;
+function showHint(t){hintEl.textContent=t;hintEl.classList.add("show");hintT=320;}
+setInterval(()=>{if(hintT>0){hintT--;if(hintT===0)hintEl.classList.remove("show");}},16);
+
+/* ============ START ============ */
+buildMap();updateHUD();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

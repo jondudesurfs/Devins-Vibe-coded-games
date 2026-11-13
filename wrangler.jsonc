@@ -1,0 +1,9 @@
+{
+  // Cloudflare Worker that serves pewpewpalace.net.
+  // Everything inside ./public is the live website.
+  "name": "restless-base-47e2",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public"
+  }
+}

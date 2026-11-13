@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The War of the Animals</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; background: #1a1410;
+    font-family: 'Trebuchet MS', Verdana, sans-serif; touch-action: none;
+  }
+  #gameContainer {
+    position: relative; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  canvas { display: block; background: #7ec850; max-width: 100%; max-height: 100%; }
+
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; pointer-events: none;
+  }
+  #moneyDisplay {
+    background: rgba(20,20,20,0.75); color: #ffd93d; font-weight: bold;
+    font-size: clamp(16px, 3vw, 22px); padding: 8px 16px; border-radius: 20px;
+    border: 2px solid #ffd93d;
+  }
+  #statusDisplay {
+    background: rgba(20,20,20,0.75); color: #fff; font-size: clamp(12px, 2.2vw, 16px);
+    padding: 8px 14px; border-radius: 20px; text-align: right;
+  }
+
+  #bossBars {
+    position: absolute; top: 50px; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 0 16px; pointer-events: none;
+  }
+  .bossBar {
+    background: rgba(20,20,20,0.75); border-radius: 10px; padding: 6px 10px;
+    width: clamp(120px, 32vw, 220px);
+  }
+  .bossBar .label {
+    color: #fff; font-size: clamp(10px, 2vw, 13px); font-weight: bold;
+    margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bossBar .track {
+    background: rgba(255,255,255,0.2); border-radius: 6px; height: 8px; overflow: hidden;
+  }
+  .bossBar .fill { height: 100%; border-radius: 6px; transition: width 0.15s; }
+  #playerBossFill { background: #4caf50; }
+  #enemyBossFill { background: #e63946; }
+  #enemyBossBar .label { text-align: right; }
+  #enemyBossBar { text-align: right; }
+
+  .megaBtn {
+    position: absolute; top: 50px; left: 50%; transform: translateX(-50%);
+    pointer-events: auto; background: linear-gradient(180deg, #ff6b3d, #c1272d);
+    border: 3px solid #ffd93d; border-radius: 14px; padding: 5px 10px;
+    text-align: center; color: #fff; font-weight: bold; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4); transition: transform 0.1s, opacity 0.2s;
+    z-index: 5;
+  }
+  .megaBtn:active { transform: translateX(-50%) scale(0.92); }
+  .megaBtn.used { opacity: 0.35; filter: grayscale(1); pointer-events: none; }
+  .megaBtn .megaIcon { font-size: clamp(18px, 4vw, 24px); line-height: 1; }
+  .megaBtn .megaLabel { font-size: clamp(8px, 1.6vw, 11px); line-height: 1.15; margin-top: 2px; white-space: nowrap; }
+
+  #flashOverlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: #fff; opacity: 0; pointer-events: none; z-index: 2;
+  }
+
+  .overlayScreen {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0); color: #fff; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s, background 0.3s; z-index: 15; padding: 20px;
+  }
+  .overlayScreen.show { opacity: 1; pointer-events: auto; background: rgba(0,0,0,0.7); }
+  .titleBox {
+    background: rgba(20,20,20,0.92); border: 3px solid #ffd93d; border-radius: 18px;
+    padding: 22px 26px; max-width: 420px; width: 100%;
+  }
+  .gameTitle { font-size: clamp(20px, 5vw, 30px); font-weight: bold; margin-bottom: 8px; }
+  .titleTagline { font-size: clamp(12px, 2.6vw, 15px); color: #ffd93d; margin-bottom: 14px; }
+  .howToList { list-style: none; text-align: left; margin-bottom: 18px; }
+  .howToList li { font-size: clamp(11px, 2.4vw, 14px); margin-bottom: 8px; line-height: 1.35; }
+  .bigStartBtn {
+    display: inline-block; background: #ffd93d; color: #1a1410; font-weight: bold;
+    padding: 10px 26px; border-radius: 24px; cursor: pointer; font-size: clamp(14px, 3vw, 18px);
+  }
+  .triviaHeader { font-size: clamp(16px, 3.6vw, 20px); font-weight: bold; color: #ffd93d; margin-bottom: 10px; }
+  .triviaIcon { font-size: clamp(36px, 9vw, 54px); margin-bottom: 4px; }
+  .triviaName { font-size: clamp(14px, 3vw, 18px); font-weight: bold; margin-bottom: 8px; }
+  .triviaFact { font-size: clamp(12px, 2.6vw, 15px); line-height: 1.4; margin-bottom: 16px; }
+
+  #unitBar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 8px;
+    padding: 10px 10px 14px; pointer-events: none; flex-wrap: wrap;
+  }
+  .unitCard {
+    pointer-events: auto; position: relative;
+    background: rgba(20,20,20,0.85); border: 3px solid #555;
+    border-radius: 14px; width: clamp(58px, 15vw, 84px); height: clamp(68px, 17vw, 96px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff; cursor: pointer; transition: transform 0.08s, border-color 0.15s;
+  }
+  .unitCard:active { transform: scale(0.92); }
+  .unitCard .icon { font-size: clamp(22px, 5.5vw, 32px); line-height: 1; }
+  .unitCard .cost { font-size: clamp(10px, 2vw, 13px); font-weight: bold; margin-top: 2px; }
+  .unitCard.afford { border-color: #ffd93d; }
+  .unitCard.noAfford { opacity: 0.45; }
+  .unitCard .lvlTag {
+    position: absolute; top: -8px; right: -6px; background: #4caf50; color: #fff;
+    font-size: 10px; font-weight: bold; padding: 2px 5px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.5);
+  }
+
+  #banner {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0);
+    color: #fff; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s, background 0.3s; z-index: 10;
+  }
+  #banner.show { opacity: 1; pointer-events: auto; background: rgba(0,0,0,0.45); }
+  #banner .title {
+    font-size: clamp(28px, 7vw, 48px); font-weight: bold;
+    text-shadow: 0 3px 8px rgba(0,0,0,0.6); margin-bottom: 14px;
+  }
+  #banner .sub {
+    font-size: clamp(15px, 3vw, 20px); background: #ffd93d; color: #1a1410;
+    padding: 10px 22px; border-radius: 24px; font-weight: bold; cursor: pointer;
+  }
+  #banner .unlockNote {
+    font-size: clamp(13px, 2.6vw, 17px); margin-bottom: 10px; color: #ffd93d;
+  }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="game" width="960" height="540"></canvas>
+  <div id="hud">
+    <div id="moneyDisplay">$0</div>
+    <div id="statusDisplay">Battle 1</div>
+  </div>
+  <div id="bossBars">
+    <div class="bossBar" id="playerBossBar">
+      <div class="label">🐂 Guardian</div>
+      <div class="track"><div class="fill" id="playerBossFill" style="width:100%"></div></div>
+    </div>
+    <div class="bossBar" id="enemyBossBar">
+      <div class="label">👑 Enemy Boss</div>
+      <div class="track"><div class="fill" id="enemyBossFill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div id="unitBar"></div>
+  <div id="megaCleanerBtn" class="megaBtn">
+    <div class="megaIcon">💥</div>
+    <div class="megaLabel">Mega Field<br>Cleaner</div>
+  </div>
+  <div id="flashOverlay"></div>
+  <div id="banner">
+    <div class="unlockNote" id="bannerUnlock"></div>
+    <div class="title" id="bannerTitle"></div>
+    <div class="sub" id="bannerSub">Tap to continue</div>
+  </div>
+
+  <div id="titleScreen" class="overlayScreen show">
+    <div class="titleBox">
+      <div class="gameTitle">🐔🦂 The War of the Animals 🦅🐺</div>
+      <div class="titleTagline">Defend your Guardian. Defeat the enemy boss. Rule the battlefield!</div>
+      <ul class="howToList">
+        <li>🐾 Tap an animal card to spend money and send it into battle</li>
+        <li>⚔️ Animals automatically fight anything they run into</li>
+        <li>👑 Push through the enemy lines and defeat their boss to win</li>
+        <li>🐂 Don't let enemies reach your Guardian, or you'll drop back a level</li>
+        <li>💥 Save your Mega Field Cleaner for when things get rough</li>
+      </ul>
+      <div class="bigStartBtn" id="titleStartBtn">Start Playing</div>
+    </div>
+  </div>
+
+  <div id="triviaScreen" class="overlayScreen">
+    <div class="titleBox">
+      <div class="triviaHeader">🧠 Did You Know?</div>
+      <div class="triviaIcon" id="triviaIcon">🐔</div>
+      <div class="triviaName" id="triviaName">Chicken</div>
+      <div class="triviaFact" id="triviaFact">Fact text here</div>
+      <div class="bigStartBtn" id="triviaContinueBtn">Continue</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const GROUND_Y = H - 70;
+
+  function mulberry32(seed) {
+    let a = seed | 0;
+    return function() {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const SPRITES = {};
+
+  function registerCodeSprite(name, drawFn, hitbox) {
+    SPRITES[name] = { type: 'code', draw: drawFn, hitbox: hitbox };
+  }
+
+  function drawSprite(name, x, y, facing, entity) {
+    const spr = SPRITES[name];
+    if (!spr) return;
+    ctx.save();
+    ctx.translate(x, y);
+    if (facing < 0) ctx.scale(-1, 1);
+    if (entity && entity.cssFilter) ctx.filter = entity.cssFilter;
+
+    if (spr.type === 'code') {
+      spr.draw(ctx, entity);
+    } else if (spr.type === 'image') {
+      const hw = spr.hitbox.w, hh = spr.hitbox.h;
+      ctx.drawImage(
+        spr.img,
+        0, 0, spr.meta.trueWidth, spr.meta.trueHeight,
+        -hw / 2, -hh, hw, hh
+      );
+    }
+    ctx.restore();
+  }
+
+  registerCodeSprite('chicken', (ctx) => {
+    ctx.fillStyle = '#fff8e6'; ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, -18, 15, 13, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(11, -32, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff9d2f';
+    ctx.beginPath(); ctx.moveTo(18, -32); ctx.lineTo(25, -30); ctx.lineTo(18, -28); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e63946';
+    ctx.beginPath(); ctx.arc(9, -40, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(13, -41, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(13, -33, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#ff9d2f'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-5, -6); ctx.lineTo(-5, 0); ctx.moveTo(5, -6); ctx.lineTo(5, 0); ctx.stroke();
+  }, { w: 40, h: 42 });
+
+  registerCodeSprite('scorpion', (ctx) => {
+    ctx.fillStyle = '#3d2b1f'; ctx.strokeStyle = '#1a1108'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath(); ctx.ellipse(-i * 8, -12 - i * 1.5, 9 - i, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.ellipse(10, -13, 8, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(16, -16); ctx.quadraticCurveTo(26, -22, 24, -14);
+    ctx.moveTo(16, -10); ctx.quadraticCurveTo(26, -6, 22, -2); ctx.stroke();
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-30, -18); ctx.quadraticCurveTo(-38, -30, -30, -38);
+    ctx.quadraticCurveTo(-24, -42, -20, -36); ctx.stroke();
+    ctx.fillStyle = '#c1272d';
+    ctx.beginPath(); ctx.arc(-20, -36, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1a1108'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.moveTo(-i * 8, -6); ctx.lineTo(-i * 8 - 4, 0);
+      ctx.moveTo(-i * 8, -6); ctx.lineTo(-i * 8 + 4, 0); ctx.stroke();
+    }
+  }, { w: 52, h: 44 });
+
+  registerCodeSprite('badger', (ctx) => {
+    ctx.fillStyle = '#4a4a4a'; ctx.strokeStyle = '#1f1f1f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, -20, 22, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8e8e8';
+    ctx.beginPath(); ctx.ellipse(16, -26, 10, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#2b2b2b';
+    ctx.beginPath(); ctx.moveTo(10, -32); ctx.lineTo(16, -40); ctx.lineTo(20, -32); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(21, -27, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1f1f1f'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(-14, -8); ctx.lineTo(-14, 2); ctx.moveTo(10, -8); ctx.lineTo(10, 2); ctx.stroke();
+  }, { w: 56, h: 50 });
+
+  registerCodeSprite('eagle', (ctx) => {
+    ctx.fillStyle = '#7a5a3d'; ctx.strokeStyle = '#3d2a18'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, -26, 14, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8e0d0';
+    ctx.beginPath(); ctx.arc(13, -34, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f2b705';
+    ctx.beginPath(); ctx.moveTo(19, -34); ctx.lineTo(27, -32); ctx.lineTo(19, -30); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(15, -35, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5a3f28';
+    ctx.beginPath(); ctx.moveTo(-8, -30); ctx.quadraticCurveTo(-26, -40, -20, -20); ctx.quadraticCurveTo(-14, -26, -8, -22); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#f2b705'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-4, -6); ctx.lineTo(-4, 0); ctx.moveTo(4, -6); ctx.lineTo(4, 0); ctx.stroke();
+  }, { w: 46, h: 44 });
+
+  registerCodeSprite('wolf', (ctx) => {
+    ctx.fillStyle = '#7d8894'; ctx.strokeStyle = '#3a3f45'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, -20, 20, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(18, -26, 9, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(14, -33); ctx.lineTo(17, -41); ctx.lineTo(20, -33); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e0e0e0';
+    ctx.beginPath(); ctx.moveTo(24, -25); ctx.lineTo(31, -23); ctx.lineTo(24, -21); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(20, -27, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#3a3f45'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-16, -8); ctx.lineTo(-16, 0); ctx.moveTo(10, -8); ctx.lineTo(10, 0); ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-20, -18); ctx.quadraticCurveTo(-32, -22, -30, -10); ctx.stroke();
+  }, { w: 54, h: 46 });
+
+  registerCodeSprite('rat', (ctx) => {
+    ctx.fillStyle = '#7a7570'; ctx.strokeStyle = '#3f3c39'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, -12, 14, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, -16, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(9, -22, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(16, -22, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c1272d';
+    ctx.beginPath(); ctx.arc(15, -17, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#b98a7a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-14, -10); ctx.quadraticCurveTo(-28, -6, -26, -18); ctx.stroke();
+    ctx.strokeStyle = '#3f3c39'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-6, -4); ctx.lineTo(-6, 0); ctx.moveTo(6, -4); ctx.lineTo(6, 0); ctx.stroke();
+  }, { w: 36, h: 26 });
+
+  registerCodeSprite('crow', (ctx) => {
+    ctx.fillStyle = '#2b2b2b'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, -24, 12, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(11, -30, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#555';
+    ctx.beginPath(); ctx.moveTo(16, -30); ctx.lineTo(24, -28); ctx.lineTo(16, -26); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e63946';
+    ctx.beginPath(); ctx.arc(13, -31, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.moveTo(-8, -26); ctx.quadraticCurveTo(-24, -34, -18, -18); ctx.quadraticCurveTo(-12, -22, -8, -20); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-2, -6); ctx.lineTo(-2, 0); ctx.moveTo(4, -6); ctx.lineTo(4, 0); ctx.stroke();
+  }, { w: 40, h: 34 });
+
+  registerCodeSprite('boar', (ctx) => {
+    ctx.fillStyle = '#5c4632'; ctx.strokeStyle = '#2b1f14'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0, -20, 22, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(19, -22, 9, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#eaeaea';
+    ctx.beginPath(); ctx.moveTo(24, -16); ctx.lineTo(32, -14); ctx.lineTo(24, -12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(23, -27, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#2b1f14'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(-14, -8); ctx.lineTo(-14, 2); ctx.moveTo(10, -8); ctx.lineTo(10, 2); ctx.stroke();
+  }, { w: 58, h: 48 });
+
+  registerCodeSprite('hyena', (ctx) => {
+    ctx.fillStyle = '#c9a876'; ctx.strokeStyle = '#5a4326'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, -18, 19, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(17, -24, 8, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#3a2a17';
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(-10 + i * 4, -18 + (i % 2), 1.4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(19, -25, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#5a4326'; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(-14, -8); ctx.lineTo(-14, 0); ctx.moveTo(9, -8); ctx.lineTo(9, 0); ctx.stroke();
+  }, { w: 50, h: 40 });
+
+  registerCodeSprite('viper', (ctx) => {
+    ctx.strokeStyle = '#2b4a1f'; ctx.fillStyle = '#3f6b2c'; ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(-26, -4);
+    ctx.quadraticCurveTo(-14, -20, 0, -6);
+    ctx.quadraticCurveTo(10, 4, 18, -10);
+    ctx.stroke();
+    ctx.fillStyle = '#3f6b2c';
+    ctx.beginPath(); ctx.ellipse(22, -12, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1e3512'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#ffd93d';
+    ctx.beginPath(); ctx.arc(25, -13, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#c1272d'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(29, -11); ctx.lineTo(34, -11); ctx.stroke();
+  }, { w: 46, h: 26 });
+
+  registerCodeSprite('goodBoss', (ctx) => {
+    ctx.fillStyle = '#8a6a4d'; ctx.strokeStyle = '#4a3520'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.ellipse(0, -34, 34, 26, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(26, -46, 16, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#c9a887';
+    ctx.beginPath(); ctx.ellipse(38, -40, 7, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#eee0cc'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(18, -58); ctx.quadraticCurveTo(10, -70, 18, -74);
+    ctx.moveTo(34, -58); ctx.quadraticCurveTo(42, -70, 34, -74); ctx.stroke();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(30, -48, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#4a3520'; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(-20, -10); ctx.lineTo(-20, 4); ctx.moveTo(14, -10); ctx.lineTo(14, 4); ctx.stroke();
+  }, { w: 100, h: 90 });
+
+  registerCodeSprite('enemyBoss', (ctx) => {
+    ctx.fillStyle = '#5a4a42'; ctx.strokeStyle = '#2b201b'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.ellipse(0, -30, 30, 20, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(24, -38, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(16, -50, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(32, -50, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd93d';
+    ctx.beginPath();
+    ctx.moveTo(12, -52); ctx.lineTo(16, -64); ctx.lineTo(20, -54);
+    ctx.lineTo(24, -66); ctx.lineTo(28, -54); ctx.lineTo(32, -64); ctx.lineTo(36, -52);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#a8790a'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#c1272d';
+    ctx.beginPath(); ctx.arc(30, -39, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(34, -34, 4, 6);
+    ctx.strokeStyle = '#b98a7a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-28, -22); ctx.quadraticCurveTo(-50, -14, -46, -34); ctx.stroke();
+    ctx.strokeStyle = '#2b201b'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(-12, 4); ctx.moveTo(10, -8); ctx.lineTo(10, 4); ctx.stroke();
+  }, { w: 92, h: 80 });
+
+  const UNIT_TYPES = {
+    chicken:  { sprite: 'chicken',  cost: 10, hp: 20, dmg: 4,  atkSpeed: 0.9,  speed: 55, bounty: 6,  side: 'player', icon: '🐔' },
+    scorpion: { sprite: 'scorpion', cost: 25, hp: 35, dmg: 9,  atkSpeed: 0.7,  speed: 32, bounty: 14, side: 'player', icon: '🦂' },
+    badger:   { sprite: 'badger',   cost: 40, hp: 70, dmg: 10, atkSpeed: 0.9,  speed: 24, bounty: 20, side: 'player', icon: '🦡' },
+    eagle:    { sprite: 'eagle',    cost: 55, hp: 25, dmg: 16, atkSpeed: 0.6,  speed: 70, bounty: 24, side: 'player', icon: '🦅' },
+    wolf:     { sprite: 'wolf',     cost: 35, hp: 45, dmg: 12, atkSpeed: 0.75, speed: 50, bounty: 18, side: 'player', icon: '🐺' },
+
+    rat:      { sprite: 'rat',      cost: 0, hp: 14, dmg: 3,  atkSpeed: 1.1, speed: 48, bounty: 5,  side: 'enemy' },
+    crow:     { sprite: 'crow',     cost: 0, hp: 18, dmg: 5,  atkSpeed: 0.8, speed: 65, bounty: 8,  side: 'enemy' },
+    boar:     { sprite: 'boar',     cost: 0, hp: 45, dmg: 8,  atkSpeed: 0.9, speed: 40, bounty: 12, side: 'enemy' },
+    hyena:    { sprite: 'hyena',    cost: 0, hp: 28, dmg: 7,  atkSpeed: 0.6, speed: 58, bounty: 10, side: 'enemy' },
+    viper:    { sprite: 'viper',    cost: 0, hp: 20, dmg: 10, atkSpeed: 0.5, speed: 36, bounty: 14, side: 'enemy' },
+
+    goodBoss:  { sprite: 'goodBoss',  cost: 0, hp: 220, dmg: 14, atkSpeed: 0.8,  speed: 0, bounty: 0, side: 'player' },
+    enemyBoss: { sprite: 'enemyBoss', cost: 0, hp: 160, dmg: 11, atkSpeed: 0.85, speed: 0, bounty: 0, side: 'enemy' }
+  };
+
+  const ANIMAL_UNLOCK_ORDER = ['chicken', 'scorpion', 'badger', 'eagle', 'wolf'];
+  const ENEMY_UNLOCK_BATTLE = { rat: 1, crow: 3, boar: 5, hyena: 7, viper: 9 };
+
+  const TRIVIA = [
+    { key: 'chicken', icon: '🐔', name: 'Chicken', fact: 'Chickens can remember over 100 different faces — including yours!' },
+    { key: 'chicken', icon: '🐔', name: 'Chicken', fact: "A chicken's heart beats up to 300 times per minute." },
+    { key: 'chicken', icon: '🐔', name: 'Chicken', fact: "Chickens aren't just birds — they're actually close relatives of dinosaurs!" },
+    { key: 'scorpion', icon: '🦂', name: 'Scorpion', fact: 'Scorpions glow a bright blue-green under ultraviolet light.' },
+    { key: 'scorpion', icon: '🦂', name: 'Scorpion', fact: 'Some scorpions can survive over a year without eating a single meal.' },
+    { key: 'badger', icon: '🦡', name: 'Badger', fact: 'Badgers can dig a burrow big enough to hide in in under 10 minutes.' },
+    { key: 'badger', icon: '🦡', name: 'Badger', fact: "Honey badgers are famous for being nearly fearless — they've even stood up to lions." },
+    { key: 'eagle', icon: '🦅', name: 'Eagle', fact: "An eagle's eyesight is about 4 to 8 times sharper than a human's." },
+    { key: 'eagle', icon: '🦅', name: 'Eagle', fact: 'Eagles can dive at speeds over 100 miles per hour while hunting.' },
+    { key: 'eagle', icon: '🦅', name: 'Eagle', fact: "A bald eagle's nest can weigh as much as a small car." },
+    { key: 'wolf', icon: '🐺', name: 'Wolf', fact: 'Wolves can hear another wolf howling from up to 6 miles away.' },
+    { key: 'wolf', icon: '🐺', name: 'Wolf', fact: 'A wolf pack usually works as a tight-knit family, led by a mom and dad pair.' },
+    { key: 'rat', icon: '🐀', name: 'Rat', fact: "Rats are ticklish, and they even make a laughing sound too high-pitched for humans to hear." },
+    { key: 'rat', icon: '🐀', name: 'Rat', fact: "A rat's front teeth never stop growing, so it gnaws constantly to keep them worn down." },
+    { key: 'crow', icon: '🐦‍⬛', name: 'Crow', fact: 'Crows can recognize individual human faces and remember them for years.' },
+    { key: 'crow', icon: '🐦‍⬛', name: 'Crow', fact: 'Crows have been seen making and using simple tools to get food.' },
+    { key: 'boar', icon: '🐗', name: 'Boar', fact: 'Wild boars can run in short bursts at speeds up to 30 miles per hour.' },
+    { key: 'boar', icon: '🐗', name: 'Boar', fact: "A boar's tusks never stop growing throughout its life." },
+    { key: 'hyena', icon: '🐕', name: 'Hyena', fact: 'Spotted hyenas have one of the strongest bites of any land mammal.' },
+    { key: 'hyena', icon: '🐕', name: 'Hyena', fact: 'Hyena clans are led by females, who are usually bigger than the males.' },
+    { key: 'viper', icon: '🐍', name: 'Viper', fact: 'Some vipers can sense the body heat of their prey using special pits on their face.' },
+    { key: 'viper', icon: '🐍', name: 'Viper', fact: "A viper's fangs fold back against the roof of its mouth when not in use." },
+    { key: 'goodBoss', icon: '🐂', name: 'Guardian Ox', fact: 'An ox is simply a full-grown, trained bull used for pulling heavy loads.' },
+    { key: 'goodBoss', icon: '🐂', name: 'Guardian Ox', fact: 'Oxen can pull loads several times heavier than their own body weight.' },
+    { key: 'enemyBoss', icon: '👑', name: 'Rat King', fact: "In old folklore, a 'rat king' was a group of rats whose tails became tangled together — mostly considered a myth today!" }
+  ];
+
+  function relevantAnimalKeys() {
+    return ANIMAL_UNLOCK_ORDER.slice(0, unlockedCount)
+      .concat(availableEnemySpecies())
+      .concat(['goodBoss', 'enemyBoss']);
+  }
+
+  function pickTrivia() {
+    const keys = relevantAnimalKeys();
+    let pool = TRIVIA.filter(t => keys.indexOf(t.key) !== -1);
+    if (pool.length === 0) pool = TRIVIA;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  const BIOMES = [
+    { name: 'Grassland', sky: ['#bfe6ff', '#eaf7ff'], ground: '#7ec850', groundEdge: '#6bb843', hill: '#a9dc76', decor: 'bush' },
+    { name: 'Desert',    sky: ['#ffe0b3', '#fff3d6'], ground: '#e0c07a', groundEdge: '#c9a75c', hill: '#d1a75c', decor: 'cactus' },
+    { name: 'Autumn Woods', sky: ['#ffd1a3', '#ffe9cc'], ground: '#c98a4b', groundEdge: '#a96f38', hill: '#b06e39', decor: 'tree' },
+    { name: 'Snowfield', sky: ['#dfeeff', '#f5fbff'], ground: '#e8f1f7', groundEdge: '#cfe3ee', hill: '#cfe3ee', decor: 'pine' },
+    { name: 'Volcanic Wastes', sky: ['#3a1f1f', '#7a3b2e'], ground: '#4a2a20', groundEdge: '#2f1a13', hill: '#6b3226', decor: 'rock' }
+  ];
+
+  function getTier(battleNum) {
+    return Math.min(5, Math.ceil(battleNum / 2));
+  }
+
+  function genLevelArt(battleNum) {
+    const tier = getTier(battleNum);
+    const biome = BIOMES[tier - 1];
+    const rng = mulberry32(battleNum * 97 + 13);
+    const hills = [];
+    const hillCount = 2 + Math.floor(rng() * 2);
+    for (let i = 0; i < hillCount; i++) {
+      hills.push({ x: 60 + rng() * (W - 120), r: 70 + rng() * 90 });
+    }
+    const decor = [];
+    const decorCount = 4 + Math.floor(rng() * 4);
+    for (let i = 0; i < decorCount; i++) {
+      decor.push({ x: 20 + rng() * (W - 40), scale: 0.7 + rng() * 0.7 });
+    }
+    return { biome: biome, hills: hills, decor: decor };
+  }
+
+  function drawDecor(type, x, scale, groundY) {
+    ctx.save();
+    ctx.translate(x, groundY);
+    ctx.scale(scale, scale);
+    if (type === 'bush') {
+      ctx.fillStyle = '#5b9c3f';
+      ctx.beginPath();
+      ctx.arc(-6, -8, 8, 0, Math.PI * 2); ctx.arc(6, -8, 8, 0, Math.PI * 2); ctx.arc(0, -14, 9, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'cactus') {
+      ctx.fillStyle = '#4c7a3e';
+      ctx.fillRect(-4, -32, 8, 32);
+      ctx.fillRect(-14, -22, 8, 14);
+      ctx.fillRect(6, -26, 8, 14);
+    } else if (type === 'tree') {
+      ctx.fillStyle = '#8a4a2b'; ctx.fillRect(-3, -20, 6, 20);
+      ctx.fillStyle = '#c96a3a';
+      ctx.beginPath(); ctx.arc(0, -30, 16, 0, Math.PI * 2); ctx.fill();
+    } else if (type === 'pine') {
+      ctx.fillStyle = '#3f6b52';
+      ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(-14, -18); ctx.lineTo(14, -18); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, -28); ctx.lineTo(-11, -10); ctx.lineTo(11, -10); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#6b4a30'; ctx.fillRect(-2, -10, 4, 10);
+    } else if (type === 'rock') {
+      ctx.fillStyle = '#2b1a14';
+      ctx.beginPath();
+      ctx.ellipse(0, -8, 14, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e05a2b';
+      ctx.beginPath(); ctx.arc(0, -8, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  const PLAYER_BOSS_X = 80;
+  const ENEMY_BOSS_X = W - 80;
+
+  let money = 40;
+  let entities = [];
+  let entityId = 0;
+  let battleNum = parseInt(localStorage.getItem('woa_battleNum') || '1', 10);
+  let unlockedCount = parseInt(localStorage.getItem('woa_unlockedCount') || '2', 10);
+  let playerLevel = parseInt(localStorage.getItem('woa_playerLevel') || '1', 10);
+  let enemySpawnTimer = 0;
+  let enemySpawnInterval = 2.6;
+  let moneyDripTimer = 0;
+  let gameOver = false;
+  let paused = false;
+  let playerBossRef = null;
+  let enemyBossRef = null;
+  let bannerNextAction = null;
+  let currentLevelArt = null;
+  let megaCleanerUsed = false;
+
+  function computeScaledHpDmg(typeKey, side) {
+    const def = UNIT_TYPES[typeKey];
+    let mult = 1;
+    if (side === 'player') mult = 1 + (playerLevel - 1) * 0.20;
+    else if (side === 'enemy') mult = 1 + (battleNum - 1) * 0.05;
+    return { hp: Math.round(def.hp * mult), dmg: Math.max(1, Math.round(def.dmg * mult)) };
+  }
+
+  function spawnUnit(typeKey, side, xOverride, statOverride) {
+    const def = UNIT_TYPES[typeKey];
+    const facing = side === 'player' ? 1 : -1;
+    const x = xOverride !== undefined ? xOverride : (side === 'player' ? 40 : W - 40);
+    const stats = statOverride || computeScaledHpDmg(typeKey, side);
+    const e = {
+      id: entityId++, type: typeKey, side: side, x: x, y: GROUND_Y,
+      hp: stats.hp, maxHp: stats.hp, dmg: stats.dmg,
+      atkSpeed: def.atkSpeed, atkTimer: 0, speed: def.speed, facing: facing,
+      sprite: def.sprite, bounty: def.bounty, state: 'walk', cssFilter: null
+    };
+    entities.push(e);
+    return e;
+  }
+
+  function tryPlaceUnit(typeKey) {
+    if (gameOver) return;
+    const def = UNIT_TYPES[typeKey];
+    if (money < def.cost) return;
+    money -= def.cost;
+    spawnUnit(typeKey, 'player');
+    updateHud();
+  }
+
+  function availableEnemySpecies() {
+    const list = [];
+    for (const k in ENEMY_UNLOCK_BATTLE) {
+      if (battleNum >= ENEMY_UNLOCK_BATTLE[k]) list.push(k);
+    }
+    return list;
+  }
+
+  function tierFilter(tier) {
+    const degs = [0, 55, 130, 205, 280];
+    return tier === 1 ? null : 'hue-rotate(' + degs[tier - 1] + 'deg)';
+  }
+
+  function startBattle() {
+    entities = [];
+    gameOver = false;
+    paused = false;
+    money = 40 + (battleNum - 1) * 8;
+    enemySpawnTimer = 0;
+    enemySpawnInterval = Math.max(1.2, 2.6 - (battleNum - 1) * 0.08);
+    currentLevelArt = genLevelArt(battleNum);
+
+    const tier = getTier(battleNum);
+    playerBossRef = spawnUnit('goodBoss', 'player', PLAYER_BOSS_X, {
+      hp: 220 + (battleNum - 1) * 24,
+      dmg: 14 + (battleNum - 1)
+    });
+    if (playerLevel > 1) playerBossRef.cssFilter = 'hue-rotate(' + Math.min(90, (playerLevel - 1) * 12) + 'deg)';
+
+    enemyBossRef = spawnUnit('enemyBoss', 'enemy', ENEMY_BOSS_X, {
+      hp: 160 + (battleNum - 1) * 26,
+      dmg: 11 + Math.round((battleNum - 1) * 1.1)
+    });
+    enemyBossRef.cssFilter = tierFilter(tier);
+
+    document.getElementById('enemyBossBar').querySelector('.label').textContent = '👑 ' + currentLevelArt.biome.name + ' Boss';
+    statusDisplay.textContent = 'Battle ' + battleNum + (playerLevel > 1 ? ' • Lv.' + playerLevel : '');
+    banner.classList.remove('show');
+    megaCleanerUsed = false;
+    megaBtn.classList.remove('used');
+    localStorage.setItem('woa_battleNum', String(battleNum));
+    localStorage.setItem('woa_unlockedCount', String(unlockedCount));
+    localStorage.setItem('woa_playerLevel', String(playerLevel));
+    renderUnitCards();
+    updateHud();
+    updateBossBars();
+  }
+
+  function endBattle(result) {
+    gameOver = true;
+    if (result === 'win') {
+      let unlockNote = '';
+      if (unlockedCount < ANIMAL_UNLOCK_ORDER.length) {
+        unlockedCount++;
+        const newAnimal = ANIMAL_UNLOCK_ORDER[unlockedCount - 1];
+        unlockNote = 'New animal unlocked: ' + UNIT_TYPES[newAnimal].icon + ' ' + capitalize(newAnimal) + '!';
+      } else {
+        playerLevel++;
+        unlockNote = 'Your army levels up! Now Lv.' + playerLevel;
+      }
+      bannerUnlock.textContent = unlockNote;
+      showBanner('Victory!', 'Battle ' + (battleNum + 1) + ' — tap to continue');
+      bannerNextAction = () => { battleNum += 1; showTriviaThenStart(); };
+    } else {
+      const nextLevel = Math.max(1, battleNum - 1);
+      bannerUnlock.textContent = '';
+      const msg = nextLevel === battleNum
+        ? 'The Guardian has fallen — try again'
+        : 'The Guardian has fallen — back to Battle ' + nextLevel;
+      showBanner('Defeated...', msg + ' — tap to continue');
+      bannerNextAction = () => { battleNum = nextLevel; showTriviaThenStart(); };
+    }
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  const unitBar = document.getElementById('unitBar');
+  const moneyDisplay = document.getElementById('moneyDisplay');
+  const statusDisplay = document.getElementById('statusDisplay');
+  const banner = document.getElementById('banner');
+  const bannerTitle = document.getElementById('bannerTitle');
+  const bannerSub = document.getElementById('bannerSub');
+  const bannerUnlock = document.getElementById('bannerUnlock');
+  const megaBtn = document.getElementById('megaCleanerBtn');
+  const flashOverlay = document.getElementById('flashOverlay');
+
+  function flashScreen() {
+    flashOverlay.style.transition = 'none';
+    flashOverlay.style.opacity = '0.85';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        flashOverlay.style.transition = 'opacity 0.5s';
+        flashOverlay.style.opacity = '0';
+      });
+    });
+  }
+
+  function useMegaCleaner() {
+    if (gameOver || megaCleanerUsed) return;
+    megaCleanerUsed = true;
+    megaBtn.classList.add('used');
+    let earned = 0;
+    for (const e of entities) {
+      if (e.state === 'dead') continue;
+      if (e.type === 'goodBoss' || e.type === 'enemyBoss') continue;
+      if (e.side === 'enemy') earned += e.bounty;
+      e.state = 'dead';
+    }
+    money += earned;
+    entities = entities.filter(e => e.state !== 'dead');
+    flashScreen();
+    updateHud();
+    updateBossBars();
+  }
+
+  ['click', 'touchstart'].forEach(evt => {
+    megaBtn.addEventListener(evt, (e) => { e.preventDefault(); useMegaCleaner(); }, { passive: false });
+  });
+
+  const titleScreen = document.getElementById('titleScreen');
+  const titleStartBtn = document.getElementById('titleStartBtn');
+  const triviaScreen = document.getElementById('triviaScreen');
+  const triviaContinueBtn = document.getElementById('triviaContinueBtn');
+  const triviaIconEl = document.getElementById('triviaIcon');
+  const triviaNameEl = document.getElementById('triviaName');
+  const triviaFactEl = document.getElementById('triviaFact');
+
+  function showTriviaThenStart() {
+    const t = pickTrivia();
+    triviaIconEl.textContent = t.icon;
+    triviaNameEl.textContent = t.name;
+    triviaFactEl.textContent = t.fact;
+    triviaScreen.classList.add('show');
+  }
+
+  ['click', 'touchstart'].forEach(evt => {
+    titleStartBtn.addEventListener(evt, (e) => {
+      e.preventDefault();
+      titleScreen.classList.remove('show');
+      showTriviaThenStart();
+    }, { passive: false });
+
+    triviaContinueBtn.addEventListener(evt, (e) => {
+      e.preventDefault();
+      triviaScreen.classList.remove('show');
+      startBattle();
+    }, { passive: false });
+  });
+
+  function renderUnitCards() {
+    unitBar.innerHTML = '';
+    for (let i = 0; i < unlockedCount; i++) {
+      const key = ANIMAL_UNLOCK_ORDER[i];
+      const def = UNIT_TYPES[key];
+      const card = document.createElement('div');
+      card.className = 'unitCard';
+      card.id = 'card-' + key;
+      card.innerHTML = '<div class="icon">' + def.icon + '</div><div class="cost">$' + def.cost + '</div>' +
+        (playerLevel > 1 ? '<div class="lvlTag">Lv.' + playerLevel + '</div>' : '');
+      ['click', 'touchstart'].forEach(evt => {
+        card.addEventListener(evt, (e) => { e.preventDefault(); tryPlaceUnit(key); }, { passive: false });
+      });
+      unitBar.appendChild(card);
+    }
+    refreshCardAfford();
+  }
+
+  function refreshCardAfford() {
+    for (let i = 0; i < unlockedCount; i++) {
+      const key = ANIMAL_UNLOCK_ORDER[i];
+      const el = document.getElementById('card-' + key);
+      if (!el) continue;
+      const canAfford = money >= UNIT_TYPES[key].cost;
+      el.classList.toggle('afford', canAfford && !gameOver);
+      el.classList.toggle('noAfford', !canAfford || gameOver);
+    }
+  }
+
+  function updateHud() {
+    moneyDisplay.textContent = '$' + Math.floor(money);
+    refreshCardAfford();
+  }
+
+  function showBanner(title, subText) {
+    bannerTitle.textContent = title;
+    bannerSub.textContent = subText;
+    banner.classList.add('show');
+  }
+
+  ['click', 'touchstart'].forEach(evt => {
+    banner.addEventListener(evt, (e) => {
+      e.preventDefault();
+      if (!banner.classList.contains('show')) return;
+      banner.classList.remove('show');
+      if (bannerNextAction) {
+        const action = bannerNextAction;
+        bannerNextAction = null;
+        action();
+      }
+    }, { passive: false });
+  });
+
+  function updateBossBars() {
+    const pPct = playerBossRef ? Math.max(0, playerBossRef.hp / playerBossRef.maxHp) : 1;
+    const ePct = enemyBossRef ? Math.max(0, enemyBossRef.hp / enemyBossRef.maxHp) : 1;
+    document.getElementById('playerBossFill').style.width = (pPct * 100) + '%';
+    document.getElementById('enemyBossFill').style.width = (ePct * 100) + '%';
+  }
+
+  const STEP = 1 / 60;
+  let acc = 0;
+  let lastTime = performance.now();
+
+  function findTarget(entity) {
+    let closest = null, closestDist = Infinity;
+    for (const other of entities) {
+      if (other.state === 'dead' || other.side === entity.side) continue;
+      const dist = Math.abs(other.x - entity.x);
+      if (dist < closestDist) { closestDist = dist; closest = other; }
+    }
+    return closest;
+  }
+
+  function update(dt) {
+    if (paused || gameOver) return;
+
+    enemySpawnTimer += dt;
+    if (enemySpawnTimer >= enemySpawnInterval) {
+      enemySpawnTimer = 0;
+      const pool = availableEnemySpecies();
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      spawnUnit(pick, 'enemy');
+    }
+
+    moneyDripTimer += dt;
+    if (moneyDripTimer >= 1) {
+      moneyDripTimer -= 1;
+      money += 1;
+    }
+
+    const ATTACK_RANGE = 42;
+
+    for (const e of entities) {
+      if (e.state === 'dead') continue;
+      const target = findTarget(e);
+      if (target && Math.abs(target.x - e.x) <= ATTACK_RANGE) {
+        e.state = 'attack';
+        e.facing = target.x > e.x ? 1 : -1;
+        e.atkTimer += dt;
+        if (e.atkTimer >= e.atkSpeed) {
+          e.atkTimer = 0;
+          target.hp -= e.dmg;
+          if (target.hp <= 0 && target.state !== 'dead') {
+            target.state = 'dead';
+            if (target.side === 'enemy') money += target.bounty;
+            if (target.type === 'enemyBoss') endBattle('win');
+            else if (target.type === 'goodBoss') endBattle('lose');
+          }
+        }
+      } else {
+        e.state = 'walk';
+        const dir = e.side === 'player' ? 1 : -1;
+        e.x += dir * e.speed * dt;
+        e.facing = dir;
+      }
+    }
+
+    entities = entities.filter(e => e.state !== 'dead');
+    updateHud();
+    updateBossBars();
+  }
+
+  function drawBackground() {
+    if (!currentLevelArt) return;
+    const biome = currentLevelArt.biome;
+    const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    grad.addColorStop(0, biome.sky[0]);
+    grad.addColorStop(1, biome.sky[1]);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, GROUND_Y);
+
+    ctx.fillStyle = biome.hill;
+    for (const h of currentLevelArt.hills) {
+      ctx.beginPath();
+      ctx.ellipse(h.x, GROUND_Y, h.r, h.r * 0.22, 0, Math.PI, 0, true);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = biome.ground;
+    ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+    ctx.fillStyle = biome.groundEdge;
+    ctx.fillRect(0, GROUND_Y, W, 6);
+
+    for (const d of currentLevelArt.decor) {
+      drawDecor(biome.decor, d.x, d.scale, GROUND_Y);
+    }
+  }
+
+  function drawHealthBar(e) {
+    const w = 32, h = 5;
+    const x = e.x - w / 2;
+    const y = e.y - 56;
+    const pct = Math.max(0, e.hp / e.maxHp);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+    ctx.fillStyle = pct > 0.5 ? '#4caf50' : (pct > 0.2 ? '#ffb84c' : '#e63946');
+    ctx.fillRect(x, y, w * pct, h);
+  }
+
+  function render() {
+    drawBackground();
+    for (const e of entities) {
+      if (e.state === 'dead') continue;
+      drawSprite(e.sprite, e.x, e.y, e.facing, e);
+      drawHealthBar(e);
+    }
+  }
+
+  function loop(now) {
+    let dt = (now - lastTime) / 1000;
+    lastTime = now;
+    if (dt > 0.25) dt = 0.25;
+    acc += dt;
+    while (acc >= STEP) { update(STEP); acc -= STEP; }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  if (battleNum > 1) {
+    titleStartBtn.textContent = 'Continue — Battle ' + battleNum;
+  }
+  requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>

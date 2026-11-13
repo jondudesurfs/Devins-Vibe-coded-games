@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Richland Kids FC — World Tour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pitch:#1f7a3d; --pitch-dk:#176030; --chalk:#f2f7f0;
+  --tang:#ff6b1a; --tang-dk:#d44f08;
+  --sky:#1e88e5; --ink:#12211a; --paper:#f6efdd; --paper-dk:#e3d7bc;
+  --gold:#ffc93c;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--ink);
+  font-family:Nunito,system-ui,sans-serif;color:var(--ink);touch-action:none}
+#app{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;image-rendering:auto;max-width:100%;max-height:100%}
+.hide{display:none!important}
+#tapstart{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--ink);z-index:99;color:var(--chalk);font-family:Bungee,sans-serif;
+  font-size:clamp(18px,5vw,32px);text-align:center;padding:24px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app"><canvas id="cv"></canvas></div>
+<div id="tapstart">TAP TO START<br><span style="font-size:.5em;font-family:Nunito">Richland Kids FC</span></div>
+<script>
+"use strict";
+/* ============================================================
+   RICHLAND KIDS FC — WORLD TOUR
+   3v3 + keeper arcade soccer. Beat a country, recruit their star.
+   Balance values imported from sim.js (600-campaign run, 0 softlocks).
+   ============================================================ */
+
+const W = 960, H = 600;                 // logical canvas size
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+cv.width = W; cv.height = H;
+
+function fit(){
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  cv.style.width = (W * s) + 'px'; cv.style.height = (H * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+/* ---------- utils ---------- */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const rnd=(a=1,b=0)=>Math.random()*(a-b)+b;
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ============================================================
+   SPRITE REGISTRY
+   Placeholder art is drawn procedurally into offscreen canvases.
+   To swap in real art: replace SPR[key] with an <img>, and update
+   META[key] with the true pixel dims. Draw calls are 9-arg and
+   read dims from META, so nothing else needs to change.
+   ============================================================ */
+const SPR = {}, META = {};
+
+function reg(key, w, h, painter){
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  painter(c.getContext('2d'), w, h);
+  SPR[key] = c; META[key] = { w, h };
+}
+
+// Player token: jersey circle, head, number. Faces are kept simple so
+// real sprites can drop in at the same footprint.
+function makePlayer(key, jersey, trim, num, isHero){
+  reg(key, 48, 56, (g,w,h)=>{
+    g.save();
+    // shadow
+    g.globalAlpha=.22; g.fillStyle='#000';
+    g.beginPath(); g.ellipse(24,50,13,5,0,0,7); g.fill(); g.globalAlpha=1;
+    // body
+    g.fillStyle=jersey;
+    g.beginPath(); g.roundRect(9,20,30,26,9); g.fill();
+    // trim stripe
+    g.fillStyle=trim; g.fillRect(21,20,6,26);
+    // arms
+    g.fillStyle=jersey;
+    g.beginPath(); g.roundRect(3,23,8,16,4); g.fill();
+    g.beginPath(); g.roundRect(37,23,8,16,4); g.fill();
+    // head
+    g.fillStyle='#f2c39a';
+    g.beginPath(); g.arc(24,14,11,0,7); g.fill();
+    // hair
+    g.fillStyle= isHero ? '#4a2c12' : '#241a12';
+    g.beginPath(); g.arc(24,11,11,Math.PI,0); g.fill();
+    // number
+    g.fillStyle=trim; g.font='bold 13px Nunito,sans-serif';
+    g.textAlign='center'; g.textBaseline='middle';
+    g.fillStyle='#fff'; g.fillText(String(num),24,34);
+    g.restore();
+  });
+}
+
+function buildSprites(){
+  makePlayer('rkfc1','#ff6b1a','#12211a',7,true);
+  makePlayer('rkfc2','#ff6b1a','#12211a',10,true);
+  makePlayer('rkfc3','#ff6b1a','#12211a',4,false);
+  makePlayer('rkfcGK','#ffc93c','#12211a',1,false);
+  makePlayer('opp1','#1e88e5','#ffffff',3,false);
+  makePlayer('opp2','#1e88e5','#ffffff',5,false);
+  makePlayer('opp3','#1e88e5','#ffffff',9,false);
+  makePlayer('oppGK','#8e24aa','#ffffff',1,false);
+
+  reg('ball',26,26,(g)=>{
+    g.fillStyle='#fff'; g.beginPath(); g.arc(13,13,12,0,7); g.fill();
+    g.strokeStyle='#12211a'; g.lineWidth=1.6; g.stroke();
+    g.fillStyle='#12211a';
+    g.beginPath(); g.arc(13,13,4.2,0,7); g.fill();
+    for(let i=0;i<5;i++){
+      const a=i/5*Math.PI*2-Math.PI/2;
+      g.beginPath(); g.arc(13+Math.cos(a)*8.4,13+Math.sin(a)*8.4,2.5,0,7); g.fill();
+    }
+  });
+}
+
+// 9-arg draw honoring META dims — real art swaps in cleanly.
+function drawSpr(key,x,y,scale=1,alpha=1){
+  const s=SPR[key], m=META[key]; if(!s) return;
+  ctx.globalAlpha=alpha;
+  ctx.drawImage(s,0,0,m.w,m.h, x-m.w*scale/2, y-m.h*scale/2, m.w*scale, m.h*scale);
+  ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   AUDIO — WebAudio synthesis, no files
+   ============================================================ */
+let AC=null;
+function ac(){ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function tone(f,d,type='sine',vol=.18,slide=0){
+  try{
+    const a=ac(), o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,a.currentTime);
+    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),a.currentTime+d);
+    g.gain.setValueAtTime(vol,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d);
+    o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+d);
+  }catch(e){}
+}
+function noise(d,vol=.2,filt=900){
+  try{
+    const a=ac(), n=a.sampleRate*d, buf=a.createBuffer(1,n,a.sampleRate), ch=buf.getChannelData(0);
+    for(let i=0;i<n;i++) ch[i]=(Math.random()*2-1)*(1-i/n);
+    const src=a.createBufferSource(); src.buffer=buf;
+    const f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=filt;
+    const g=a.createGain(); g.gain.value=vol;
+    src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+  }catch(e){}
+}
+const SFX={
+  kick:()=>{ tone(180,.09,'square',.16,-90); noise(.06,.12,1600); },
+  superKick:()=>{ tone(320,.28,'sawtooth',.2,520); noise(.22,.16,2600); },
+  save:()=>{ tone(140,.14,'triangle',.16,-60); },
+  goal:()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.28,'square',.16),i*95)); noise(.7,.16,700); },
+  concede:()=>{ [392,330,262].forEach((f,i)=>setTimeout(()=>tone(f,.3,'sine',.13),i*130)); },
+  whistle:()=>{ tone(2100,.18,'sine',.12,-500); setTimeout(()=>tone(2100,.22,'sine',.12,-600),200); },
+  charged:()=>{ [660,880,1180].forEach((f,i)=>setTimeout(()=>tone(f,.13,'square',.13),i*70)); },
+  ui:()=>tone(660,.07,'square',.1),
+  recruit:()=>{ [523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>tone(f,.22,'triangle',.15),i*80)); },
+};
+
+/* ============================================================
+   DATA — ladder + roster (values carried over from sim.js)
+   ============================================================ */
+const LADDER=[
+  {name:'USA',         round:'GROUP STAGE', power:44, keeper:44, flag:['#b22234','#ffffff','#3c3b6e'],
+   star:{name:'STAR #1 (USA)',      spd:60,shot:58,pass:55}},
+  {name:'CHINA',       round:'GROUP STAGE', power:50, keeper:49, flag:['#de2910','#ffde00','#de2910'],
+   star:{name:'STAR #2 (CHINA)',    spd:62,shot:58,pass:62}},
+  {name:'NORWAY',      round:'GROUP STAGE', power:56, keeper:54, flag:['#ba0c2f','#ffffff','#00205b'],
+   star:{name:'STAR #3 (NORWAY)',   spd:64,shot:66,pass:56}},
+  {name:'NETHERLANDS', round:'ROUND OF 16', power:64, keeper:59, flag:['#ae1c28','#ffffff','#21468b'],
+   star:{name:'STAR #4 (NETH)',     spd:66,shot:62,pass:70}},
+  {name:'FRANCE',      round:'QUARTERFINAL',power:68, keeper:62, flag:['#0055a4','#ffffff','#ef4135'],
+   star:{name:'STAR #5 (FRANCE)',   spd:72,shot:68,pass:64}},
+  {name:'ARGENTINA',   round:'SEMIFINAL',   power:72, keeper:65, flag:['#74acdf','#ffffff','#74acdf'],
+   star:{name:'STAR #6 (ARG)',      spd:70,shot:74,pass:72}},
+  {name:'BRAZIL',      round:'THE FINAL',   power:76, keeper:68, flag:['#009c3b','#ffdf00','#002776'],
+   star:{name:'STAR #7 (BRAZIL)',   spd:76,shot:76,pass:74}},
+  {name:'TEACHERS',    round:'SECRET BOSS', power:82, keeper:74, flag:['#5d4037','#ffc93c','#5d4037'],
+   star:null, boss:true},
+];
+
+// Map node positions (sticker-album layout)
+const NODES=[[150,430],[275,330],[405,420],[520,300],[640,395],[755,290],[845,410],[480,145]];
+
+const HERO_DEFS=[
+  {name:'DEVIN',  spd:62,shot:64,pass:58, spr:'rkfc1', move:'SUPER MOVE #1'},
+  {name:'JULIAN', spd:64,shot:58,pass:62, spr:'rkfc2', move:'SUPER MOVE #2'},
+  {name:'ROOKIE', spd:50,shot:48,pass:52, spr:'rkfc3', move:'SUPER MOVE #3'},
+];
+
+
+/* ============================================================
+   WORLD CUP HISTORY BLURBS
+   Several per opponent, shuffled so the same one doesn't repeat.
+   ============================================================ */
+const BLURBS={
+'USA':[
+ "The USA women have won FOUR World Cups — 1991, 1999, 2015 and 2019. That's more than any other country.",
+ "In 1999 the USA beat China in the final at the Rose Bowl in front of more than 90,000 fans — a record crowd for a women's game.",
+ "In 1950 the USA men beat England 1-0. England had the best players in the world, and nobody could believe the score was real.",
+ "In 2026 the World Cup came to the USA, Canada and Mexico — the biggest ever, with 48 teams instead of 32."
+],
+'CHINA':[
+ "China hosted the very first Women's World Cup in 1991. Before that, there was no world championship for women at all.",
+ "China reached the 1999 final and lost to the USA on penalty kicks. It is still one of the closest finals ever played.",
+ "Sun Wen of China was named the best player at the 1999 World Cup, sharing the top scorer award too.",
+ "China hosted the Women's World Cup twice — in 1991 and again in 2007."
+],
+'NORWAY':[
+ "Norway won the Women's World Cup in 1995, beating Germany in the final.",
+ "Norway also went to the 1991 final. They lost that one to the USA, then came back four years later and won it all.",
+ "Ada Hegerberg of Norway won the very first Ballon d'Or Feminin in 2018 — the award for best player in the world.",
+ "At the 1998 World Cup, Norway's men beat Brazil, who were the reigning champions. Almost nobody saw it coming."
+],
+'NETHERLANDS':[
+ "The Netherlands men have reached three World Cup finals — 1974, 1978 and 2010 — and lost all three. They are the best team never to win it.",
+ "In the 1970s the Dutch invented 'Total Football', where every player could swap positions with any other player at any moment.",
+ "Johan Cruyff invented a move at the 1974 World Cup by pretending to pass and dragging the ball behind his own leg. It is still called the Cruyff Turn.",
+ "The Dutch women won the European Championship in 2017 and reached the World Cup final in 2019."
+],
+'FRANCE':[
+ "France won the World Cup in 1998 as the host country, then won it again in 2018.",
+ "Just Fontaine of France scored 13 goals at the 1958 World Cup. No player has ever scored more in a single tournament.",
+ "The World Cup trophy is named after Jules Rimet, a Frenchman who started the whole tournament back in 1930.",
+ "Zinedine Zidane scored two headers in the 1998 final to beat Brazil in Paris."
+],
+'ARGENTINA':[
+ "Argentina have won three World Cups — 1978, 1986 and 2022.",
+ "In 2022 Argentina beat France in a final that finished 3-3 and went to penalties. Many people call it the greatest final ever played.",
+ "At the 1986 World Cup Diego Maradona scored a goal by running past five England players. It was later voted the greatest goal in World Cup history.",
+ "Argentina played in the very first World Cup final in 1930, and lost to their neighbours Uruguay."
+],
+'BRAZIL':[
+ "Brazil have won five World Cups — 1958, 1962, 1970, 1994 and 2002. That is more than any other country.",
+ "Brazil is the only country that has played in every single World Cup ever held.",
+ "Pele won the World Cup three times. He was only 17 years old when he won his first one in 1958.",
+ "Marta of Brazil has scored 17 World Cup goals — more than any other player in history, men's or women's."
+],
+'TEACHERS':[
+ "The World Cup trophy is solid gold and weighs about 6 kilograms — roughly the same as a big bowling ball.",
+ "The first World Cup was played in Uruguay in 1930. Only 13 teams entered, and some travelled by boat for two weeks to get there.",
+ "The World Cup final is watched by more people than any other sporting event on Earth.",
+ "A World Cup match is 90 minutes long, but the ball is only actually in play for about 55 of them."
+]};
+
+// Shuffle a queue per opponent so blurbs rotate instead of repeating.
+function nextBlurb(country){
+  const pool=BLURBS[country]||BLURBS['TEACHERS'];
+  G.blurbQ=G.blurbQ||{}; G.blurbLast=G.blurbLast||{};
+  let q=G.blurbQ[country];
+  if(!q || !q.length){
+    q=pool.map((_,i)=>i);
+    for(let i=q.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=q[i]; q[i]=q[j]; q[j]=t; }
+    if(q.length>1 && G.blurbLast[country]===q[0]){ const t=q[0]; q[0]=q[1]; q[1]=t; }
+    G.blurbQ[country]=q;
+  }
+  const idx=q.shift();
+  G.blurbLast[country]=idx;
+  return pool[idx];
+}
+
+// word wrap helper
+function wrapText(txt,maxW,font){
+  ctx.font=font;
+  const words=String(txt).split(' '); const lines=[]; let line='';
+  for(const w of words){
+    const t=line?line+' '+w:w;
+    if(line && ctx.measureText(t).width>maxW){ lines.push(line); line=w; } else line=t;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+const G={
+  screen:'title',
+  squad:HERO_DEFS.map(h=>({...h})),
+  stage:0,
+  streak:0,           // consecutive losses -> difficulty easing
+  stickers:[],        // recruited stars, for the album
+  match:null,
+  blurb:'',
+  blurbQ:{}, blurbLast:{},
+  t:0,
+  flash:null,
+};
+
+function easeMul(){ return 1 - Math.min(G.streak,3)*0.10; }
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+const keys={};
+addEventListener('keydown',e=>{
+  if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  keys[e.key]=true; keys[e.key.toLowerCase&&e.key.toLowerCase()]=true;
+  handleConfirm(e.key);
+});
+addEventListener('keyup',e=>{
+  keys[e.key]=false; if(e.key.toLowerCase) keys[e.key.toLowerCase()]=false;
+  if(e.key===' ') releaseKick();
+});
+
+let touch={active:false,dx:0,dy:0,kick:false};
+function canvasPt(e){
+  const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/r.width*W, y:(e.clientY-r.top)/r.height*H};
+}
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  const p=canvasPt(e);
+  if(G.screen==='match'){
+    if(p.x>W*0.55){ touch.kick=true; keys[' ']=true; }
+    else { touch.active=true; touch.ox=p.x; touch.oy=p.y; }
+  } else { handleConfirm(' '); }
+});
+cv.addEventListener('pointermove',e=>{
+  if(!touch.active) return;
+  const p=canvasPt(e);
+  touch.dx=clamp((p.x-touch.ox)/60,-1,1); touch.dy=clamp((p.y-touch.oy)/60,-1,1);
+});
+cv.addEventListener('pointerup',()=>{
+  if(touch.kick){ touch.kick=false; keys[' ']=false; releaseKick(); }
+  touch.active=false; touch.dx=0; touch.dy=0;
+});
+
+function handleConfirm(k){
+  if(k!==' '&&k!=='Enter') return;
+  SFX.ui();
+  if(G.screen==='title'){ G.screen='map'; }
+  else if(G.screen==='map'){ G.blurb=nextBlurb(LADDER[G.stage].name); G.screen='blurb'; }
+  else if(G.screen==='blurb'){ startMatch(); }
+  else if(G.screen==='result'){
+    if(G.match.win){
+      if(LADDER[G.stage].star){ G.screen='recruit'; }
+      else { G.screen = G.stage>=LADDER.length-1 ? 'victory' : 'map'; }
+    } else { G.screen='map'; }
+  }
+  else if(G.screen==='recruit'){
+    G.stage++;
+    G.screen = G.stage>=LADDER.length ? 'victory' : 'map';
+  }
+  else if(G.screen==='victory'){ location.reload(); }
+}
+
+/* ============================================================
+   MATCH SETUP
+   ============================================================ */
+const PITCH={x:60,y:96,w:840,h:452};
+const GOAL_H=136;
+const HALF_LEN=60*60;    // 60s per half at 60fps
+
+function mkPlayer(o){ return Object.assign({x:0,y:0,vx:0,vy:0,r:17,face:1,cool:0},o); }
+
+function startMatch(){
+  const opp=LADDER[G.stage], em=easeMul();
+  const oppStat=opp.power*em;
+
+  const us=G.squad.map((h,i)=>mkPlayer({
+    team:0, spr:h.spr||'rkfc3', name:h.name,
+    spd:h.spd, shot:h.shot, pass:h.pass, slot:i
+  }));
+  const them=[0,1,2].map(i=>mkPlayer({
+    team:1, spr:'opp'+(i+1), name:opp.name+' '+(i+1),
+    spd:oppStat, shot:oppStat, pass:oppStat, slot:i
+  }));
+
+  G.match={
+    opp, tick:0, half:1, scoreUs:0, scoreThem:0,
+    us, them,
+    gkUs:mkPlayer({team:0,spr:'rkfcGK',save:55,r:19,gk:true}),
+    gkThem:mkPlayer({team:1,spr:'oppGK',save:opp.keeper*em,r:19,gk:true}),
+    ball:{x:W/2,y:H/2,vx:0,vy:0,r:11,owner:null,lastKick:0,deflectCool:0,kicker:null,kickTeam:-1},
+    charge:0, charged:false, kickHold:0, ctrl:0,   // ctrl is fixed for the match
+    msg:'KICK OFF!', msgT:90, over:false, win:false, kp:null, goalLock:false, resetIn:0, resetDir:1,
+    fx:[], shake:0, ease:em,
+  };
+  resetPositions(1);
+  G.screen='match'; SFX.whistle();
+}
+
+function resetPositions(dir){
+  const m=G.match, cx=PITCH.x+PITCH.w/2, cy=PITCH.y+PITCH.h/2;
+  const spots=[[-.26,-.24],[-.30,.02],[-.26,.26]];
+  m.us.forEach((p,i)=>{ p.x=cx+spots[i][0]*PITCH.w; p.y=cy+spots[i][1]*PITCH.h; p.vx=p.vy=0; });
+  m.them.forEach((p,i)=>{ p.x=cx-spots[i][0]*PITCH.w; p.y=cy+spots[i][1]*PITCH.h; p.vx=p.vy=0; });
+  m.gkUs.x=PITCH.x+26; m.gkUs.y=cy;
+  m.gkThem.x=PITCH.x+PITCH.w-26; m.gkThem.y=cy;
+  m.ball.x=cx; m.ball.y=cy; m.ball.vx=0; m.ball.vy=0; m.ball.owner=null;
+  m.kp=null; m.ball.lastKick=0; m.ball.deflectCool=0; m.ball.saveRolled=false;
+  m.goalLock=false; m.resetIn=0;
+}
+
+/* ============================================================
+   MATCH SIM STEP
+   ============================================================ */
+function nearestToBall(list,ball){
+  let best=null,bd=1e9;
+  for(const p of list){ const d=dist(p,ball); if(d<bd){bd=d;best=p;} }
+  return best;
+}
+
+function releaseKick(){
+  const m=G.match; if(!m||m.over) return;
+  const p=m.us[m.ctrl];
+  if(m.ball.owner!==p){ m.kickHold=0; return; }
+  const power=clamp(m.kickHold/34,0.32,1);
+  doKick(p, power, m.charged);
+  if(m.charged){ m.charged=false; m.charge=0; }
+  m.kickHold=0;
+}
+
+function doKick(p, power, isSuper){
+  const m=G.match, b=m.ball;
+  const goalX = p.team===0 ? PITCH.x+PITCH.w : PITCH.x;
+  const goalY = PITCH.y+PITCH.h/2;
+
+  let ax, ay;
+  if(isSuper){
+    // super shot homes on goal mouth
+    const ty = goalY + rnd(34,-34);
+    ax = goalX-p.x; ay = ty-p.y;
+  } else {
+    // kick in facing direction, biased toward goal so kids score
+    const fx = p.face, fy = clamp((goalY-p.y)/220,-1,1);
+    ax = fx*1 + (goalX-p.x)*0.0022;
+    ay = fy*0.6 + (goalY-p.y)*0.0016;
+  }
+  let ang=Math.atan2(ay,ax);
+  if(!isSuper){
+    const dG=Math.hypot(goalX-p.x, goalY-p.y);
+    const spread=clamp(0.16 + (dG/560)*(1-p.shot/260), 0.07, 0.74);
+    ang += rnd(spread,-spread);
+  } else {
+    ang += rnd(0.045,-0.045);
+  }
+  const spd=(isSuper?17.5:8.2+power*6.4) * (0.9+p.shot/260);
+  b.vx=Math.cos(ang)*spd; b.vy=Math.sin(ang)*spd;
+  b.owner=null; b.lastKick=12; p.cool=isSuper?34:28; b.saveRolled=false; b.kicker=p; b.kickTeam=p.team;
+  if(isSuper){
+    SFX.superKick(); m.shake=14;
+    for(let i=0;i<18;i++) m.fx.push({x:p.x,y:p.y,vx:rnd(6,-6),vy:rnd(6,-6),life:26,c:'#ffc93c'});
+  } else SFX.kick();
+}
+
+function stepMatch(){
+  const m=G.match; if(!m) return;
+  if(m.msgT>0) m.msgT--;
+  if(m.shake>0) m.shake*=0.86;
+  m.fx=m.fx.filter(f=>{ f.x+=f.vx; f.y+=f.vy; f.vx*=.92; f.vy*=.92; f.life--; return f.life>0; });
+
+  if(m.over) return;
+  if(m.goalLock){
+    if(m.resetIn>0){
+      m.resetIn--;
+      if(m.resetIn===0){ resetPositions(m.resetDir); }
+    }
+    return;                            // celebration freeze — applies to both sides
+  }
+
+  m.tick++;
+  if(m.tick>=HALF_LEN){
+    if(m.half===1){ m.half=2; m.tick=0; m.msg='HALF TIME'; m.msgT=110; resetPositions(-1); SFX.whistle(); }
+    else { endMatch(); return; }
+  }
+
+  const b=m.ball;
+  if(b.lastKick>0) b.lastKick--;
+
+  // keeper is holding the ball — freeze possession, then punt upfield
+  if(m.kp){
+    const gk=m.kp.gk;
+    b.x=gk.x + (m.kp.side===1 ? -22 : 22); b.y=gk.y; b.vx=b.vy=0; b.owner=null;
+    m.kp.t--;
+    if(m.kp.t<=0){
+      const dir = m.kp.side===1 ? -1 : 1;
+      // travel = v * f/(1-f) with f=0.968, so v = target * 0.032
+      const target = PITCH.w/3;                       // one third of the pitch
+      const v = target * 0.032;
+      const ang = Math.atan2(rnd(90,-90), dir*420);
+      b.vx=Math.cos(ang)*v; b.vy=Math.sin(ang)*v;
+      b.lastKick=14; b.kicker=gk; b.kickTeam=m.kp.side;
+      m.kp=null; SFX.kick();
+    }
+  }
+
+  // --- controlled player is fixed for the whole match (m.ctrl set at kickoff) ---
+
+  // --- input ---
+  const p=m.us[m.ctrl];
+  let ix=0, iy=0;
+  if(keys['ArrowLeft']||keys['a']) ix-=1;
+  if(keys['ArrowRight']||keys['d']) ix+=1;
+  if(keys['ArrowUp']||keys['w']) iy-=1;
+  if(keys['ArrowDown']||keys['s']) iy+=1;
+  if(touch.active){ ix+=touch.dx; iy+=touch.dy; }
+  const il=Math.hypot(ix,iy);
+  if(il>0.15){ ix/=il||1; iy/=il||1; p.face = ix>0.1?1:ix<-0.1?-1:p.face; }
+  else { ix=iy=0; }
+  const sp=1.75+p.spd/58;
+  p.vx=lerp(p.vx, ix*sp, .28); p.vy=lerp(p.vy, iy*sp, .28);
+
+  if(keys[' '] && b.owner===p) m.kickHold=Math.min(40,m.kickHold+1);
+
+  // --- charge meter fills while we hold the ball ---
+  if(b.owner && b.owner.team===0 && !m.charged){
+    m.charge=Math.min(100,m.charge+0.62);
+    if(m.charge>=100){ m.charged=true; SFX.charged(); }
+  }
+
+  // --- teammate AI (ours) ---
+  // With control locked to one player, the nearest team-mate actively presses
+  // so the kid isn't chasing three defenders on their own.
+  const helper = nearestToBall(m.us.filter((q,i)=>i!==m.ctrl), b);
+  m.us.forEach((q,i)=>{
+    if(i===m.ctrl) return;
+    const goalX=PITCH.x+PITCH.w;
+    let tx,ty;
+    if(b.owner&&b.owner.team===0){ tx=lerp(q.x, clamp(b.x+150, PITCH.x+220, goalX-300), .04); ty=lerp(q.y, PITCH.y+PITCH.h*(0.24+0.48*(i/2)), .05); }
+    else if(q===helper){ tx=b.x; ty=b.y; }
+    else { tx=lerp(q.x,b.x,.28); ty=lerp(q.y,b.y,.40); }
+    moveToward(q,tx,ty,1.45+q.spd/60);
+  });
+
+  // --- opponent AI ---
+  const chaser=nearestToBall(m.them,b);
+  const support=nearestToBall(m.them.filter(q=>q!==chaser),b);
+  m.them.forEach(q=>{
+    const goalX=PITCH.x;
+    let tx,ty;
+    if(q===chaser){ tx=b.x; ty=b.y; }
+    else if(q===support && (!b.owner || b.owner.team===0)){ tx=lerp(q.x,b.x,.7); ty=lerp(q.y,b.y,.7); }
+    else if(b.owner&&b.owner.team===1){ tx=lerp(q.x,goalX+170,.03); ty=lerp(q.y,b.y+rnd(90,-90),.02); }
+    else { tx=lerp(q.x,(PITCH.x+b.x)/2,.05); ty=lerp(q.y,b.y,.06); }
+    moveToward(q,tx,ty,1.30+q.spd/46);
+  });
+
+  // --- keepers ---
+  [[m.gkUs,PITCH.x+26],[m.gkThem,PITCH.x+PITCH.w-26]].forEach(([gk,gx])=>{
+    const ty=clamp(b.y, PITCH.y+PITCH.h/2-GOAL_H/2-14, PITCH.y+PITCH.h/2+GOAL_H/2+14);
+    gk.x=lerp(gk.x,gx,.16);
+    gk.y=lerp(gk.y,ty, 0.085 + (gk.save||55)/620);
+  });
+
+  // --- keeper has the ball: clear the attacking side out of the box ---
+  if(m.kp){
+    const boxX = m.kp.side===1 ? PITCH.x+PITCH.w-110 : PITCH.x+110;
+    const atk  = m.kp.side===1 ? m.us : m.them;
+    atk.forEach(q=>{
+      if(m.kp.side===1 ? q.x>boxX : q.x<boxX){
+        q.vx = lerp(q.vx, (m.kp.side===1 ? -3.0 : 3.0), .30);
+      }
+    });
+  }
+
+  // --- integrate ---
+  [...m.us,...m.them].forEach(q=>{
+    q.x=clamp(q.x+q.vx, PITCH.x+14, PITCH.x+PITCH.w-14);
+    q.y=clamp(q.y+q.vy, PITCH.y+14, PITCH.y+PITCH.h-14);
+    if(q.cool>0) q.cool--;
+  });
+
+  // --- ball ---
+  if(b.owner){
+    const o=b.owner;
+    b.x=lerp(b.x, o.x+o.face*20, .5);
+    b.y=lerp(b.y, o.y+8, .5);
+    b.vx=b.vy=0;
+  } else {
+    b.x+=b.vx; b.y+=b.vy; b.vx*=.968; b.vy*=.968;
+    if(b.y<PITCH.y+11||b.y>PITCH.y+PITCH.h-11){ b.vy*=-.72; b.y=clamp(b.y,PITCH.y+11,PITCH.y+PITCH.h-11); }
+  }
+
+  // --- in-flight deflections off defenders ---
+  if(b.deflectCool>0) b.deflectCool--;
+  if(!b.owner && b.lastKick>0 && b.deflectCool<=0){
+    for(const q of [...m.us,...m.them]){
+      if(q===b.kicker || q.team===b.kickTeam) continue;
+      if(dist(q,b) < q.r+b.r+1){
+        const dx=b.x-q.x, dy=b.y-q.y, dl=Math.hypot(dx,dy)||1;
+        const sp=Math.hypot(b.vx,b.vy)*0.5;
+        b.vx = dx/dl*sp + rnd(1.4,-1.4);
+        b.vy = dy/dl*sp + rnd(1.4,-1.4);
+        b.deflectCool=20; b.saveRolled=false;
+        m.fx.push({x:b.x,y:b.y,vx:0,vy:0,life:12,c:'#ffffff'});
+        break;
+      }
+    }
+  }
+
+  // --- possession / tackling ---
+  if(b.lastKick===0 && !m.kp){
+    const cands=[...m.us,...m.them]
+      .filter(q=>q.cool<=0 && q!==b.owner && dist(q,b) < q.r+b.r+3)
+      .sort((a,c)=>dist(a,b)-dist(c,b));
+    const q=cands[0];
+    if(q){
+      if(b.owner){
+        if(b.owner.team!==q.team){
+          const atk=q.spd, def=b.owner.spd;
+          if(Math.random() < 0.075 + (atk-def)/1000){ b.owner=q; b.saveRolled=false; }
+        }
+      } else { b.owner=q; b.saveRolled=false; }
+    }
+  }
+
+  // --- our AI team-mates don't shoot: they win the ball and pass it to the kid ---
+  if(b.owner && b.owner.team===0 && b.owner!==m.us[m.ctrl]){
+    b.owner.passT=(b.owner.passT||0)+1;
+    if(b.owner.passT>24){
+      const tgt=m.us[m.ctrl], src=b.owner;
+      const dx=tgt.x-src.x, dy=tgt.y-src.y, dl=Math.hypot(dx,dy)||1;
+      const sp=clamp(dl*0.05, 5, 11);
+      b.vx=dx/dl*sp; b.vy=dy/dl*sp;
+      src.passT=0; src.cool=16;
+      b.owner=null; b.lastKick=10; b.kicker=src; b.kickTeam=0; b.saveRolled=false;
+      SFX.kick();
+    }
+  } else if(b.owner) { b.owner.passT=0; }
+
+  // --- opponent shooting ---
+  if(b.owner && b.owner.team===1){
+    const o=b.owner;
+    const d=Math.abs(o.x-PITCH.x);
+    if(d<380 && Math.random()<0.060+(o.shot/9000)) doKick(o, 1, false);
+    else if(Math.random()<0.006) doKick(o,0.5,false);
+  }
+
+  // --- keeper saves ---
+  [[m.gkUs,0],[m.gkThem,1]].forEach(([gk,side])=>{
+    if(b.owner) return;
+    if(dist(gk,b) < gk.r+b.r+8){
+      if(b.saveRolled) return;          // one roll per shot, not per frame
+      b.saveRolled=true;
+      const save = (gk.save||55);
+      if(Math.random() < 0.42 + save/210){
+        SFX.save();
+        m.fx.push({x:b.x,y:b.y,vx:0,vy:0,life:22,c:'#ffffff',txt:'SAVE!'});
+        giveToKeeper(m, gk, side);
+      }
+    }
+  });
+
+  // --- goals ---
+  const cy=PITCH.y+PITCH.h/2;
+  const inMouth = Math.abs(b.y-cy) < GOAL_H/2;
+  if(inMouth){
+    // A goal only counts if the attacking side last touched it. Own goals become
+    // goal kicks — no cheap gifts, and no 7-year-old losing to their own defender.
+    // Deflections don't change kickTeam, so a deflected shot still counts.
+    if(b.x > PITCH.x+PITCH.w-8){
+      if(b.kickTeam===0) scoreGoal(0); else { b.x=PITCH.x+PITCH.w-11; giveToKeeper(m, m.gkThem, 1); }
+    } else if(b.x < PITCH.x+8){
+      if(b.kickTeam===1) scoreGoal(1); else { b.x=PITCH.x+11; giveToKeeper(m, m.gkUs, 0); }
+    }
+  } else {
+    if(b.x > PITCH.x+PITCH.w-11){ b.x=PITCH.x+PITCH.w-11; giveToKeeper(m, m.gkThem, 1); }
+    else if(b.x < PITCH.x+11){ b.x=PITCH.x+11; giveToKeeper(m, m.gkUs, 0); }
+  }
+}
+
+function giveToKeeper(m, gk, side){
+  if(m.kp) return;
+  m.kp={gk, side, t:60};   // 1 second at 60fps
+  m.ball.owner=null; m.ball.vx=0; m.ball.vy=0; m.ball.saveRolled=false;
+  m.ball.lastKick=0; m.ball.deflectCool=0;
+  if(side===1){ m.charge=Math.max(0,m.charge-14); }   // losing the ball costs meter
+}
+
+function moveToward(q,tx,ty,sp){
+  const dx=tx-q.x, dy=ty-q.y, d=Math.hypot(dx,dy)||1;
+  q.vx=lerp(q.vx, dx/d*sp, .16); q.vy=lerp(q.vy, dy/d*sp, .16);
+  if(dx>4) q.face=1; else if(dx<-4) q.face=-1;
+}
+
+function scoreGoal(team){
+  const m=G.match;
+  if(m.goalLock) return;              // the ball sits past the line for many frames — count it once
+  m.goalLock=true;
+  if(team===0){ m.scoreUs++; SFX.goal(); m.msg='GOAL!'; m.shake=20; }
+  else { m.scoreThem++; SFX.concede(); m.msg='THEY SCORED'; m.shake=10; }
+  m.msgT=100; m.charge=0; m.charged=false;
+  m.resetIn=54; m.resetDir = team===0 ? -1 : 1;
+  for(let i=0;i<26;i++) m.fx.push({x:m.ball.x,y:m.ball.y,vx:rnd(9,-9),vy:rnd(9,-9),life:34,
+    c:team===0?'#ffc93c':'#90a4ae'});
+}
+
+function endMatch(){
+  const m=G.match; m.over=true; m.win=m.scoreUs>m.scoreThem;
+  SFX.whistle();
+  if(m.win){ G.streak=0; if(LADDER[G.stage].star) G.stickers.push(LADDER[G.stage].star.name); }
+  else G.streak++;
+  setTimeout(()=>{ G.screen='result'; },700);
+}
+
+function applyRecruit(){
+  const star=LADDER[G.stage].star; if(!star) return;
+  // never bench Devin or Julian
+  let idx=-1, worst=1e9;
+  G.squad.forEach((p,i)=>{
+    if(p.name==='DEVIN'||p.name==='JULIAN') return;
+    const v=p.spd+p.shot+p.pass; if(v<worst){worst=v; idx=i;}
+  });
+  if(idx>=0) G.squad[idx]={...star, spr:'rkfc3', move:'SUPER MOVE'};
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function bgPaper(){
+  ctx.fillStyle='var(--paper)'; ctx.fillStyle='#f6efdd'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(18,33,26,.06)'; ctx.lineWidth=1;
+  for(let y=0;y<H;y+=26){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+}
+function title(txt,y,size,color='#12211a',align='center'){
+  ctx.fillStyle=color; ctx.font=size+'px Bungee, Nunito, sans-serif';
+  ctx.textAlign=align; ctx.textBaseline='middle'; ctx.fillText(txt,align==='center'?W/2:60,y);
+}
+function body(txt,y,size,color='#12211a',align='center',x=null){
+  ctx.fillStyle=color; ctx.font='700 '+size+'px Nunito, sans-serif';
+  ctx.textAlign=align; ctx.textBaseline='middle';
+  ctx.fillText(txt, x!==null?x:(align==='center'?W/2:60), y);
+}
+
+function drawTitle(){
+  bgPaper();
+  // pitch band
+  ctx.fillStyle='#1f7a3d'; ctx.fillRect(0,H*0.42,W,H*0.22);
+  ctx.strokeStyle='rgba(242,247,240,.5)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(W/2,H*0.42); ctx.lineTo(W/2,H*0.64); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2,H*0.53,44,0,7); ctx.stroke();
+
+  title('RICHLAND KIDS',52,42,'#12211a');
+  title('FOOTBALL CLUB',92,42,'#ff6b1a');
+  title('WORLD TOUR',H*0.545,34,'#f2f7f0');
+
+  // controls card
+  const cw=660, cx=W/2-cw/2, cy0=H*0.70, chh=150;
+  ctx.fillStyle='#ffffff';
+  ctx.beginPath(); ctx.roundRect(cx,cy0-26,cw,chh,16); ctx.fill();
+  ctx.strokeStyle='#12211a'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.roundRect(cx,cy0-26,cw,chh,16); ctx.stroke();
+
+  title('HOW TO PLAY', cy0, 20, '#12211a');
+
+  const rows=[
+    ['ARROWS  or  W A S D','Run around the pitch'],
+    ['HOLD  SPACE','Kick — hold longer to kick harder'],
+    ['METER FULL','Your next kick is a SUPER SHOT'],
+    ['ON A TABLET','Drag the left side to run, tap the right to kick'],
+  ];
+  rows.forEach((r,i)=>{
+    const y=cy0+30+i*25;
+    ctx.font='700 14px Nunito, sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillStyle='#ff6b1a'; ctx.fillText(r[0], W/2-14, y);
+    ctx.font='700 14px Nunito, sans-serif'; ctx.textAlign='left';
+    ctx.fillStyle='#3d4d43'; ctx.fillText(r[1], W/2+14, y);
+  });
+
+  const pulse=0.6+Math.sin(G.t/16)*0.4;
+  ctx.globalAlpha=pulse;
+  body('PRESS SPACE OR TAP TO PLAY', H*0.615, 20, '#f2f7f0');
+  ctx.globalAlpha=1;
+}
+
+function drawMap(){
+  bgPaper();
+  title('WORLD TOUR',52,38,'#12211a');
+  body('Beat a country — their star joins Richland Kids FC',86,15,'#5b6b60');
+
+  // dotted route
+  ctx.strokeStyle='rgba(18,33,26,.28)'; ctx.lineWidth=3; ctx.setLineDash([6,9]);
+  ctx.beginPath();
+  NODES.forEach((n,i)=> i?ctx.lineTo(n[0],n[1]):ctx.moveTo(n[0],n[1]));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  NODES.forEach((n,i)=>{
+    const L=LADDER[i], done=i<G.stage, cur=i===G.stage, locked=i>G.stage;
+    const [x,y]=n, r=cur?36:30;
+    ctx.save();
+    if(cur){ ctx.shadowColor='rgba(255,107,26,.55)'; ctx.shadowBlur=18+Math.sin(G.t/9)*8; }
+    // sticker
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x,y,r+5,0,7); ctx.fill();
+    ctx.shadowBlur=0;
+    // flag disc
+    const f=L.flag;
+    for(let k=0;k<3;k++){
+      ctx.fillStyle=f[k]; ctx.beginPath();
+      ctx.moveTo(x,y); ctx.arc(x,y,r, (k/3)*6.283-1.57, ((k+1)/3)*6.283-1.57); ctx.fill();
+    }
+    ctx.globalAlpha= locked?0.45:1;
+    ctx.strokeStyle=L.boss?'#ffc93c':'#12211a'; ctx.lineWidth=L.boss?5:3;
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.stroke();
+    ctx.globalAlpha=1;
+
+    if(done){ // peeled sticker = collected
+      ctx.fillStyle='rgba(18,33,26,.62)'; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+      ctx.fillStyle='#ffc93c'; ctx.font='30px Bungee, sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('★',x,y+1);
+    }
+    if(locked){ ctx.fillStyle='rgba(246,239,221,.6)'; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill(); }
+    ctx.restore();
+
+    body(L.name, y+r+18, cur?15:12, cur?'#12211a':'#7d8a80');
+  });
+
+  const L=LADDER[G.stage];
+  ctx.fillStyle='#12211a'; ctx.fillRect(0,H-72,W,72);
+  body('NEXT: '+L.name+'  —  '+L.round, H-46,20,'#ffffff');
+  if(G.streak>0) body('Losing streak help is ON — they are '+(G.streak*10)+'% weaker', H-22,13,'#ffc93c');
+  else body('Press SPACE or tap to kick off', H-22,13,'#9fb0a5');
+}
+
+function drawPitch(){
+  const m=G.match;
+  ctx.save();
+  if(m.shake>0.4) ctx.translate(rnd(m.shake,-m.shake)/2, rnd(m.shake,-m.shake)/2);
+
+  ctx.fillStyle='#176030'; ctx.fillRect(0,0,W,H);
+  // mown stripes
+  for(let i=0;i<10;i++){
+    ctx.fillStyle = i%2 ? '#1f7a3d' : '#228543';
+    ctx.fillRect(PITCH.x+i*PITCH.w/10, PITCH.y, PITCH.w/10, PITCH.h);
+  }
+  const ch='rgba(242,247,240,.82)';
+  ctx.strokeStyle=ch; ctx.lineWidth=3;
+  ctx.strokeRect(PITCH.x,PITCH.y,PITCH.w,PITCH.h);
+  ctx.beginPath(); ctx.moveTo(PITCH.x+PITCH.w/2,PITCH.y); ctx.lineTo(PITCH.x+PITCH.w/2,PITCH.y+PITCH.h); ctx.stroke();
+  ctx.beginPath(); ctx.arc(PITCH.x+PITCH.w/2,PITCH.y+PITCH.h/2,62,0,7); ctx.stroke();
+  const cy=PITCH.y+PITCH.h/2;
+  ctx.strokeRect(PITCH.x,cy-104,86,208);
+  ctx.strokeRect(PITCH.x+PITCH.w-86,cy-104,86,208);
+  // goals
+  ctx.lineWidth=6; ctx.strokeStyle='#ffffff';
+  ctx.beginPath(); ctx.moveTo(PITCH.x,cy-GOAL_H/2); ctx.lineTo(PITCH.x,cy+GOAL_H/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PITCH.x+PITCH.w,cy-GOAL_H/2); ctx.lineTo(PITCH.x+PITCH.w,cy+GOAL_H/2); ctx.stroke();
+
+  // control ring
+  const p=m.us[m.ctrl];
+  if(p){
+    ctx.strokeStyle='#ffc93c'; ctx.lineWidth=3.5;
+    ctx.beginPath(); ctx.ellipse(p.x,p.y+22,20,8,0,0,7); ctx.stroke();
+  }
+
+  const order=[m.gkUs,m.gkThem,...m.them,...m.us].sort((a,b)=>a.y-b.y);
+  order.forEach(q=>{
+    const sc = q.gk?1.02:0.98;
+    ctx.save();
+    if(q.face<0){ ctx.translate(q.x*2,0); ctx.scale(-1,1); }
+    drawSpr(q.spr, q.x, q.y, sc);
+    ctx.restore();
+  });
+  drawSpr('ball', m.ball.x, m.ball.y, 0.88);
+
+  // fx
+  m.fx.forEach(f=>{
+    ctx.globalAlpha=clamp(f.life/28,0,1);
+    if(f.txt){ ctx.fillStyle=f.c; ctx.font='22px Bungee,sans-serif'; ctx.textAlign='center'; ctx.fillText(f.txt,f.x,f.y-24); }
+    else { ctx.fillStyle=f.c; ctx.beginPath(); ctx.arc(f.x,f.y,4,0,7); ctx.fill(); }
+    ctx.globalAlpha=1;
+  });
+  ctx.restore();
+
+  drawHUD();
+}
+
+function drawHUD(){
+  const m=G.match;
+  ctx.fillStyle='#12211a'; ctx.fillRect(0,0,W,86);
+  // scoreboard
+  ctx.fillStyle='#ff6b1a'; ctx.fillRect(W/2-168,14,150,44);
+  ctx.fillStyle='#1e88e5'; ctx.fillRect(W/2+18,14,150,44);
+  body('RKFC', 28, 13, '#12211a', 'center', W/2-93);
+  body(m.opp.name.slice(0,11), 28, 13, '#ffffff','center', W/2+93);
+  ctx.font='26px Bungee,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#ffffff';
+  ctx.fillText(String(m.scoreUs), W/2-93, 48);
+  ctx.fillText(String(m.scoreThem), W/2+93, 48);
+
+  // clock
+  const rem=Math.max(0,Math.ceil((HALF_LEN-m.tick)/60));
+  body('HALF '+m.half+'  ·  '+rem+'s', 72, 13, '#9fb0a5');
+
+  // charge meter
+  const bx=40, by=24, bw=200, bh=22;
+  ctx.fillStyle='#2a3b32'; ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,11); ctx.fill();
+  const w=bw*(m.charge/100);
+  ctx.fillStyle= m.charged ? '#ffc93c' : '#4caf50';
+  ctx.beginPath(); ctx.roundRect(bx,by,Math.max(6,w),bh,11); ctx.fill();
+  ctx.font='700 12px Nunito,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#ffffff';
+  ctx.fillText(m.charged?'SUPER READY — KICK IT!':'SUPER METER', bx+10, by+bh/2+4);
+  if(m.charged){
+    ctx.strokeStyle='#ffc93c'; ctx.lineWidth=2+Math.sin(G.t/5)*1.4;
+    ctx.beginPath(); ctx.roundRect(bx-3,by-3,bw+6,bh+6,14); ctx.stroke();
+  }
+
+  // power bar while holding
+  if(m.kickHold>0){
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.fillRect(W-238,30,clamp(m.kickHold/40,0,1)*190,10);
+    ctx.strokeStyle='#ffffff'; ctx.lineWidth=2; ctx.strokeRect(W-238,30,190,10);
+    body('POWER', 52, 12, '#9fb0a5','left', W-238);
+  }
+
+  if(m.msgT>0 && m.msg){
+    ctx.globalAlpha=clamp(m.msgT/40,0,1);
+    ctx.fillStyle='rgba(18,33,26,.72)'; ctx.fillRect(0,H/2-52,W,104);
+    title(m.msg, H/2, 52, m.msg==='GOAL!'?'#ffc93c':'#f2f7f0');
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawResult(){
+  const m=G.match;
+  bgPaper();
+  ctx.fillStyle=m.win?'#1f7a3d':'#5b6b60'; ctx.fillRect(0,120,W,150);
+  title(m.win?'WE WON!':'WE LOST', 172, 54, '#ffffff');
+  title(m.scoreUs+' – '+m.scoreThem, 232, 40, m.win?'#ffc93c':'#dfe6e0');
+  body('RICHLAND KIDS FC  vs  '+m.opp.name, 300, 18, '#12211a');
+
+  if(m.win){
+    body('Their star wants to join your team!', 350, 20, '#ff6b1a');
+  } else {
+    const nxt=Math.min(G.streak,3)*10;
+    body('No progress lost — you can try again right now.', 344, 18, '#12211a');
+    if(nxt>0) body(m.opp.name+' will be '+nxt+'% weaker next try.', 376, 17, '#1f7a3d');
+  }
+  const pulse=0.55+Math.sin(G.t/14)*0.45;
+  ctx.globalAlpha=pulse;
+  body('PRESS SPACE OR TAP TO CONTINUE', H-90, 20, '#12211a');
+  ctx.globalAlpha=1;
+}
+
+function drawRecruit(){
+  bgPaper();
+  const star=LADDER[G.stage].star;
+  title('NEW SIGNING!', 96, 46, '#ff6b1a');
+  body('Added to your sticker album', 138, 15, '#5b6b60');
+
+  // big sticker
+  const x=W/2, y=290;
+  ctx.save();
+  ctx.shadowColor='rgba(255,201,60,.6)'; ctx.shadowBlur=26;
+  ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.roundRect(x-118,y-118,236,236,20); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle='#ff6b1a'; ctx.beginPath(); ctx.roundRect(x-104,y-104,208,208,14); ctx.fill();
+  drawSpr('rkfc3', x, y-6, 2.5);
+
+  title(star.name, y+164, 26, '#12211a');
+  body('SPEED '+Math.round(star.spd)+'   SHOT '+Math.round(star.shot)+'   PASS '+Math.round(star.pass),
+       y+200, 17, '#5b6b60');
+
+  const pulse=0.55+Math.sin(G.t/14)*0.45;
+  ctx.globalAlpha=pulse;
+  body('PRESS SPACE OR TAP TO CONTINUE', H-46, 18, '#12211a');
+  ctx.globalAlpha=1;
+}
+
+function drawBlurb(){
+  bgPaper();
+  const L=LADDER[G.stage];
+
+  // header band
+  ctx.fillStyle='#12211a'; ctx.fillRect(0,0,W,104);
+  title(L.round, 40, 20, '#9fb0a5');
+  title('RICHLAND KIDS FC  vs  '+L.name, 74, 26, '#ffffff');
+
+  // flag disc
+  const fx=W/2, fy=190, fr=44;
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(fx,fy,fr+6,0,7); ctx.fill();
+  const f=L.flag;
+  for(let k=0;k<3;k++){
+    ctx.fillStyle=f[k]; ctx.beginPath();
+    ctx.moveTo(fx,fy); ctx.arc(fx,fy,fr,(k/3)*6.283-1.57,((k+1)/3)*6.283-1.57); ctx.fill();
+  }
+  ctx.strokeStyle=L.boss?'#ffc93c':'#12211a'; ctx.lineWidth=L.boss?5:3;
+  ctx.beginPath(); ctx.arc(fx,fy,fr,0,7); ctx.stroke();
+
+  // blurb card
+  const cw=700, cx=W/2-cw/2, cy0=262;
+  const lines=wrapText(G.blurb, cw-60, '700 19px Nunito, sans-serif');
+  const chh=76+lines.length*29;
+  ctx.fillStyle='#ffffff';
+  ctx.beginPath(); ctx.roundRect(cx,cy0,cw,chh,18); ctx.fill();
+  ctx.strokeStyle='#ff6b1a'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.roundRect(cx,cy0,cw,chh,18); ctx.stroke();
+
+  title('DID YOU KNOW?', cy0+34, 20, '#ff6b1a');
+  ctx.font='700 19px Nunito, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#12211a';
+  lines.forEach((ln,i)=> ctx.fillText(ln, W/2, cy0+72+i*29));
+
+  if(G.streak>0){
+    body(LADDER[G.stage].name+' will be '+(Math.min(G.streak,3)*10)+'% weaker this try',
+         cy0+chh+30, 15, '#1f7a3d');
+  }
+
+  const pulse=0.55+Math.sin(G.t/14)*0.45;
+  ctx.globalAlpha=pulse;
+  body('PRESS SPACE OR TAP TO KICK OFF', H-42, 20, '#12211a');
+  ctx.globalAlpha=1;
+}
+
+function drawVictory(){
+  bgPaper();
+  ctx.fillStyle='#1f7a3d'; ctx.fillRect(0,0,W,H);
+  for(let i=0;i<60;i++){
+    const t=(G.t*1.6+i*97)%H;
+    ctx.fillStyle=['#ffc93c','#ff6b1a','#ffffff','#1e88e5'][i%4];
+    ctx.fillRect((i*137)%W, t, 7, 13);
+  }
+  title('WORLD CHAMPIONS', 190, 56, '#ffc93c');
+  title('RICHLAND KIDS FC', 258, 38, '#ffffff');
+  body('You beat every country — and the Teachers.', 330, 20, '#dfe6e0');
+  body('Stars collected: '+G.stickers.length+' / 7', 372, 18, '#ffc93c');
+  const pulse=0.55+Math.sin(G.t/14)*0.45;
+  ctx.globalAlpha=pulse;
+  body('PRESS SPACE OR TAP TO PLAY AGAIN', H-80, 20, '#ffffff');
+  ctx.globalAlpha=1;
+}
+
+/* ============================================================
+   LOOP
+   ============================================================ */
+let _prevScreen=null;
+function frame(){
+  G.t++;
+  if(G.screen==='recruit' && _prevScreen!=='recruit'){ applyRecruit(); SFX.recruit(); }
+  _prevScreen=G.screen;
+
+  if(G.screen==='match') stepMatch();
+
+  ctx.clearRect(0,0,W,H);
+  switch(G.screen){
+    case 'title':   drawTitle(); break;
+    case 'map':     drawMap(); break;
+    case 'blurb':   drawBlurb(); break;
+    case 'match':   drawPitch(); break;
+    case 'result':  drawResult(); break;
+    case 'recruit': drawRecruit(); break;
+    case 'victory': drawVictory(); break;
+  }
+  requestAnimationFrame(frame);
+}
+
+buildSprites();
+document.getElementById('tapstart').addEventListener('click',()=>{
+  document.getElementById('tapstart').classList.add('hide');
+  try{ ac().resume(); }catch(e){}
+  frame();
+});
+
+/* ============================================================
+   SMOKE TEST HOOKS — used by headless validation, harmless in browser
+   ============================================================ */
+window.__RKFC__={keys,G,LADDER,drawTitle,drawMap,drawBlurb,drawPitch,nextBlurb,BLURBS,wrapText,drawResult,drawRecruit,drawVictory,frame,startMatch,stepMatch,endMatch,applyRecruit,doKick,scoreGoal,
+                 resetPositions,SPR,META,HALF_LEN,PITCH};
+</script>
+</body>
+</html>

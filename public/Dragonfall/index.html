@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Dragonfall</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100%;overscroll-behavior:none;background:#1b2029;font-family:"Trebuchet MS",Verdana,sans-serif;color:#f3ead6;user-select:none;-webkit-user-select:none;}
+#wrap{position:relative;display:flex;flex-direction:column;
+  height:100dvh;min-height:560px;overflow:hidden;}
+
+/* ---------- TOP BAR ---------- */
+#top{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:6px 8px;
+  background:linear-gradient(#3a3324,#241f16);border-bottom:3px solid #12100b;
+  padding-top:calc(6px + env(safe-area-inset-top));}
+.stat{display:flex;align-items:center;gap:4px;background:#0f0d09;border:2px solid #55492f;
+  border-radius:9px;padding:3px 8px;font-size:15px;font-weight:bold;white-space:nowrap;}
+.stat .ic{font-size:15px;}
+#waveStat{color:#ffd98a}#lifeStat{color:#ff8a8a}#goldStat{color:#ffe14d}
+#spacer{flex:1}
+#musBtn{background:#2c4a63;border:2px solid #6fa8cf;border-radius:9px;padding:4px 9px;
+  font-size:14px;font-weight:bold;color:#dff0ff;}
+#musBtn.off{opacity:.45;border-color:#55492f;}
+#spdBtn{background:#2c4a63;border:2px solid #6fa8cf;border-radius:9px;padding:4px 9px;
+  font-size:14px;font-weight:bold;color:#dff0ff;}
+#menuBtn{background:#3a2c4a;border:2px solid #9b7fc0;border-radius:9px;padding:4px 9px;font-size:14px;color:#eadfff;}
+
+/* ---------- STAGE ---------- */
+#stage{flex:1 1 auto;position:relative;overflow:hidden;min-height:320px;
+  background:radial-gradient(120% 90% at 50% 0%,#4a5d76 0%,#2a3341 55%,#191d26 100%);}
+#cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:100%;height:100%;object-fit:contain;touch-action:none;}
+
+/* ---------- BANNER / TOAST ---------- */
+#banner{position:absolute;left:0;right:0;top:14%;text-align:center;pointer-events:none;
+  font-size:30px;font-weight:bold;letter-spacing:1px;opacity:0;transition:opacity .25s;
+  text-shadow:0 3px 0 #000,0 0 22px #000;padding:0 12px;}
+#toast{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;pointer-events:none;
+  background:#0d0b07dd;border:2px solid #6a5a38;border-radius:10px;padding:6px 12px;
+  font-size:14px;opacity:0;transition:opacity .3s;max-width:92%;text-align:center;}
+
+/* ---------- ROYAL RAIL ---------- */
+#royals{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:7px;}
+.royal{width:60px;height:60px;border-radius:14px;border:3px solid #6a5a38;
+  background:#171410;position:relative;overflow:hidden;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:10px;font-weight:bold;line-height:1.1;}
+.royal .rIc{font-size:23px}
+.royal.ready{border-color:#ffd54a;background:#2e2412;box-shadow:0 0 12px #ffd54a55;}
+.royal.armed{border-color:#8bff6f;background:#1d3418;box-shadow:0 0 16px #8bff6f88;}
+.royal .cd{position:absolute;left:0;right:0;bottom:0;background:#000000aa;pointer-events:none;}
+
+/* ---------- BOTTOM SHOP ---------- */
+#bottom{flex:0 0 auto;background:linear-gradient(#241f16,#3a3324);border-top:3px solid #12100b;
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom));}
+#shop{display:flex;gap:5px;justify-content:center;}
+.card{flex:1 1 0;max-width:110px;border-radius:11px;border:3px solid #55492f;background:#171410;
+  padding:5px 3px;text-align:center;position:relative;}
+.card.sel{border-color:#ffd54a;background:#2e2412;}
+.card.poor{opacity:.42;}
+.card .cIc{font-size:22px;line-height:1.1}
+.card .cNm{font-size:10.5px;font-weight:bold;color:#f6e9c9;margin-top:1px}
+.card .cCost{font-size:11px;font-weight:bold;color:#ffe14d;margin-top:1px}
+#startBtn{margin-top:6px;width:100%;padding:11px;border-radius:12px;border:3px solid #7ddc5a;
+  background:linear-gradient(#3f7d2c,#2a5a1c);color:#eaffdd;font-size:17px;font-weight:bold;
+  letter-spacing:.5px;}
+#startBtn.hid{display:none}
+#nextInfo{margin-top:5px;text-align:center;font-size:12px;color:#c9bda0;min-height:15px}
+
+/* ---------- SELECTED TOWER SHEET ---------- */
+#sheet{position:absolute;left:6px;right:6px;bottom:6px;background:#100e0aee;border:3px solid #6a5a38;
+  border-radius:13px;padding:8px 10px;display:none;}
+#sheet.on{display:block}
+#shName{font-size:15px;font-weight:bold;color:#ffd98a}
+#shInfo{font-size:11.5px;color:#c9bda0;margin:3px 0 7px;line-height:1.45}
+#shRow{display:flex;gap:6px}
+.shBtn{flex:1;padding:9px 4px;border-radius:10px;border:3px solid #55492f;background:#201c14;
+  font-size:12.5px;font-weight:bold;color:#f3ead6;}
+.shBtn.up{border-color:#7ddc5a;background:#26401c;color:#e6ffd8}
+.shBtn.up.poor{opacity:.42}
+.shBtn.sell{border-color:#d0714a;background:#3a1e14;color:#ffd9c9}
+
+/* ---------- MODAL ---------- */
+#modal{position:absolute;inset:0;background:#08060499;display:none;align-items:center;
+  justify-content:center;padding:16px;}
+#modal.on{display:flex}
+#mBox{background:linear-gradient(#2b2417,#1a160f);border:4px solid #6a5a38;border-radius:18px;
+  padding:18px 16px;max-width:340px;width:100%;text-align:center;max-height:88%;overflow-y:auto;}
+#mTitle{font-size:23px;font-weight:bold;color:#ffd54a;text-shadow:0 2px 0 #000}
+#mBody{font-size:13.5px;color:#ddd2b8;margin:9px 0 14px;line-height:1.6;text-align:left}
+#mBody b{color:#ffd98a}
+.mBtn{width:100%;padding:12px;margin-top:7px;border-radius:12px;border:3px solid #7ddc5a;
+  background:linear-gradient(#3f7d2c,#2a5a1c);color:#eaffdd;font-size:16px;font-weight:bold;}
+.mBtn.alt{border-color:#6fa8cf;background:linear-gradient(#2c4a63,#1e3446);color:#dff0ff}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="top">
+    <div class="stat" id="waveStat"><span class="ic">&#9876;</span><span id="waveTxt">1/20</span></div>
+    <div class="stat" id="lifeStat"><span class="ic">&#10084;</span><span id="lifeTxt">20</span></div>
+    <div class="stat" id="goldStat"><span class="ic">&#9733;</span><span id="goldTxt">350</span></div>
+    <div id="spacer"></div>
+    <button id="musBtn">&#9834;</button>
+    <button id="spdBtn">1&times;</button>
+    <button id="menuBtn">?</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="cv" width="900" height="640"></canvas>
+    <div id="banner"></div>
+    <div id="toast"></div>
+    <div id="royals">
+      <button class="royal" data-r="knights"><span class="rIc">&#128737;</span>KNIGHTS</button>
+      <button class="royal" data-r="queen"><span class="rIc">&#128081;</span>QUEEN</button>
+      <button class="royal" data-r="king"><span class="rIc">&#9889;</span>KING</button>
+    </div>
+    <div id="sheet">
+      <div id="shName">Tower</div>
+      <div id="shInfo"></div>
+      <div id="shRow">
+        <button class="shBtn up" id="shUp">Upgrade</button>
+        <button class="shBtn sell" id="shSell">Sell</button>
+        <button class="shBtn" id="shClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="shop"></div>
+    <div id="nextInfo"></div>
+    <button id="startBtn">SEND WAVE 1</button>
+  </div>
+
+  <div id="modal"><div id="mBox">
+    <div id="mTitle">Dragonfall</div>
+    <div id="mBody"></div>
+    <button class="mBtn" id="mGo">PLAY</button>
+    <button class="mBtn alt" id="mAlt" style="display:none">Again</button>
+  </div></div>
+</div>
+
+<script src="assets.js" onerror="void 0"></script>
+<script>
+"use strict";
+/* ==========================================================================
+   DRAGONFALL  --  isometric tower defense
+   Greybox build. All terrain + units drawn procedurally (no image assets yet).
+   Art swap target: SPR{} registry, see ART_PROMPTS.md
+   ========================================================================== */
+
+/* ==========================================================================
+   SPRITE REGISTRY
+   assets.js (optional) defines ASSETS {key: dataURL} and META {key:{w,h}}.
+   With it absent the game runs on its original programmer art, so this file
+   is always playable on its own.
+   ========================================================================== */
+const USE_ART = true;          /* flip to false to A/B against the greybox */
+const ART_SCALE = 0.60;        /* sprite px -> world px. global dial */
+/* Per-dragon trim, applied on top of ART_SCALE. Sprite footprint depends on
+   wingspan and leg length as much as on bulk, so no single automatic measure
+   got the relative sizes right. These are eyeball dials -- change a number,
+   reload, look. No reprocessing needed. */
+const ART_FIX = {
+  crawler: 1.00, scaler: 0.78, brute: 1.05,
+  wyrm:    0.72, ashwing: 0.92,
+  warlord: 1.00, skylord: 0.80,
+  archer: 1.00, bombard: 1.00, mage: 1.00, guard: 1.00,
+  unit_guard: 1.00, unit_manatarms: 1.00, unit_paladin: 1.00, knight: 1.00
+};
+function artFix(k){ const b = k.replace(/_[abc]$/, ''); return ART_FIX[b] || 1; }
+const SPR = {}, MET = {};
+let ART_READY = false, ART_PENDING = 0;
+(function loadArt(){
+  if (typeof ASSETS === 'undefined' || typeof META === 'undefined') return;
+  for (const k in ASSETS){
+    const im = new Image();
+    ART_PENDING++;
+    im.onload = () => { if (--ART_PENDING === 0) ART_READY = true; };
+    im.onerror = () => { if (--ART_PENDING === 0) ART_READY = true; };
+    im.src = ASSETS[k];
+    SPR[k] = im; MET[k] = META[k];
+  }
+})();
+function art(key){
+  return (USE_ART && ART_READY && SPR[key] && MET[key]) ? key : null;
+}
+/* walkers alternate stride and snap to the attack pose while blocked;
+   flyers run a 4-step wingbeat a-b-a-c */
+function frameKey(e){
+  if (e.fly){
+    const f = ['a','b','a','c'][Math.floor(now/130) % 4];
+    return e.key + '_' + f;
+  }
+  if (e.blocked) return e.key + '_c';
+  return e.key + '_' + (Math.floor(now/220) % 2 ? 'b' : 'a');
+}
+function drawSprite(key, cx, baseY, scale, flip){
+  const m = MET[key], im = SPR[key];
+  const w = m.w * scale, h = m.h * scale;
+  ctx.save();
+  if (flip){ ctx.translate(cx, 0); ctx.scale(-1, 1); ctx.translate(-cx, 0); }
+  ctx.drawImage(im, 0, 0, m.w, m.h, cx - w/2, baseY - h, w, h);   /* explicit 9-arg */
+  ctx.restore();
+}
+
+/* ---------------- seeded rng (mulberry32) ---------------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+let rng = mulberry32(20260729);
+
+/* ---------------- canvas ---------------- */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const CW = 900, CH = 640;
+
+/* ---------------- isometric projection ----------------
+   Standard 2:1 iso. HW/HH = half tile width/height on screen.
+   HZ = pixels per unit of tile elevation.                                 */
+const HW = 34, HH = 17, HZ = 26;
+const ORX = 452, ORY = 118;
+function iso(c, r, h){ return { x: ORX + (c - r) * HW, y: ORY + (c + r) * HH - (h||0) * HZ }; }
+
+/* ---------------- map ----------------
+   12x12. Legend:  . grass   ^ high grass   # path   t tree   o plinth   V village
+   Path is hand-authored (not procedural) so it can never self-cross.      */
+const MAP = [
+  ".o#....tt^^t",
+  "..#.o.....^t",
+  ".o#..o.o..^t",
+  "..######o..t",
+  "..o.o..#o..t",
+  "t...o.o#o...",
+  "t.....o#o.tt",
+  "...#####o..^",
+  "..o#o..o...t",
+  "..o#.o..o..t",
+  "^..#######V.",
+  "^^.o.o.o.o.t"
+];
+const N = 12;
+
+/* Path centreline, in (row, col) corners. Enemies walk this polyline. */
+const WAY = [
+  [-1.6, 2], [3, 2], [3, 7], [7, 7], [7, 3], [10, 3], [10, 10]
+];
+const VILLAGE = { r: 10, c: 10 };
+
+/* terrain lookup */
+const T_GRASS=0, T_HIGH=1, T_PATH=2, T_TREE=3, T_PLINTH=4, T_VILLAGE=5;
+const grid = [];
+for (let r = 0; r < N; r++){
+  grid[r] = [];
+  for (let c = 0; c < N; c++){
+    const ch = MAP[r][c];
+    let t = T_GRASS;
+    if (ch === '^') t = T_HIGH;
+    else if (ch === '#') t = T_PATH;
+    else if (ch === 't') t = T_TREE;
+    else if (ch === 'o') t = T_PLINTH;
+    else if (ch === 'V') t = T_VILLAGE;
+    grid[r][c] = { t: t, tower: null, r: r, c: c };
+  }
+}
+function heightOf(t){
+  if (t === T_HIGH) return 1.75;
+  if (t === T_PATH) return 0.82;
+  return 1;
+}
+/* deterministic per-tile jitter so the grass reads as hand-placed chunks */
+const jitter = [];
+for (let r = 0; r < N; r++){ jitter[r] = []; for (let c = 0; c < N; c++) jitter[r][c] = rng(); }
+
+/* ---------------- palette ---------------- */
+const PAL = {
+  grassA:['#8FD14F','#9C5C3C','#7A4530'],
+  grassB:['#82C444','#9C5C3C','#7A4530'],
+  high:  ['#A6E063','#A56442','#844C34'],
+  path:  ['#E9D9AE','#BBA173','#98815A'],
+  plinthTop:'#8E4A3E', plinthL:'#C4E4EC', plinthR:'#9BC4D3',
+  treeTrunk:['#8A5A3A','#6E4529','#5A3721'],
+  leafA:['#3F9E63','#2E7A4B','#24603A'],
+  leafB:['#59B87A','#3F9E63','#2E7A4B'],
+  stoneTop:'#D6DEE4', stoneL:'#A8B4BE', stoneR:'#8A97A2'
+};
+
+/* ---------------- audio (WebAudio synth, no files) ---------------- */
+let AC = null, muted = false;
+function ac(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function blip(freq, dur, type, vol, slideTo){
+  if (muted) return; const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type || 'square'; o.frequency.value = freq;
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30,slideTo), a.currentTime + dur);
+  g.gain.value = (vol==null?0.05:vol);
+  g.gain.exponentialRampToValueAtTime(0.0008, a.currentTime + dur);
+  o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + dur + 0.02);
+}
+function noise(dur, vol){
+  if (muted) return; const a = ac(); if (!a) return;
+  const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1 - i/n);
+  const s = a.createBufferSource(), g = a.createGain();
+  s.buffer = buf; g.gain.value = vol==null?0.12:vol;
+  s.connect(g); g.connect(a.destination); s.start();
+}
+const SFX = {
+  tap:   ()=>blip(660, .05, 'square', .04),
+  place: ()=>{blip(440,.07,'square',.05); setTimeout(()=>blip(660,.09,'square',.05),70);},
+  deny:  ()=>blip(180,.13,'sawtooth',.05,110),
+  arrow: ()=>blip(1250,.05,'triangle',.022,700),
+  boom:  ()=>{noise(.22,.13); blip(90,.2,'sine',.06,40);},
+  bolt:  ()=>blip(880,.11,'sine',.035,1500),
+  hit:   ()=>blip(240,.05,'square',.022,160),
+  die:   ()=>blip(300,.19,'sawtooth',.045,80),
+  leak:  ()=>{blip(200,.3,'sawtooth',.07,70); noise(.2,.09);},
+  wave:  ()=>{[523,659,784].forEach((f,i)=>setTimeout(()=>blip(f,.13,'square',.05),i*95));},
+  royal: ()=>{[392,523,659,784].forEach((f,i)=>setTimeout(()=>blip(f,.15,'triangle',.055),i*70));},
+  win:   ()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>blip(f,.22,'square',.06),i*130));},
+  lose:  ()=>{[392,330,262,196].forEach((f,i)=>setTimeout(()=>blip(f,.26,'sawtooth',.06),i*160));},
+  up:    ()=>{[523,784].forEach((f,i)=>setTimeout(()=>blip(f,.11,'square',.05),i*80));}
+};
+
+/* ==========================================================================
+   MUSIC
+   Streamed from music/ as separate files -- 5 MB of audio has no business
+   being base64'd into the HTML. One track per wave, cycling, crossfaded.
+   ========================================================================== */
+const MUSIC = ['music/track1.mp3','music/track2.mp3','music/track3.mp3','music/track4.mp3'];
+const MUSIC_VOL = 0.42;
+let musicOn = true, curTrack = null, curIdx = -1, fadeT = null;
+
+function setTrack(i){
+  if (!musicOn) return;
+  i = ((i % MUSIC.length) + MUSIC.length) % MUSIC.length;
+  if (i === curIdx && curTrack && !curTrack.paused) return;
+  curIdx = i;
+  const next = new Audio(MUSIC[i]);
+  next.loop = true; next.volume = 0; next.preload = 'auto';
+  const prev = curTrack;
+  const pr = next.play();
+  if (pr && pr.catch) pr.catch(()=>{});   /* blocked until a gesture; retried later */
+  curTrack = next;
+  clearInterval(fadeT);
+  let t = 0;
+  fadeT = setInterval(()=>{
+    t++;
+    const k = Math.min(1, t / 36);
+    next.volume = MUSIC_VOL * k;
+    if (prev) prev.volume = MUSIC_VOL * (1 - k);
+    if (k >= 1){
+      clearInterval(fadeT);
+      if (prev){ try { prev.pause(); } catch(e){} }
+    }
+  }, 25);
+}
+function musicForWave(){ setTrack(wave - 1); }
+function toggleMusic(){
+  musicOn = !musicOn;
+  if (!musicOn){
+    clearInterval(fadeT);
+    if (curTrack){ try { curTrack.pause(); } catch(e){} }
+    curIdx = -1;
+  } else {
+    musicForWave();
+  }
+  const b = document.getElementById('musBtn');
+  if (b) b.classList.toggle('off', !musicOn);
+}
+
+/* ==========================================================================
+   DATA TABLES
+   ========================================================================== */
+const TOWERS = {
+  archer: { name:'Archer Tower', icon:'\u{1F3F9}', cost:100, air:true, shot:'arrow',
+    body:'#4E7FB8', trim:'#DCE9F5',
+    tiers:[ {dmg:14,range:3.2,rate:0.70,up:90},
+            {dmg:25,range:3.7,rate:0.60,up:165},
+            {dmg:40,range:4.2,rate:0.50,up:0} ],
+    blurb:'Fast single shots. Hits ground AND air. Your reliable pick.' },
+
+  bombard: { name:'Bombard Tower', icon:'\u{1F4A5}', cost:160, air:false, shot:'shell',
+    body:'#6B6660', trim:'#2E2A26',
+    tiers:[ {dmg:38,range:2.7,rate:1.9,splash:1.35,up:145},
+            {dmg:64,range:2.9,rate:1.75,splash:1.5,up:240},
+            {dmg:104,range:3.1,rate:1.6,splash:1.75,up:0} ],
+    blurb:'Slow lobbed shells with big splash. GROUND ONLY \u2014 cannot hit flyers.' },
+
+  mage: { name:'Mage Tower', icon:'\u{1F52E}', cost:185, air:true, shot:'bolt',
+    body:'#7B54C0', trim:'#E6D6FF',
+    tiers:[ {dmg:42,range:2.9,rate:1.25,pierce:true,up:175},
+            {dmg:72,range:3.1,rate:1.10,pierce:true,up:280},
+            {dmg:118,range:3.4,rate:0.95,pierce:true,slow:0.55,up:0} ],
+    blurb:'Ignores dragon armour. Hits air and ground. Tier 3 also chills them.' },
+
+  guard: { name:'Guard Post', icon:'\u{1F6E1}', cost:60, air:false, shot:'none',
+    body:'#B8563F', trim:'#F0D9A8', onRoad:true, maxRoadGap:2.5,   /* rail: every pad on this map is 1.0-2.0 away */
+    tiers:[ {dmg:5, range:0.95,rate:1.10,hp:55, count:1,unit:'Guard',      up:80},
+            {dmg:12,range:0.95,rate:0.95,hp:120,count:2,unit:'Man-at-Arms',up:200},
+            {dmg:34,range:1.05,rate:0.80,hp:320,count:2,unit:'PALADIN',    up:0} ],
+    blurb:'Posts guards ON THE ROAD to block walking dragons. Tier 3 turns them into Paladins.' }
+};
+const TOWER_KEYS = ['archer','bombard','mage','guard'];
+
+const ENEMIES = {
+  crawler:{ name:'Crawler',  hp:70,  spd:1.05, armor:0, gold:11,  leak:1, fly:false, sz:1.0, body:'#7A4A6E', belly:'#C97FA8', horn:'#F2E6D0' },
+  scaler: { name:'Scaler',   hp:110, spd:1.60, armor:1, gold:15, leak:1, fly:false, sz:0.9, body:'#8A6B2E', belly:'#D8B85A', horn:'#FFF3D6' },
+  brute:  { name:'Brute',    hp:220, spd:0.75, armor:4, gold:23, leak:2, fly:false, sz:1.35,body:'#4A3A5E', belly:'#8A6FB0', horn:'#EFE2C8' },
+  wyrm:   { name:'Wyrmling', hp:90,  spd:1.90, armor:0, gold:18, leak:1, fly:true,  sz:0.95,body:'#2F5A8A', belly:'#8FC4E8', horn:'#EAF2FA' },
+  ashwing:{ name:'Ashwing',  hp:290, spd:1.40, armor:6, gold:34, leak:2, fly:true,  sz:1.3, body:'#5A2A2A', belly:'#C05A45', horn:'#F5DCC4' },
+  warlord:{ name:'Dread Warlord', hp:1400, spd:0.60, armor:8,  gold:150, leak:5, fly:false, sz:2.0, boss:true, body:'#3A2040', belly:'#B0409A', horn:'#FFE8B0' },
+  skylord:{ name:'Sky Tyrant',    hp:1700, spd:1.15, armor:10, gold:200, leak:5, fly:true,  sz:2.0, boss:true, body:'#2A2A55', belly:'#5A7FE0', horn:'#EAF0FF' }
+};
+
+/* Wave table. gap = seconds between spawns in that group. */
+const WAVES = [
+  [['crawler',6,1.0]],
+  [['crawler',10,0.85]],
+  [['crawler',8,0.8],['scaler',4,0.7]],
+  [['crawler',14,0.7],['scaler',6,0.65]],
+  [['crawler',10,0.7],['brute',4,1.4]],
+  [['wyrm',8,0.85]],
+  [['crawler',12,0.6],['wyrm',6,0.8]],
+  [['scaler',10,0.55],['brute',6,1.2]],
+  [['crawler',10,0.6],['wyrm',10,0.7]],
+  [['warlord',1,1],['crawler',14,0.5]],
+  [['scaler',12,0.5],['wyrm',8,0.7]],
+  [['brute',8,1.0],['ashwing',4,1.2]],
+  [['crawler',16,0.45],['wyrm',10,0.6]],
+  [['brute',10,0.9],['scaler',8,0.5],['wyrm',6,0.7]],
+  [['skylord',1,1],['wyrm',10,0.6],['scaler',5,0.8]],
+  [['ashwing',5,1.0],['scaler',8,0.5],['crawler',10,0.45]],
+  [['brute',7,0.9],['wyrm',10,0.6],['scaler',7,0.5]],
+  [['ashwing',7,0.9],['brute',4,1.2],['crawler',12,0.45]],
+  [['brute',7,0.9],['ashwing',5,1.0],['scaler',9,0.5]],
+  [['warlord',1,1],['skylord',1,1],['brute',5,1.1],['ashwing',4,1.1],['scaler',6,0.55]]
+];
+const FIRST_FLY_WAVE = 6;
+function hpMul(w){ return 1 + 0.10*(w-1) + 0.012*(w-1)*(w-1); }
+/* bosses scale far gentler or they outrun every counter you own */
+function bossMul(w){ return 1 + 0.07*(w-1) + 0.0038*(w-1)*(w-1); }
+
+const ROYALS = {
+  knights:{ name:'Call the Knights', cd:35, aim:true,
+    blurb:'Drops 3 knights on a path tile. They block and fight for 20s.' },
+  queen:  { name:"Queen's Blessing", cd:70, aim:false,
+    blurb:'Chills every dragon on the map for 7s and mends 2 hearts.' },
+  king:   { name:"King's Wrath", cd:50, aim:true,
+    blurb:'Aimed lightning strike. Huge damage, ignores armour, hits flyers.' }
+};
+
+/* ==========================================================================
+   DRAW PRIMITIVES
+   ========================================================================== */
+function poly(pts, fill){
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+/* a flat-shaded iso box: top diamond + two side faces */
+function cube(x, y, hw, hh, ht, top, left, right){
+  const ty = y - ht;
+  poly([[x,ty-hh],[x+hw,ty],[x,ty+hh],[x-hw,ty]], top);
+  poly([[x-hw,ty],[x,ty+hh],[x,y+hh],[x-hw,y]], left);
+  poly([[x,ty+hh],[x+hw,ty],[x+hw,y],[x,y+hh]], right);
+}
+function diamond(x, y, hw, hh, fill){
+  poly([[x,y-hh],[x+hw,y],[x,y+hh],[x-hw,y]], fill);
+}
+
+/* ---- terrain tile: chunky floating block with cliff faces ---- */
+function drawTile(g){
+  const h = heightOf(g.t);
+  const p = iso(g.c, g.r, h);
+  const skirt = h * HZ + 22;
+  let cols;
+  if (g.t === T_PATH) cols = PAL.path;
+  else if (g.t === T_HIGH) cols = PAL.high;
+  else cols = ((g.r + g.c) % 2 === 0) ? PAL.grassA : PAL.grassB;
+
+  poly([[p.x-HW,p.y],[p.x,p.y+HH],[p.x,p.y+HH+skirt],[p.x-HW,p.y+skirt]], cols[1]);
+  poly([[p.x,p.y+HH],[p.x+HW,p.y],[p.x+HW,p.y+skirt],[p.x,p.y+HH+skirt]], cols[2]);
+  diamond(p.x, p.y, HW, HH, cols[0]);
+
+  if (g.t === T_PATH){
+    /* soft pebbles on the road */
+    const j = jitter[g.r][g.c];
+    ctx.globalAlpha = .5;
+    diamond(p.x + (j-.5)*26, p.y + (j-.5)*12, 4, 2, '#C9B486');
+    diamond(p.x - (j-.5)*20, p.y + (j-.5)*9, 3, 1.6, '#C9B486');
+    ctx.globalAlpha = 1;
+  }
+  if (g.t === T_TREE) drawTree(p.x, p.y, jitter[g.r][g.c]);
+  if (g.t === T_PLINTH) drawPlinth(p.x, p.y, g);
+  if (g.t === T_VILLAGE) drawVillage(p.x, p.y);
+
+  /* build highlight */
+  if (g.t === T_PLINTH && !g.tower && buyKey &&
+      !(TOWERS[buyKey].onRoad && g.roadGap > TOWERS[buyKey].maxRoadGap)){
+    ctx.globalAlpha = .35 + Math.sin(now/220)*.16;
+    diamond(p.x, p.y - 26, HW-4, HH-2, '#FFF07A');
+    ctx.globalAlpha = 1;
+  }
+}
+function drawTree(x, y, j){
+  const lean = (j - .5) * 5;
+  cube(x + lean, y + 4, 6, 3, 15, PAL.treeTrunk[0], PAL.treeTrunk[1], PAL.treeTrunk[2]);
+  const big = j > .5 ? PAL.leafA : PAL.leafB;
+  const small = j > .5 ? PAL.leafB : PAL.leafA;
+  cube(x + lean, y - 9, 20, 10, 20, big[0], big[1], big[2]);
+  cube(x + lean - 2, y - 27, 13, 6.5, 15, small[0], small[1], small[2]);
+}
+function drawPlinth(x, y, g){
+  /* pale stone pedestal, brown flat cap -- matches the reference art */
+  cube(x, y + 2, 27, 13.5, 24, PAL.plinthTop, PAL.plinthL, PAL.plinthR);
+  if (!g.tower){
+    ctx.globalAlpha = .5;
+    diamond(x, y - 22, 12, 6, '#6B4A3E');
+    ctx.globalAlpha = 1;
+  }
+}
+function drawVillage(x, y){
+  cube(x, y + 2, 26, 13, 16, PAL.stoneTop, PAL.stoneL, PAL.stoneR);
+  cube(x - 8, y - 14, 13, 6.5, 26, PAL.stoneTop, PAL.stoneL, PAL.stoneR);
+  cube(x + 10, y - 10, 10, 5, 20, PAL.stoneTop, PAL.stoneL, PAL.stoneR);
+  /* banner */
+  const t = Math.sin(now / 300) * 2;
+  poly([[x-8,y-44],[x-8+16+t,y-40],[x-8+16+t,y-31],[x-8,y-35]], '#C33A46');
+  const hpFrac = Math.max(0, lives / MAX_LIVES);
+  ctx.fillStyle = '#2A1410'; ctx.fillRect(x - 26, y - 58, 52, 7);
+  ctx.fillStyle = hpFrac > .5 ? '#5ED66B' : hpFrac > .25 ? '#F2C94C' : '#E24C4C';
+  ctx.fillRect(x - 25, y - 57, 50 * hpFrac, 5);
+}
+
+/* ---- towers (sit on the plinth cap, 22px above tile top) ---- */
+function drawTowerUnit(t){
+  const p = iso(t.c, t.r, heightOf(T_PLINTH));
+  const bx = p.x, by = p.y - 22;
+  const spec = TOWERS[t.key], lv = spec.tiers[t.lv];
+  const face = t.aim || 0;
+  const dx = Math.cos(face) * 9, dy = Math.sin(face) * 4.5;
+  const recoil = Math.max(0, 1 - t.since / 0.14);
+
+  const tkey = art(t.key);
+  if (tkey){
+    drawSprite(tkey, bx, by + 12, ART_SCALE * artFix(tkey), false);
+    for (let i = 0; i <= t.lv; i++) diamond(bx - 8 + i*8, by + 14, 3, 1.8, '#FFD54A');
+    return;
+  }
+
+  if (t.key === 'guard'){
+    cube(bx, by, 10, 5, 9, '#7A4B2E', '#5E3A22', '#492D1A');
+    poly([[bx-1.5,by-32],[bx-1.5,by-9],[bx+1.5,by-9],[bx+1.5,by-32]], '#6E4529');
+    const wav = Math.sin(now/300)*2;
+    poly([[bx+1.5,by-32],[bx+16+wav,by-29],[bx+16+wav,by-20],[bx+1.5,by-23]],
+         t.lv === 2 ? '#FFD54A' : t.lv === 1 ? '#D8894A' : '#B8563F');
+  } else if (t.key === 'bombard'){
+    cube(bx, by, 15, 7.5, 12, '#7C766E', '#5E5952', '#474340');
+    /* barrel, kicks back when it fires */
+    const kx = bx + dx*1.5 - dx*recoil*3, ky = by - 11 + dy*1.5 - dy*recoil*3;
+    cube(kx, ky, 8, 4, 9, '#8E887F', '#5E5952', '#474340');
+    diamond(kx + dx, ky - 9 + dy, 5, 2.5, '#2E2A26');
+  } else if (t.key === 'mage'){
+    cube(bx, by, 11, 5.5, 15, spec.body, '#63409E', '#4C2F7C');
+    poly([[bx,by-38],[bx+9,by-22],[bx-9,by-22]], '#8E63D6');
+    const glow = .55 + Math.sin(now/160)*.25;
+    ctx.globalAlpha = glow;
+    diamond(bx + dx, by - 20 + dy, 6, 6, '#E6D6FF');
+    ctx.globalAlpha = 1;
+  } else { /* archer */
+    cube(bx, by, 10, 5, 13, spec.body, '#3A6294', '#2B4C74');
+    cube(bx, by-13, 9, 4.5, 9, '#9EC7E8', '#7BA3C4', '#5F84A2');
+    ctx.strokeStyle = '#E8D9B0'; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(bx + dx*1.1, by - 12 + dy*1.1, 7, face - 1.1, face + 1.1);
+    ctx.stroke();
+  }
+  /* tier pips */
+  for (let i = 0; i <= t.lv; i++) diamond(bx - 8 + i*8, by + 12, 3, 1.8, '#FFD54A');
+}
+
+/* ---- guards posted on the road; Paladins at tier 3 ---- */
+function drawGuardUnit(g, t){
+  const pal = t.lv === 2;
+  const p = iso(g.c, g.r, heightOf(T_PATH));
+  if (g.hp <= 0){
+    ctx.globalAlpha = .30;
+    diamond(p.x, p.y, 12, 6, '#5A5A5A');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#FFD54A'; ctx.font = 'bold 12px Verdana'; ctx.textAlign = 'center';
+    ctx.fillText(Math.ceil(g.timer) + 's', p.x, p.y - 7);
+    return;
+  }
+  const gkey = art(['unit_guard','unit_manatarms','unit_paladin'][t.lv]);
+  if (gkey){
+    const gb = p.y + Math.sin(now/200 + g.ph) * 1.4;
+    const back = posAt(Math.max(0, (g.at || 0) - 0.5));
+    const bpp = iso(back.c, back.r, heightOf(T_PATH));
+    if (t.lv === 2){
+      ctx.globalAlpha = .3 + Math.sin(now/210 + g.ph) * .16;
+      diamond(p.x, p.y + 2, 15, 7.5, '#FFE14D');
+      ctx.globalAlpha = 1;
+    }
+    drawSprite(gkey, p.x, gb + 4, ART_SCALE * 0.85 * artFix(gkey), bpp.x <= p.x);
+    const gw = t.lv === 2 ? 30 : 26;
+    ctx.fillStyle = '#2A1410'; ctx.fillRect(p.x - gw/2, gb - 44, gw, 5);
+    ctx.fillStyle = t.lv === 2 ? '#FFD54A' : '#7FD6F5';
+    ctx.fillRect(p.x - gw/2 + 1, gb - 43, (gw-2) * Math.max(0, g.hp/g.maxHp), 3);
+    return;
+  }
+
+  const s = pal ? 1.3 : 1, bob = Math.sin(now/200 + g.ph) * 1.4;
+  const by = p.y + bob;
+  /* face back down the road, toward whatever is walking at them */
+  const back = posAt(Math.max(0, (g.at || 0) - 0.5));
+  const bp = iso(back.c, back.r, heightOf(T_PATH));
+  const faceR = bp.x > p.x;
+  ctx.save();
+  if (!faceR){ ctx.translate(p.x, 0); ctx.scale(-1, 1); ctx.translate(-p.x, 0); }
+  if (pal){
+    ctx.globalAlpha = .3 + Math.sin(now/210 + g.ph) * .16;
+    diamond(p.x, p.y + 2, 15, 7.5, '#FFE14D');
+    ctx.globalAlpha = 1;
+  }
+  cube(p.x, by, 7*s, 3.5*s, 13*s,
+       pal ? '#F6E3AE' : '#C9CFD6', pal ? '#C9A24A' : '#9AA2AA', pal ? '#9E7C2C' : '#79818A');
+  cube(p.x, by - 13*s, 8*s, 4*s, 8*s,
+       pal ? '#FFEFC0' : '#9EC7E8', pal ? '#D4B058' : '#7BA3C4', pal ? '#A8862E' : '#5F84A2');
+  poly([[p.x + 6*s, by - 24*s],[p.x + 13*s, by - 13*s],[p.x + 9*s, by - 10*s]],
+       pal ? '#FFF8D8' : '#E8E2C8');
+  ctx.restore();
+  const w = pal ? 30 : 26;
+  ctx.fillStyle = '#2A1410'; ctx.fillRect(p.x - w/2, by - 30*s - 5, w, 5);
+  ctx.fillStyle = pal ? '#FFD54A' : '#7FD6F5';
+  ctx.fillRect(p.x - w/2 + 1, by - 30*s - 4, (w-2) * Math.max(0, g.hp/g.maxHp), 3);
+}
+
+/* ---- knights summoned by the royal ability ---- */
+function drawKnight(k){
+  const p = iso(k.c, k.r, heightOf(grid[Math.round(k.r)] && grid[Math.round(k.r)][Math.round(k.c)] ? grid[Math.round(k.r)][Math.round(k.c)].t : T_GRASS));
+  const bob = Math.sin(now/180 + k.ph) * 1.6;
+  ctx.globalAlpha = k.life < 3 ? (0.35 + Math.sin(now/90)*0.3) : 1;
+  const kkey = art('knight');
+  if (kkey){
+    drawSprite(kkey, p.x, p.y + bob + 4, ART_SCALE * 0.8 * artFix('knight'), false);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#2A1410'; ctx.fillRect(p.x-13, p.y+bob-46, 26, 5);
+    ctx.fillStyle = '#7FD6F5'; ctx.fillRect(p.x-12, p.y+bob-45, 24*Math.max(0,k.hp/k.maxHp), 3);
+    return;
+  }
+  cube(p.x, p.y + bob, 7, 3.5, 13, '#C9CFD6', '#9AA2AA', '#79818A');
+  cube(p.x, p.y + bob - 13, 8, 4, 8, '#DCE3EA', '#AEB6BE', '#8C949C');
+  poly([[p.x+6,p.y+bob-24],[p.x+13,p.y+bob-14],[p.x+9,p.y+bob-11]], '#E8E2C8');
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#2A1410'; ctx.fillRect(p.x-13, p.y+bob-32, 26, 5);
+  ctx.fillStyle = '#7FD6F5'; ctx.fillRect(p.x-12, p.y+bob-31, 24*Math.max(0,k.hp/k.maxHp), 3);
+}
+
+/* ---- dragons ---- */
+function drawDragon(e){
+  const spec = ENEMIES[e.key];
+  const gh = e.fly ? 1 : heightOf(gridAt(e.gr, e.gc));
+  const p = iso(e.gc, e.gr, gh);
+  const s = spec.sz;
+  const alt = e.fly ? (34 + Math.sin(now/230 + e.ph) * 5) : 0;
+  const step = e.fly ? 0 : Math.abs(Math.sin(now/((160/Math.max(.4,spec.spd))) + e.ph)) * 2.2;
+  const bx = p.x, by = p.y - alt - step;
+
+  /* The road runs screen-left for over half its length, so a sprite drawn
+     head-right would walk backwards. Mirror about the body centre. Art must
+     therefore be generated consistently FACING RIGHT. */
+  const ahead = e.fly ? flyPosAt(Math.min(FLY_LEN, e.d + 0.4), e.off)
+                      : posAt(Math.min(PATH_LEN, e.d + 0.4));
+  const ap = iso(ahead.c, ahead.r, gh);
+  e.faceRight = (ap.x === p.x) ? (e.faceRight !== false) : (ap.x > p.x);
+  const akey = art(frameKey(e));
+  if (akey){
+    drawSprite(akey, bx, by + 10*s, ART_SCALE * artFix(akey), !e.faceRight);
+  } else {
+
+  ctx.save();
+  if (!e.faceRight){ ctx.translate(bx, 0); ctx.scale(-1, 1); ctx.translate(-bx, 0); }
+
+  if (e.fly){
+    ctx.globalAlpha = .22;
+    diamond(p.x, p.y + 3, 16*s, 8*s, '#000000');
+    ctx.globalAlpha = 1;
+    const flap = Math.sin(now/110 + e.ph);
+    poly([[bx-3*s,by-10*s],[bx-26*s,by-16*s-flap*9],[bx-20*s,by-2*s-flap*4]], spec.belly);
+    poly([[bx+3*s,by-10*s],[bx+26*s,by-16*s-flap*9],[bx+20*s,by-2*s-flap*4]], spec.body);
+  }
+  /* tail */
+  poly([[bx-4*s,by-4*s],[bx-20*s,by+3*s],[bx-4*s,by+2*s]], spec.body);
+  /* body + head */
+  cube(bx, by, 13*s, 6.5*s, 11*s, spec.belly, spec.body, shade(spec.body, -0.22));
+  cube(bx + 10*s, by - 9*s, 8*s, 4*s, 8*s, spec.belly, spec.body, shade(spec.body, -0.22));
+  /* horns + eye */
+  poly([[bx+7*s,by-19*s],[bx+11*s,by-28*s],[bx+13*s,by-18*s]], spec.horn);
+  ctx.fillStyle = '#FFE14D';
+  ctx.beginPath(); ctx.arc(bx+15*s, by-15*s, 1.9*s, 0, 7); ctx.fill();
+  /* corruption wisps */
+  if (spec.boss || e.chill > 0){
+    ctx.globalAlpha = .4 + Math.sin(now/130 + e.ph)*.2;
+    diamond(bx, by - 26*s, 7*s, 4*s, e.chill > 0 ? '#8FE8FF' : '#C060E0');
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  }
+
+  /* health bar */
+  const w = Math.max(26, 30*s);
+  const frac = e.hp / e.maxHp;
+  ctx.fillStyle = '#2A1410'; ctx.fillRect(bx - w/2, by - 30*s - 6, w, 6);
+  ctx.fillStyle = frac > .5 ? '#5ED66B' : frac > .22 ? '#F2C94C' : '#E24C4C';
+  ctx.fillRect(bx - w/2 + 1, by - 30*s - 5, (w-2) * Math.max(0, frac), 4);
+  if (e.blocked){
+    ctx.globalAlpha = .8;
+    ctx.fillStyle = '#FFD54A'; ctx.font = 'bold 11px Verdana';
+    ctx.textAlign = 'center'; ctx.fillText('!', bx, by - 30*s - 10);
+    ctx.globalAlpha = 1;
+  }
+}
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n>>16)&255, g = (n>>8)&255, b = n&255;
+  r = Math.max(0, Math.min(255, Math.round(r + 255*amt)));
+  g = Math.max(0, Math.min(255, Math.round(g + 255*amt)));
+  b = Math.max(0, Math.min(255, Math.round(b + 255*amt)));
+  return '#' + ((1<<24) + (r<<16) + (g<<8) + b).toString(16).slice(1);
+}
+function gridAt(r, c){
+  const ri = Math.round(r), ci = Math.round(c);
+  if (ri < 0 || ci < 0 || ri >= N || ci >= N) return T_GRASS;
+  return grid[ri][ci].t;
+}
+
+/* ---- projectiles + effects ---- */
+function drawProj(pr){
+  if (pr.kind === 'arrow'){
+    const p = iso(pr.c, pr.r, 1.55);
+    ctx.strokeStyle = '#FFF6DC'; ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(p.x - pr.vx*5, p.y - pr.vy*5); ctx.lineTo(p.x, p.y); ctx.stroke();
+  } else if (pr.kind === 'shell'){
+    const arc = Math.sin(pr.t / pr.dur * Math.PI) * 46;
+    const p = iso(pr.c, pr.r, 1.3);
+    ctx.globalAlpha = .2;
+    diamond(p.x, p.y + 6, 5, 2.5, '#000'); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#33302B';
+    ctx.beginPath(); ctx.arc(p.x, p.y - arc, 5.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#8E887F';
+    ctx.beginPath(); ctx.arc(p.x-1.6, p.y - arc - 1.6, 2, 0, 7); ctx.fill();
+  } else {
+    const p = iso(pr.c, pr.r, 1.5 + (pr.tgtFly ? 1.1 : 0));
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 11);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(.4, '#D8B4FF'); g.addColorStop(1, '#7B54C000');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, 7); ctx.fill();
+  }
+}
+function drawFx(f){
+  const k = f.t / f.dur;
+  if (f.kind === 'boom'){
+    const p = iso(f.c, f.r, 1.1);
+    ctx.globalAlpha = (1-k) * .85;
+    ctx.strokeStyle = '#FFC24A'; ctx.lineWidth = 4 * (1-k) + 1;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, f.rad*HW*1.414*k, f.rad*HH*1.414*k, 0, 0, 7); ctx.stroke();
+    ctx.globalAlpha = (1-k) * .5;
+    ctx.fillStyle = '#FF8A3A';
+    ctx.beginPath(); ctx.arc(p.x, p.y - 10*(1-k)*2, 16*(1-k), 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  } else if (f.kind === 'spark'){
+    const p = iso(f.c, f.r, f.h);
+    ctx.globalAlpha = 1-k; ctx.fillStyle = f.col || '#FFF3C4';
+    for (let i = 0; i < 4; i++){
+      const a = f.ph + i*1.57;
+      ctx.beginPath();
+      ctx.arc(p.x + Math.cos(a)*10*k, p.y + Math.sin(a)*5*k - 6*k, 2.4*(1-k), 0, 7);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (f.kind === 'bolt'){
+    const p = iso(f.c, f.r, 1.1);
+    ctx.globalAlpha = Math.min(1, (1-k)*2);
+    ctx.strokeStyle = '#EAF2FF'; ctx.lineWidth = 6*(1-k)+2;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y - 400);
+    let yy = p.y - 400;
+    while (yy < p.y){ yy += 46; ctx.lineTo(p.x + (Math.sin(yy*0.7+f.ph)*15), Math.min(yy, p.y)); }
+    ctx.stroke();
+    ctx.strokeStyle = '#9FD8FF'; ctx.lineWidth = 3*(1-k)+1; ctx.stroke();
+    ctx.globalAlpha = (1-k)*.7; ctx.fillStyle = '#CFE8FF';
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, f.rad*HW*1.414, f.rad*HH*1.414, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  } else if (f.kind === 'chill'){
+    ctx.globalAlpha = (1-k) * .35;
+    ctx.fillStyle = '#8FE8FF'; ctx.fillRect(0, 0, CW, CH);
+    ctx.globalAlpha = 1;
+  } else if (f.kind === 'coin'){
+    const p = iso(f.c, f.r, 1.4);
+    ctx.globalAlpha = 1-k;
+    ctx.fillStyle = '#FFE14D'; ctx.font = 'bold 13px Verdana'; ctx.textAlign = 'center';
+    ctx.fillText('+' + f.n, p.x, p.y - 22 - 26*k);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---- range ellipse (a grid circle projects to an axis-aligned ellipse) ---- */
+function rangeRing(r, c, rad, col){
+  const p = iso(c, r, heightOf(T_PLINTH));
+  ctx.globalAlpha = .16; ctx.fillStyle = col;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y, rad*HW*1.414, rad*HH*1.414, 0, 0, 7); ctx.fill();
+  ctx.globalAlpha = .6; ctx.strokeStyle = col; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y, rad*HW*1.414, rad*HH*1.414, 0, 0, 7); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+/* ==========================================================================
+   PATH MATH
+   ========================================================================== */
+const SEGS = [];
+let PATH_LEN = 0;
+for (let i = 0; i < WAY.length - 1; i++){
+  const a = WAY[i], b = WAY[i+1];
+  const dr = b[0]-a[0], dc = b[1]-a[1];
+  const len = Math.hypot(dr, dc);
+  SEGS.push({ r:a[0], c:a[1], dr:dr/len, dc:dc/len, len:len, start:PATH_LEN });
+  PATH_LEN += len;
+}
+function posAt(d){
+  if (d <= 0) return { r: WAY[0][0], c: WAY[0][1] };
+  for (let i = 0; i < SEGS.length; i++){
+    const s = SEGS[i];
+    if (d <= s.start + s.len || i === SEGS.length - 1){
+      const k = Math.min(d - s.start, s.len);
+      return { r: s.r + s.dr*k, c: s.c + s.dc*k };
+    }
+  }
+  return { r: VILLAGE.r, c: VILLAGE.c };
+}
+/* Dragons fly ABOVE THE ROAD, not straight across the board (Devin's note).
+   Same polyline as the walkers, just carried at altitude with a gentle
+   sideways drift so a flight doesn't render as one stacked column. */
+const FLY_LEN = PATH_LEN;
+function flyPosAt(d, off){
+  const p = posAt(d);
+  const q = posAt(Math.min(PATH_LEN, d + 0.4));
+  const dr = q.r - p.r, dc = q.c - p.c;
+  const L = Math.hypot(dr, dc) || 1;
+  const sway = off * 0.22;   /* keeps flyers visibly over the road */
+  return { r: p.r - (dc / L) * sway, c: p.c + (dr / L) * sway };
+}
+
+/* nearest point on the road -- guards station themselves there */
+function nearestPathPoint(r, c){
+  let gap = 1e9, at = 0;
+  for (let d = 0; d <= PATH_LEN; d += 0.15){
+    const p = posAt(d);
+    const dd = Math.hypot(p.r - r, p.c - c);
+    if (dd < gap){ gap = dd; at = d; }
+  }
+  return { gap: gap, d: at };
+}
+/* precomputed once so the build-highlight isn't doing this every frame */
+for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+  const g = grid[r][c];
+  if (g.t === T_PLINTH){ const n = nearestPathPoint(r, c); g.roadGap = n.gap; g.roadD = n.d; }
+}
+
+/* ==========================================================================
+   STATE
+   ========================================================================== */
+const MAX_LIVES = 20;
+let lives = MAX_LIVES, gold = 350, wave = 1, phase = 'intro';
+let enemies = [], towers = [], projs = [], fx = [], knights = [], queue = [];
+let buyKey = null, selected = null, armed = null;
+let speed = 1, now = 0, chillT = 0, easeMul = 1, lostCount = {};
+let spawnT = 0, aliveTarget = 0;
+
+/* ==========================================================================
+   HELPERS
+   ========================================================================== */
+function dist(r1,c1,r2,c2){ return Math.hypot(r1-r2, c1-c2); }
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.opacity = 1;
+  clearTimeout(toast._t); toast._t = setTimeout(()=>{ el.style.opacity = 0; }, 1900);
+}
+function banner(msg, col){
+  const el = document.getElementById('banner');
+  el.textContent = msg; el.style.color = col || '#FFD54A'; el.style.opacity = 1;
+  clearTimeout(banner._t); banner._t = setTimeout(()=>{ el.style.opacity = 0; }, 1500);
+}
+function addFx(o){ o.t = 0; o.dur = o.dur || .4; o.ph = o.ph==null ? rng()*6.28 : o.ph; fx.push(o); }
+
+/* ==========================================================================
+   WAVES
+   ========================================================================== */
+function buildQueue(w){
+  const groups = WAVES[w-1] || WAVES[WAVES.length-1];
+  const q = []; let t = 0;
+  groups.forEach(g => {
+    const key = g[0], n = g[1], gap = g[2];
+    let tt = t;
+    for (let i = 0; i < n; i++){ q.push({ key: key, at: tt }); tt += gap; }
+    t += 0.9; /* groups overlap slightly */
+  });
+  q.sort((a,b)=>a.at-b.at);
+  return q;
+}
+function startWave(){
+  if (phase !== 'build') return;
+  phase = 'combat'; queue = buildQueue(wave); spawnT = 0; aliveTarget = queue.length;
+  musicForWave();
+  SFX.wave(); banner('WAVE ' + wave, '#FFD54A');
+  document.getElementById('startBtn').classList.add('hid');
+  refreshUI();
+}
+function spawnOne(key){
+  const s = ENEMIES[key];
+  const mul = (s.boss ? bossMul(wave) : hpMul(wave)) * easeMul;
+  const e = {
+    key: key, fly: s.fly, spd: s.spd, armor: s.armor, gold: s.gold, leak: s.leak,
+    hp: Math.round(s.hp * mul), maxHp: Math.round(s.hp * mul),
+    d: 0, gr: 0, gc: 0, ph: rng()*6.28, off: (rng()-.5)*2.4,
+    chill: 0, blocked: null
+  };
+  const p = e.fly ? flyPosAt(0, e.off) : posAt(0);
+  e.gr = p.r; e.gc = p.c;
+  enemies.push(e);
+}
+function waveCleared(){
+  const bonus = 40 + wave * 14;
+  gold += bonus;
+  phase = 'build';
+  banner('WAVE ' + wave + ' CLEARED  +' + bonus, '#8BFF6F');
+  SFX.win();
+  wave++;
+  if (wave > WAVES.length){ winGame(); return; }
+  document.getElementById('startBtn').classList.remove('hid');
+  refreshUI();
+  setTimeout(advise, 1800);
+}
+
+/* ==========================================================================
+   TOWERS + COMBAT
+   ========================================================================== */
+const GUARD_RESPAWN = 5;   /* seconds before a fallen guard returns */
+
+function stationGuards(t){
+  const lv = towerSpec(t);
+  const base = grid[t.r][t.c].roadD;
+  t.posts = [];
+  for (let i = 0; i < lv.count; i++){
+    const off = (i - (lv.count - 1) / 2) * 0.62;
+    const d = Math.max(0.4, Math.min(PATH_LEN - 0.4, base + off));
+    const p = posAt(d);
+    t.posts.push({ r:p.r, c:p.c, at:d, hp:lv.hp, maxHp:lv.hp,
+                   cd:i*0.3, timer:0, isGuard:true, ph: rng()*6.28 });
+  }
+}
+function makeTower(key, g){
+  const spec = TOWERS[key];
+  const t = { key: key, r: g.r, c: g.c, lv: 0, cd: 0, since: 9, aim: 0.6 };
+  towers.push(t); g.tower = t;
+  if (key === 'guard') stationGuards(t);
+  return t;
+}
+function towerSpec(t){ return TOWERS[t.key].tiers[t.lv]; }
+function upgradeCost(t){ return towerSpec(t).up; }
+function sellValue(t){
+  const spec = TOWERS[t.key];
+  let paid = spec.cost;
+  for (let i = 0; i < t.lv; i++) paid += spec.tiers[i].up;
+  return Math.floor(paid * 0.6);
+}
+function applyDamage(e, dmg, pierce){
+  const eff = pierce ? dmg : Math.max(1, dmg - e.armor);
+  e.hp -= eff;
+  if (e.hp <= 0) killEnemy(e);
+  return eff;
+}
+function killEnemy(e){
+  const i = enemies.indexOf(e); if (i < 0) return;
+  enemies.splice(i, 1);
+  gold += e.gold;
+  addFx({ kind:'coin', r:e.gr, c:e.gc, n:e.gold, dur:.8 });
+  addFx({ kind:'spark', r:e.gr, c:e.gc, h: e.fly ? 2.2 : 1.3, col:'#FFB4B4', dur:.45 });
+  SFX.die();
+  refreshUI();
+}
+function updateTowers(dt){
+  for (const t of towers){
+    const spec = TOWERS[t.key], lv = towerSpec(t);
+    t.since += dt; t.cd -= dt;
+
+    if (t.key === 'guard'){
+      for (const g of t.posts){
+        if (g.hp <= 0){
+          g.timer -= dt;
+          if (g.timer <= 0){ g.hp = lv.hp; g.maxHp = lv.hp; }
+          continue;
+        }
+        g.maxHp = lv.hp;
+        g.cd -= dt;
+        if (g.cd > 0) continue;
+        let gb = null, gbd = -1;
+        for (const e of enemies){
+          if (e.fly) continue;
+          if (dist(g.r, g.c, e.gr, e.gc) > lv.range) continue;
+          if (e.d > gbd){ gbd = e.d; gb = e; }
+        }
+        if (gb){
+          g.cd = lv.rate;
+          applyDamage(gb, lv.dmg, false);
+          addFx({ kind:'spark', r:gb.gr, c:gb.gc, h:1.2,
+                  col: t.lv === 2 ? '#FFE14D' : '#FFE9B0', dur:.25 });
+          SFX.hit();
+        }
+      }
+      continue;
+    }
+    if (t.cd > 0) continue;
+
+    /* pick the target furthest along its route */
+    let best = null, bestD = -1;
+    for (const e of enemies){
+      if (e.fly && !spec.air) continue;
+      if (dist(t.r, t.c, e.gr, e.gc) > lv.range) continue;
+      if (e.d > bestD){ bestD = e.d; best = e; }
+    }
+    if (!best) continue;
+
+    const tp = iso(t.c, t.r, heightOf(T_PLINTH));
+    const ep = iso(best.gc, best.gr, best.fly ? 2.2 : 1);
+    t.aim = Math.atan2(ep.y - tp.y, ep.x - tp.x);
+    t.cd = lv.rate; t.since = 0;
+
+    if (t.key === 'guard'){
+      applyDamage(best, lv.dmg, false);
+      addFx({ kind:'spark', r:best.gr, c:best.gc, h:1.2, col:'#FFE9B0', dur:.25 });
+      SFX.hit();
+    } else if (spec.shot === 'shell'){
+      const flight = Math.max(.35, dist(t.r,t.c,best.gr,best.gc) / 7);
+      projs.push({ kind:'shell', r:t.r, c:t.c, sr:t.r, sc:t.c,
+        tr:best.gr, tc:best.gc, t:0, dur:flight,
+        dmg:lv.dmg, splash:lv.splash, pierce:false });
+      SFX.boom();
+    } else {
+      projs.push({ kind: spec.shot === 'bolt' ? 'bolt' : 'arrow',
+        r:t.r, c:t.c, tgt:best, spd: spec.shot === 'bolt' ? 8 : 13,
+        dmg:lv.dmg, pierce:!!lv.pierce, slow:lv.slow||0, vx:0, vy:0,
+        tgtFly:best.fly, t:0, dur:2 });
+      if (spec.shot === 'bolt') SFX.bolt(); else SFX.arrow();
+    }
+  }
+}
+function updateProjs(dt){
+  for (let i = projs.length - 1; i >= 0; i--){
+    const pr = projs[i];
+    pr.t += dt;
+    if (pr.kind === 'shell'){
+      const k = Math.min(1, pr.t / pr.dur);
+      pr.r = pr.sr + (pr.tr - pr.sr) * k;
+      pr.c = pr.sc + (pr.tc - pr.sc) * k;
+      if (k >= 1){
+        addFx({ kind:'boom', r:pr.tr, c:pr.tc, rad:pr.splash, dur:.45 });
+        for (const e of enemies.slice()){
+          if (e.fly) continue;
+          if (dist(pr.tr, pr.tc, e.gr, e.gc) <= pr.splash) applyDamage(e, pr.dmg, false);
+        }
+        projs.splice(i, 1);
+      }
+      continue;
+    }
+    /* homing shots */
+    const tgt = pr.tgt;
+    if (!tgt || enemies.indexOf(tgt) < 0 || pr.t > pr.dur){ projs.splice(i, 1); continue; }
+    const dr = tgt.gr - pr.r, dc = tgt.gc - pr.c;
+    const len = Math.hypot(dr, dc) || 1e-6;
+    const step = pr.spd * dt;
+    const sp = iso(pr.c, pr.r, 1.5), np = iso(pr.c + dc/len*0.4, pr.r + dr/len*0.4, 1.5);
+    pr.vx = np.x - sp.x; pr.vy = np.y - sp.y;
+    const vl = Math.hypot(pr.vx, pr.vy) || 1;
+    pr.vx /= vl; pr.vy /= vl;
+    if (len <= step){
+      applyDamage(tgt, pr.dmg, pr.pierce);
+      if (pr.slow && enemies.indexOf(tgt) >= 0) tgt.chill = Math.max(tgt.chill, 1.6);
+      addFx({ kind:'spark', r:tgt.gr, c:tgt.gc, h: tgt.fly ? 2.3 : 1.3,
+              col: pr.kind === 'bolt' ? '#D8B4FF' : '#FFF3C4', dur:.3 });
+      SFX.hit();
+      projs.splice(i, 1);
+    } else {
+      pr.r += dr/len*step; pr.c += dc/len*step;
+    }
+  }
+}
+
+/* ==========================================================================
+   ENEMIES
+   ========================================================================== */
+function blockersList(){
+  const out = [];
+  for (const t of towers) if (t.key === 'guard')
+    for (const g of t.posts) if (g.hp > 0)
+      out.push({ r:g.r, c:g.c, ref:g, rad:0.72 });
+  for (const k of knights) if (k.hp > 0)
+    out.push({ r:k.r, c:k.c, ref:k, rad:0.7 });
+  return out;
+}
+function updateEnemies(dt){
+  const blockers = blockersList();
+  for (let i = enemies.length - 1; i >= 0; i--){
+    const e = enemies[i];
+    if (e.chill > 0) e.chill -= dt;
+    const slow = (e.chill > 0 || chillT > 0) ? 0.45 : 1;
+
+    /* ground units get stopped by guards and knights */
+    e.blocked = null;
+    if (!e.fly){
+      for (const b of blockers){
+        if (dist(b.r, b.c, e.gr, e.gc) <= b.rad){ e.blocked = b; break; }
+      }
+    }
+    if (e.blocked){
+      const bite = 6 * ENEMIES[e.key].sz * (1 + wave * 0.06) * dt;
+      e.blocked.ref.hp -= bite;
+      if (e.blocked.ref.hp <= 0){
+        e.blocked.ref.hp = 0;
+        if (e.blocked.ref.isGuard) e.blocked.ref.timer = GUARD_RESPAWN;
+        addFx({ kind:'spark', r:e.blocked.r, c:e.blocked.c, h:1.5, col:'#FF9A6F', dur:.4 });
+      }
+    } else {
+      e.d += e.spd * slow * dt;
+    }
+
+    const p = e.fly ? flyPosAt(e.d, e.off) : posAt(e.d);
+    e.gr = p.r; e.gc = p.c;
+
+    const goal = e.fly ? FLY_LEN : PATH_LEN;
+    if (e.d >= goal){
+      enemies.splice(i, 1);
+      lives -= e.leak;
+      SFX.leak();
+      addFx({ kind:'spark', r:VILLAGE.r, c:VILLAGE.c, h:1.6, col:'#FF6B6B', dur:.5 });
+      banner('-' + e.leak + ' \u2764', '#FF8A8A');
+      refreshUI();
+      if (lives <= 0){ loseWave(); return; }
+    }
+  }
+}
+function updateKnights(dt){
+  for (let i = knights.length - 1; i >= 0; i--){
+    const k = knights[i];
+    k.life -= dt; k.cd -= dt;
+    if (k.life <= 0 || k.hp <= 0){ knights.splice(i, 1); continue; }
+    if (k.cd <= 0){
+      let best = null, bestD = -1;
+      for (const e of enemies){
+        if (e.fly) continue;
+        if (dist(k.r, k.c, e.gr, e.gc) > 1.0) continue;
+        if (e.d > bestD){ bestD = e.d; best = e; }
+      }
+      if (best){
+        k.cd = 0.8;
+        applyDamage(best, 18 + wave*2, false);
+        addFx({ kind:'spark', r:best.gr, c:best.gc, h:1.2, col:'#DCE3EA', dur:.25 });
+        SFX.hit();
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   ROYAL ABILITIES
+   ========================================================================== */
+const royalCD = { knights:0, queen:0, king:0 };
+function fireRoyal(key, r, c){
+  if (royalCD[key] > 0) return;
+  if (key === 'knights'){
+    /* snap to the nearest point on the road so they always land usefully */
+    let bd = 1e9, bp = null;
+    for (let d = 0; d <= PATH_LEN; d += 0.25){
+      const p = posAt(d);
+      const dd = dist(p.r, p.c, r, c);
+      if (dd < bd){ bd = dd; bp = p; }
+    }
+    for (let i = 0; i < 3; i++){
+      knights.push({ r: bp.r + (rng()-.5)*0.7, c: bp.c + (rng()-.5)*0.7,
+        hp:180 + wave*12, maxHp:180 + wave*12, cd: i*0.25, life:20, ph: rng()*6.28 });
+    }
+    addFx({ kind:'spark', r:bp.r, c:bp.c, h:1.6, col:'#DCE3EA', dur:.6 });
+    banner('FOR THE KING!', '#DCE3EA');
+  } else if (key === 'queen'){
+    chillT = 7;
+    lives = Math.min(MAX_LIVES, lives + 2);
+    for (const e of enemies) e.chill = Math.max(e.chill, 7);
+    addFx({ kind:'chill', r:0, c:0, dur:.9 });
+    banner("QUEEN'S BLESSING", '#8FE8FF');
+  } else {
+    const RAD = 2.2, DMG = 200 + wave * 24;
+    addFx({ kind:'bolt', r:r, c:c, rad:RAD, dur:.6 });
+    for (const e of enemies.slice()){
+      if (dist(r, c, e.gr, e.gc) <= RAD) applyDamage(e, DMG, true);
+    }
+    banner("KING'S WRATH", '#CFE8FF');
+    noise(.3, .16);
+  }
+  royalCD[key] = ROYALS[key].cd;
+  armed = null;
+  SFX.royal();
+  refreshUI();
+}
+
+/* ==========================================================================
+   LOSE / WIN  (kid-friendly: never lose your towers or your gold)
+   ========================================================================== */
+function loseWave(){
+  phase = 'build';
+  enemies = []; projs = []; queue = []; knights = [];
+  for (const t of towers) if (t.key === 'guard') stationGuards(t);
+  lostCount[wave] = (lostCount[wave] || 0) + 1;
+  lives = MAX_LIVES;
+  gold += 120;
+  SFX.lose();
+  let extra = '';
+  if (lostCount[wave] >= 2){
+    easeMul *= 0.85;
+    extra = '<br><br><b>Royal Blessing:</b> the dragons of this wave have been weakened. You have this.';
+  }
+  showModal('The Village Fell',
+    'The dragons broke through on <b>wave ' + wave + '</b>.<br><br>' +
+    'Nothing is lost \u2014 your towers are still standing and you keep your gold. ' +
+    'Here is <b>+120</b> extra gold to strengthen the line, then try wave ' + wave + ' again.' + extra,
+    'TRY WAVE ' + wave + ' AGAIN', ()=>{ hideModal(); refreshUI(); });
+  document.getElementById('startBtn').classList.remove('hid');
+  refreshUI();
+  setTimeout(advise, 2200);
+}
+function winGame(){
+  phase = 'done';
+  SFX.win();
+  showModal('THE HORDE IS BROKEN',
+    'All <b>' + WAVES.length + ' waves</b> repelled. The corruption is lifted and the dragons ' +
+    'return to the mountains in peace.<br><br>The village survives with <b>' + lives +
+    ' hearts</b> and <b>' + gold + ' gold</b> in the treasury.<br><br>Long live the King and Queen!',
+    'PLAY AGAIN', ()=>{ location.reload(); });
+}
+
+/* ==========================================================================
+   INPUT
+   ========================================================================== */
+function canvasPoint(ev){
+  const rect = cv.getBoundingClientRect();
+  const sc = Math.min(rect.width / CW, rect.height / CH);
+  const ox = (rect.width - CW*sc) / 2, oy = (rect.height - CH*sc) / 2;
+  return { x: (ev.clientX - rect.left - ox) / sc, y: (ev.clientY - rect.top - oy) / sc };
+}
+function pickTile(x, y){
+  /* front-to-back so the nearest chunk wins */
+  const order = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) order.push(grid[r][c]);
+  order.sort((a,b)=> (b.r+b.c) - (a.r+a.c));
+  for (const g of order){
+    const lift = g.t === T_PLINTH ? 22 : 0;
+    const p = iso(g.c, g.r, heightOf(g.t));
+    const dx = Math.abs(x - p.x), dy = Math.abs(y - (p.y - lift));
+    if (dx/HW + dy/HH <= 1) return g;
+  }
+  return null;
+}
+cv.addEventListener('pointerdown', ev => {
+  ev.preventDefault();
+  if (phase === 'intro' || phase === 'done') return;
+  ac();
+  const pt = canvasPoint(ev);
+  const g = pickTile(pt.x, pt.y);
+  if (!g){ closeSheet(); return; }
+
+  if (armed){ fireRoyal(armed, g.r, g.c); return; }
+
+  if (g.t === T_PLINTH){
+    if (g.tower){
+      selected = g.tower; buyKey = null; openSheet(); SFX.tap(); refreshUI(); return;
+    }
+    if (buyKey){
+      const cost = TOWERS[buyKey].cost;
+      if (gold < cost){ SFX.deny(); toast('Not enough gold for a ' + TOWERS[buyKey].name); return; }
+      if (TOWERS[buyKey].onRoad && g.roadGap > TOWERS[buyKey].maxRoadGap){
+        SFX.deny(); toast('Guards stand on the road \u2014 build this pad closer to it.'); return;
+      }
+      gold -= cost; makeTower(buyKey, g); SFX.place();
+      addFx({ kind:'spark', r:g.r, c:g.c, h:1.9, col:'#FFF07A', dur:.35 });
+      refreshUI(); return;
+    }
+    toast('Pick a tower below first, then tap a stone pad.'); SFX.tap(); return;
+  }
+  closeSheet();
+});
+
+/* ==========================================================================
+   UI
+   ========================================================================== */
+const shopEl = document.getElementById('shop');
+TOWER_KEYS.forEach(k => {
+  const s = TOWERS[k];
+  const d = document.createElement('button');
+  d.className = 'card'; d.dataset.k = k;
+  d.innerHTML = '<div class="cIc">' + s.icon + '</div><div class="cNm">' +
+    s.name.replace(' Tower','').replace(' Post','') + '</div><div class="cCost">' + s.cost + '</div>';
+  d.addEventListener('click', ()=>{
+    ac();
+    buyKey = (buyKey === k) ? null : k;
+    armed = null; selected = null; closeSheet();
+    if (buyKey) toast(s.blurb);
+    SFX.tap(); refreshUI();
+  });
+  shopEl.appendChild(d);
+});
+document.querySelectorAll('.royal').forEach(btn => {
+  btn.addEventListener('click', ()=>{
+    ac();
+    const k = btn.dataset.r;
+    if (royalCD[k] > 0){ SFX.deny(); toast(ROYALS[k].name + ' \u2014 ready in ' + Math.ceil(royalCD[k]) + 's'); return; }
+    if (!ROYALS[k].aim){ fireRoyal(k, 0, 0); return; }
+    armed = (armed === k) ? null : k;
+    buyKey = null; selected = null; closeSheet();
+    if (armed) toast(ROYALS[k].blurb + ' \u2014 tap the map.');
+    SFX.tap(); refreshUI();
+  });
+});
+function openSheet(){ document.getElementById('sheet').classList.add('on'); refreshSheet(); }
+function closeSheet(){ selected = null; document.getElementById('sheet').classList.remove('on'); }
+document.getElementById('shClose').addEventListener('click', ()=>{ closeSheet(); SFX.tap(); refreshUI(); });
+document.getElementById('shSell').addEventListener('click', ()=>{
+  if (!selected) return;
+  gold += sellValue(selected);
+  grid[selected.r][selected.c].tower = null;
+  towers.splice(towers.indexOf(selected), 1);
+  closeSheet(); SFX.up(); refreshUI();
+});
+document.getElementById('shUp').addEventListener('click', ()=>{
+  if (!selected) return;
+  const t = selected;
+  if (t.lv >= 2){ SFX.deny(); toast('Already at max tier.'); return; }
+  const c = upgradeCost(t);
+  if (gold < c){ SFX.deny(); toast('Need ' + c + ' gold to upgrade.'); return; }
+  gold -= c; t.lv++;
+  if (t.key === 'guard') stationGuards(t);
+  SFX.up(); addFx({ kind:'spark', r:t.r, c:t.c, h:2.1, col:'#FFD54A', dur:.4 });
+  refreshSheet(); refreshUI();
+});
+function refreshSheet(){
+  if (!selected) return;
+  const t = selected, spec = TOWERS[t.key], lv = towerSpec(t);
+  document.getElementById('shName').textContent = spec.name + '  \u2014  Tier ' + (t.lv+1);
+  let info = 'Damage <b>' + lv.dmg + '</b> &nbsp; Range <b>' + lv.range.toFixed(1) + '</b> &nbsp; ' +
+    (t.key === 'guard'
+      ? lv.count + ' \u00D7 <b>' + lv.unit + '</b> on the road, <b>' + lv.hp + '</b> health each'
+      : 'Every <b>' + lv.rate.toFixed(2) + 's</b>');
+  info += '<br>' + (spec.air ? 'Hits ground and air' : 'Ground only \u2014 cannot hit flyers');
+  if (t.key === 'guard') info += ' &nbsp; Returns <b>' + GUARD_RESPAWN + 's</b> after falling';
+  if (lv.splash) info += ' &nbsp; Splash <b>' + lv.splash + '</b>';
+  if (lv.pierce) info += ' &nbsp; Ignores armour';
+  document.getElementById('shInfo').innerHTML = info;
+  const up = document.getElementById('shUp');
+  if (t.lv >= 2){ up.textContent = 'MAX TIER'; up.classList.add('poor'); }
+  else {
+    up.textContent = 'Upgrade  ' + upgradeCost(t) + 'g';
+    up.classList.toggle('poor', gold < upgradeCost(t));
+  }
+  document.getElementById('shSell').textContent = 'Sell  +' + sellValue(t) + 'g';
+}
+function advise(){
+  const freePads = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+    if (grid[r][c].t === T_PLINTH && !grid[r][c].tower) freePads.push(1);
+  const cheapest = Math.min.apply(null, TOWER_KEYS.map(k => TOWERS[k].cost));
+  const upgradable = towers.filter(t => t.lv < 2).map(t => upgradeCost(t)).sort((a,b)=>a-b);
+  if (freePads.length && gold >= cheapest * 2)
+    toast('You have ' + gold + ' gold! Build more towers on the empty stone pads.');
+  else if (upgradable.length && gold >= upgradable[0])
+    toast('You have ' + gold + ' gold! Tap a tower to upgrade it.');
+}
+function refreshUI(){
+  document.getElementById('waveTxt').textContent = Math.min(wave, WAVES.length) + '/' + WAVES.length;
+  document.getElementById('lifeTxt').textContent = Math.max(0, lives);
+  document.getElementById('goldTxt').textContent = gold;
+  document.querySelectorAll('.card').forEach(el => {
+    const k = el.dataset.k;
+    el.classList.toggle('sel', buyKey === k);
+    el.classList.toggle('poor', gold < TOWERS[k].cost);
+  });
+  document.querySelectorAll('.royal').forEach(btn => {
+    const k = btn.dataset.r, cd = royalCD[k];
+    btn.classList.toggle('ready', cd <= 0 && armed !== k);
+    btn.classList.toggle('armed', armed === k);
+    let bar = btn.querySelector('.cd');
+    if (!bar){ bar = document.createElement('div'); bar.className = 'cd'; btn.appendChild(bar); }
+    bar.style.height = (cd <= 0 ? 0 : (cd / ROYALS[k].cd) * 100) + '%';
+  });
+  const btn = document.getElementById('startBtn');
+  btn.textContent = 'SEND WAVE ' + Math.min(wave, WAVES.length);
+  const ni = document.getElementById('nextInfo');
+  if (phase === 'combat'){
+    ni.textContent = 'Dragons remaining: ' + (enemies.length + queue.length);
+  } else {
+    const next = WAVES[wave-1] || [];
+    const names = next.map(g => ENEMIES[g[0]].name + ' \u00D7' + g[1]).join(', ');
+    const anyFly = next.some(g => ENEMIES[g[0]].fly);
+    if (wave === FIRST_FLY_WAVE) ni.innerHTML = '<span style="color:#8FE8FF">\u26A0 FLYING DRAGONS INCOMING \u2014 bombards cannot hit them!</span>';
+    else if (wave === FIRST_FLY_WAVE - 1) ni.innerHTML = '<span style="color:#FFD54A">Next: ' + names + '. Flyers arrive after this!</span>';
+    else ni.textContent = 'Next: ' + names + (anyFly ? '  (includes flyers)' : '');
+  }
+  if (selected) refreshSheet();
+}
+document.getElementById('startBtn').addEventListener('click', ()=>{ ac(); startWave(); });
+document.getElementById('musBtn').addEventListener('click', ()=>{ ac(); SFX.tap(); toggleMusic(); });
+document.getElementById('spdBtn').addEventListener('click', ()=>{
+  speed = speed === 1 ? 2 : 1;
+  document.getElementById('spdBtn').innerHTML = speed + '&times;';
+  SFX.tap();
+});
+
+/* ---------------- modal ---------------- */
+function showModal(title, body, btnTxt, cb){
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mBody').innerHTML = body;
+  const b = document.getElementById('mGo');
+  b.textContent = btnTxt;
+  b.onclick = ()=>{ ac(); SFX.tap(); cb(); };
+  document.getElementById('modal').classList.add('on');
+}
+function hideModal(){ document.getElementById('modal').classList.remove('on'); }
+document.getElementById('menuBtn').addEventListener('click', ()=>{
+  SFX.tap();
+  showModal('How to Defend',
+    '<b>1.</b> Tap a tower at the bottom, then tap a pale <b>stone pad</b> to build it.<br>' +
+    '<b>2.</b> Tap a built tower to <b>upgrade</b> it (3 tiers) or sell it.<br>' +
+    '<b>3.</b> <b>Bombards cannot hit flying dragons.</b> Archers and mages can.<br>' +
+    '<b>4.</b> <b>Guards stand on the road</b> and block walking dragons. Upgrade twice and they become <b>PALADINS</b>. A fallen guard returns after <b>5 seconds</b>.<br>' +
+    '<b>5.</b> Flying dragons <b>follow the road from above</b> \u2014 guards cannot stop them, only arrows and magic can.<br>' +
+    '<b>6.</b> Your royal helpers on the right are the real trump cards. Use them.<br><br>' +
+    'If the village falls you <b>keep every tower and every coin</b> and simply retry the wave.',
+    'BACK', hideModal);
+});
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+function render(){
+  ctx.clearRect(0, 0, CW, CH);
+  const list = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+    const g = grid[r][c];
+    list.push({ d:(r+c)*10, f:()=>drawTile(g) });
+    if (g.tower) list.push({ d:(r+c)*10+2, f:()=>drawTowerUnit(g.tower) });
+  }
+  for (const t of towers) if (t.key === 'guard')
+    for (const g of t.posts) list.push({ d:(g.r+g.c)*10+4, f:()=>drawGuardUnit(g, t) });
+  for (const e of enemies) list.push({ d:(e.gr+e.gc)*10+5, f:()=>drawDragon(e) });
+  for (const k of knights) list.push({ d:(k.r+k.c)*10+6, f:()=>drawKnight(k) });
+  list.sort((a,b)=>a.d-b.d);
+
+  /* range rings sit under everything so they read as ground paint */
+  if (selected) rangeRing(selected.r, selected.c, towerSpec(selected).range, '#FFD54A');
+  for (const it of list) it.f();
+  for (const pr of projs) drawProj(pr);
+  for (const f of fx) drawFx(f);
+
+  if (armed){
+    ctx.fillStyle = '#8BFF6F'; ctx.font = 'bold 17px Verdana'; ctx.textAlign = 'center';
+    ctx.fillText('TAP THE MAP  \u2014  ' + ROYALS[armed].name.toUpperCase(), CW/2, 30);
+  }
+  if (chillT > 0){
+    ctx.globalAlpha = .12; ctx.fillStyle = '#8FE8FF'; ctx.fillRect(0,0,CW,CH); ctx.globalAlpha = 1;
+  }
+}
+
+/* ==========================================================================
+   MAIN LOOP  (fixed timestep)
+   ========================================================================== */
+const STEP = 1/60;
+let acc = 0, last = performance.now();
+function step(dt){
+  now += dt * 1000;
+  if (chillT > 0) chillT -= dt;
+  for (const k in royalCD) if (royalCD[k] > 0){
+    royalCD[k] = Math.max(0, royalCD[k] - dt);
+    if (royalCD[k] === 0) refreshUI();
+  }
+  for (let i = fx.length - 1; i >= 0; i--){ fx[i].t += dt; if (fx[i].t >= fx[i].dur) fx.splice(i,1); }
+
+  if (phase === 'combat'){
+    spawnT += dt;
+    while (queue.length && queue[0].at <= spawnT){ spawnOne(queue.shift().key); }
+    updateEnemies(dt);
+    updateTowers(dt);
+    updateProjs(dt);
+    updateKnights(dt);
+    if (phase === 'combat' && !queue.length && !enemies.length) waveCleared();
+    if (Math.floor(now/250) !== Math.floor((now - dt*1000)/250)) refreshUI();
+  } else {
+    updateKnights(dt);
+  }
+}
+function frame(ts){
+  const raw = Math.min(0.1, (ts - last) / 1000);
+  last = ts;
+  if (phase === 'combat' || phase === 'build'){
+    acc += raw * speed;
+    let guard = 0;
+    while (acc >= STEP && guard++ < 12){ step(STEP); acc -= STEP; }
+  } else { now += raw * 1000; }
+  render();
+  requestAnimationFrame(frame);
+}
+
+/* ==========================================================================
+   BOOT
+   ========================================================================== */
+function boot(){
+  showModal('Dragonfall',
+    'A corrupted horde is pouring down out of the mountains, and the village at the end of the road ' +
+    'is all that stands between them and the kingdom.<br><br>' +
+    'Build <b>towers</b> on the stone pads. Hold the road with <b>guards</b>. ' +
+    'Call your <b>King, Queen and Knights</b> when it gets bad.<br><br>' +
+    '<b>Walking dragons</b> come first. From <b>wave 6</b> they <b>fly along the road from above</b> \u2014 ' +
+    'guards and bombards cannot touch them.<br><br>' +
+    '<b>' + WAVES.length + ' waves.</b> Lose one and you keep everything and try again.',
+    'DEFEND THE VILLAGE',
+    ()=>{ hideModal(); phase = 'build'; refreshUI(); musicForWave(); });
+  refreshUI();
+  requestAnimationFrame(frame);
+}
+boot();
+</script>
+</body>
+</html>

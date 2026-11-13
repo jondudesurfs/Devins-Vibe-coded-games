@@ -1,0 +1,1867 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lord of the Ducks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Baloo+2:wght@500;700;800&display=swap">
+<style>
+/* Layout: one phone-shaped column; HUD on top, a drawn world in the middle, a sheet of actions at the bottom. */
+:root {
+  --sky: #bfe9ff;
+  --grass: #8fd16a;
+  --duck: #ffd23f;
+  --bill: #ff8c1a;
+  --ink: #22304a;
+  --royal: #3a2a86;
+  --paper: #fffaf0;
+  --cash: #2fa05a;
+  --danger: #e5383b;
+  --muted: #5d6b85;
+  --display: 'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  --body: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { background: var(--sky); color: var(--ink); font-family: var(--body); font-size: 16px; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+* { box-sizing: border-box; }
+button { font-family: var(--display); letter-spacing: 0.02em; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--royal); outline-offset: 2px; }
+#app { position: relative; height: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; background: var(--sky); }
+.screen { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.pad { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+.btn { border: 3px solid var(--ink); border-radius: 16px; background: var(--duck); color: var(--ink); font-size: 1.15rem; padding: 10px 18px; box-shadow: 0 4px 0 var(--ink); transition: transform .06s; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn.btn[disabled] { background: #d9dee6; color: #7c879b; box-shadow: 0 4px 0 #9aa3b3; border-color: #9aa3b3; cursor: default; }
+.btn.alt { background: #fff; }
+.btn.go { background: #3ddc84; }
+.btn.royal { background: var(--royal); color: #fff; }
+.btn.red { background: #ff6b6e; }
+.btn.small { font-size: .95rem; padding: 6px 12px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+.btn.big { font-size: 1.4rem; padding: 12px 26px; }
+
+/* Title */
+.title-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding-block: 20px; }
+.logo { font-family: var(--display); font-size: clamp(2.6rem, 11vw, 3.6rem); line-height: .95; color: var(--duck); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); margin: 0; text-wrap: balance; }
+.logo small { display: block; font-size: .42em; color: #fff; margin-top: 8px; -webkit-text-stroke: 2px var(--ink); text-shadow: 0 3px 0 var(--ink); }
+.tag { font-weight: 700; color: var(--royal); margin: 0; max-width: 32ch; }
+.stack { display: flex; flex-direction: column; gap: 12px; align-items: stretch; width: min(300px, 100%); }
+
+/* Create */
+.card { background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; padding: 16px; box-shadow: 0 5px 0 var(--ink); }
+.create { flex: 1; overflow-y: auto; padding-block: 16px; display: flex; flex-direction: column; gap: 14px; }
+.create h2, .sheet h3, .modal h2 { font-family: var(--display); font-weight: 400; margin: 0; letter-spacing: .02em; }
+.create label { font-weight: 800; }
+.create input { width: 100%; font: 700 1.2rem var(--body); padding: 10px 14px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; color: var(--ink); }
+.hats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.hat { border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 2px; display: flex; flex-direction: column; align-items: center; font: 700 .7rem var(--body); color: var(--ink); }
+.hat[aria-pressed="true"] { background: var(--duck); box-shadow: inset 0 0 0 3px #fff; }
+.hat canvas { width: 100%; height: auto; display: block; }
+.preview { display: flex; align-items: center; gap: 12px; }
+.preview canvas { width: 110px; height: 110px; flex: none; }
+
+/* HUD */
+.hud { display: flex; align-items: center; gap: 8px; padding-block: 8px; background: var(--royal); color: #fff; border-bottom: 3px solid var(--ink); flex-wrap: wrap; }
+.hud .name { font-family: var(--display); font-size: 1.1rem; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud .chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+.chip { display: inline-flex; align-items: center; gap: 5px; background: #fff; color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 1px 10px 1px 4px; font-weight: 800; font-variant-numeric: tabular-nums; font-size: .95rem; white-space: nowrap; }
+.chip.plain { padding-left: 10px; }
+.billicon { width: 22px; height: 14px; border-radius: 4px; background: var(--cash); border: 2px solid var(--ink); display: inline-grid; place-items: center; color: #fff; font: 400 .6rem var(--display); }
+.tummy { display: inline-flex; gap: 2px; }
+.loaf { width: 16px; height: 9px; border-radius: 6px; border: 2px solid var(--ink); background: #e8b35a; }
+.loaf.empty { background: transparent; border-style: dashed; opacity: .6; }
+.iconbtn { border: 2px solid var(--ink); background: #fff; color: var(--ink); border-radius: 10px; font: 400 .85rem var(--display); padding: 3px 8px; }
+
+.world { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; }
+.world canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.sheet { background: var(--paper); border-top: 3px solid var(--ink); padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; min-height: 150px; max-height: 48%; overflow-y: auto; flex: none; }
+.sheet p { margin: 0; line-height: 1.35; }
+.sheet .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sheet .row.spread { justify-content: space-between; }
+.muted { color: var(--muted); }
+.warn { color: var(--danger); font-weight: 800; }
+.bar { height: 14px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; overflow: hidden; flex: 1; min-width: 100px; }
+.bar i { display: block; height: 100%; background: var(--cash); border-radius: 999px; transition: width .3s; }
+.stats { display: flex; gap: 6px; flex-wrap: wrap; }
+.stat { font-weight: 800; font-size: .85rem; background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 0 7px; font-variant-numeric: tabular-nums; }
+.unitinfo { display: flex; gap: 10px; align-items: flex-start; }
+.unitinfo canvas { width: 64px; height: 64px; flex: none; border: 2px solid var(--ink); border-radius: 12px; background: var(--grass); }
+.unitinfo > div { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.trainlist { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+.trainbtn { flex: none; width: 92px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; padding: 4px; display: flex; flex-direction: column; align-items: center; color: var(--ink); box-shadow: 0 3px 0 var(--ink); }
+.trainbtn canvas { width: 60px; height: 60px; }
+.trainbtn b { font: 400 .78rem var(--display); line-height: 1.1; text-align: center; }
+.trainbtn span { font: 800 .8rem var(--body); display: inline-flex; gap: 3px; align-items: center; }
+.trainbtn[disabled] { opacity: .45; box-shadow: none; }
+
+/* Modal */
+.modal-bg { position: absolute; inset: 0; background: rgba(34,48,74,.55); display: grid; place-items: center; z-index: 20; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.modal { width: min(400px, 100%); max-height: 90%; overflow-y: auto; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.modal p { margin: 0; line-height: 1.4; }
+.modal canvas { width: 180px; height: 140px; }
+.modal .btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.big-num { font-family: var(--display); font-size: 2.4rem; color: var(--cash); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+
+/* Toasts */
+.toasts { position: absolute; left: 50%; top: 64px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; z-index: 15; pointer-events: none; width: min(92%, 420px); }
+.toast { background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 4px 12px; font-weight: 800; text-align: center; box-shadow: 0 3px 0 var(--ink); animation: pop .25s ease-out; }
+.toast.bad { background: #ffd9da; }
+.toast.good { background: #d8f7e4; }
+@keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } .btn { transition: none; } }
+
+/* Minigame */
+.mg { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; background: var(--sky); }
+.mg-top { display: flex; align-items: center; gap: 10px; padding-block: 8px; background: var(--royal); color: #fff; border-bottom: 3px solid var(--ink); }
+.mg-top b { font-family: var(--display); font-weight: 400; font-size: 1.1rem; }
+.timer { flex: 1; height: 14px; border: 2px solid var(--ink); background: #fff; border-radius: 999px; overflow: hidden; }
+.timer i { display: block; height: 100%; background: var(--duck); }
+</style>
+
+<div id="app"></div>
+<script>/* Lord of the Ducks: pure game logic (no DOM). Shared by the game and the headless sim. */
+(function (root) {
+  'use strict';
+
+  // ---------- RNG (seed lives in state so saves are deterministic) ----------
+  function rnd(S) {
+    let t = (S.seed = (S.seed + 0x6D2B79F5) | 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function ri(S, a, b) { return a + Math.floor(rnd(S) * (b - a + 1)); }
+  function pick(S, arr) { return arr[Math.floor(rnd(S) * arr.length)]; }
+
+  // ---------- Tunables (balanced by sim.js) ----------
+  const CFG = {
+    FOOD_COST: 5,          // a meal fills your tummy
+    TUMMY_MAX: 3,          // one tummy point per job
+    JOBS_PER_DAY: 5,
+    HUNGRY_LOSS: 4,        // bills dropped when you work hungry
+    SHOP_RATE: 10,          // bills per minute per shop level
+    SHOP_UP_BASE: 30,
+    SHOP_UP_GROWTH: 1.45,
+    SHOP_MAX_LEVEL: 12,
+    OFFLINE_CAP_MIN: 120,  // shop earns while away, up to 2 hours
+    WAR_START_BILLS: 12,
+    CAPITAL_INCOME: 4,
+    CITY_INCOME: 2,
+    PALACE_INCOME: 5,
+    AI_INCOME_MULT: 1.0,
+    CAPTURE_BONUS: 4,
+    MAX_UNITS_PER_CITY: 3
+  };
+
+  const HATS = [
+    { id: 'beret', name: 'Beret' },
+    { id: 'tophat', name: 'Top Hat' },
+    { id: 'cap', name: 'Ball Cap' },
+    { id: 'cowboy', name: 'Cowboy Hat' },
+    { id: 'pirate', name: 'Pirate Hat' },
+    { id: 'viking', name: 'Viking Helmet' },
+    { id: 'party', name: 'Party Hat' },
+    { id: 'flower', name: 'Flower' },
+    { id: 'bow', name: 'Bow' },
+    { id: 'none', name: 'No Hat' }
+  ];
+
+  const JOBS = [
+    { id: 'bread', name: 'Deliver Bread', place: 'Bakery', desc: 'Tap the house with the bread bubble. Be quick!' },
+    { id: 'fish', name: 'Catch Fish', place: 'Fishing Dock', desc: 'Tap the fish before they swim away!' },
+    { id: 'pond', name: 'Clean the Pond', place: 'The Pond', desc: 'Tap the trash. Do NOT tap the frogs!' },
+    { id: 'nest', name: 'Fix Nests', place: 'Nest Row', desc: 'Tap the holes to patch them with twigs!' },
+    { id: 'ducklings', name: 'Find Lost Ducklings', place: 'Reedy Park', desc: 'Tap the reeds to find the hiding ducklings!' }
+  ];
+
+  const BUILDINGS = [
+    { id: 'nest', name: 'Nest', cost: 10, perk: 'A cozy home! Your first step up.' },
+    { id: 'house', name: 'House', cost: 30, perk: 'Jobs pay 2x!' },
+    { id: 'shop', name: 'Shop', cost: 80, perk: 'Your shop makes bills, even while you are away!' },
+    { id: 'mansion', name: 'Mansion', cost: 250, perk: 'A cook makes your food for free. Shop earns 1.5x.' },
+    { id: 'castle', name: 'Castle', cost: 600, perk: 'Jobs pay 5x. Shop earns 2x more.' },
+    { id: 'palace', name: 'Duckingham Palace', cost: 1300, perk: 'You become the Lord of the Ducks!' }
+  ];
+  const JOB_MULT = [1, 1, 2, 2.5, 3.5, 5, 5];
+
+  // ---------- Act 1 & 2 ----------
+  function newGame(name, hat, seed, now) {
+    return {
+      v: 1, seed: (seed | 0) || 12345, name: name || 'Ducky', hat: hat || 'beret',
+      act: 1, bills: 0, tummy: CFG.TUMMY_MAX, day: 1, jobsToday: 0,
+      dayStartBills: 0, dayStartTummy: CFG.TUMMY_MAX,
+      built: 0, shopLevel: 0, shopFrac: 0, lastSeen: now || 0,
+      stats: { jobs: 0, faints: 0, earned: 0 }, war: null
+    };
+  }
+  function nextBuilding(G) { return BUILDINGS[G.built] || null; }
+  function hasB(G, id) { return BUILDINGS.findIndex(b => b.id === id) < G.built; }
+  function jobMult(G) { return JOB_MULT[G.built]; }
+  function hasCook(G) { return hasB(G, 'mansion'); }
+  function jobPay(G, score) {
+    score = Math.max(0, Math.min(1, score));
+    return Math.max(1, Math.round((2 + score * 5) * jobMult(G)));
+  }
+
+  function doJob(G, jobId, score) {
+    if (G.jobsToday >= CFG.JOBS_PER_DAY) return { ok: false, tired: true };
+    const hungry = !hasCook(G) && G.tummy <= 0;
+    let pay = jobPay(G, score);
+    if (hungry) pay = Math.max(1, Math.floor(pay / 2));
+    if (!hungry && !hasCook(G)) G.tummy--;
+    G.bills += pay; G.stats.earned += pay; G.stats.jobs++; G.jobsToday++;
+    const ev = { ok: true, pay, hungry, lost: 0, fainted: false };
+    if (hungry) {
+      if (G.bills < CFG.HUNGRY_LOSS) {
+        faint(G); ev.fainted = true;
+      } else { G.bills -= CFG.HUNGRY_LOSS; ev.lost = CFG.HUNGRY_LOSS; }
+    }
+    return ev;
+  }
+  function faint(G) {
+    G.bills = G.dayStartBills; G.tummy = Math.max(2, G.dayStartTummy);
+    G.jobsToday = 0; G.stats.faints++;
+  }
+  function buyFood(G) {
+    if (hasCook(G)) return { ok: false, why: 'Your cook makes food for free!' };
+    if (G.tummy >= CFG.TUMMY_MAX) return { ok: false, why: 'Your tummy is already full!' };
+    if (G.bills < CFG.FOOD_COST) return { ok: false, why: 'Food costs ' + CFG.FOOD_COST + ' bills.' };
+    G.bills -= CFG.FOOD_COST; G.tummy = CFG.TUMMY_MAX; return { ok: true };
+  }
+  function sleep(G) {
+    G.day++; G.jobsToday = 0; G.dayStartBills = G.bills; G.dayStartTummy = G.tummy;
+    return { ok: true };
+  }
+  function buyBuilding(G) {
+    const b = nextBuilding(G);
+    if (!b) return { ok: false, why: 'You built everything!' };
+    if (G.bills < b.cost) return { ok: false, why: 'You need ' + b.cost + ' bills.' };
+    G.bills -= b.cost; G.built++;
+    if (b.id === 'shop') G.shopLevel = 1;
+    if (b.id === 'nest') G.act = 2;
+    G.dayStartBills = G.bills;
+    return { ok: true, building: b };
+  }
+  function shopRate(G) { // bills per minute
+    if (!G.shopLevel) return 0;
+    let r = G.shopLevel * CFG.SHOP_RATE;
+    if (hasB(G, 'mansion')) r *= 1.5;
+    if (hasB(G, 'castle')) r *= 2;
+    return r;
+  }
+  function shopUpgradeCost(G) {
+    if (!G.shopLevel || G.shopLevel >= CFG.SHOP_MAX_LEVEL) return null;
+    return Math.round(CFG.SHOP_UP_BASE * Math.pow(CFG.SHOP_UP_GROWTH, G.shopLevel - 1));
+  }
+  function upgradeShop(G) {
+    const c = shopUpgradeCost(G);
+    if (c === null) return { ok: false, why: 'Shop is maxed out!' };
+    if (G.bills < c) return { ok: false, why: 'You need ' + c + ' bills.' };
+    G.bills -= c; G.shopLevel++; return { ok: true };
+  }
+  function tickShop(G, now) {
+    if (!G.lastSeen || now < G.lastSeen) { G.lastSeen = now; return 0; }
+    const capMs = CFG.OFFLINE_CAP_MIN * 60000;
+    const dt = Math.min(now - G.lastSeen, capMs);
+    G.lastSeen = now;
+    if (!G.shopLevel || G.act === 3) return 0;
+    G.shopFrac += shopRate(G) * dt / 60000;
+    const earned = Math.floor(G.shopFrac);
+    G.shopFrac -= earned; G.bills += earned; G.stats.earned += earned;
+    return earned;
+  }
+
+  // ---------- Act 3: War for France ----------
+  const FACTIONS = [
+    { id: 0, name: 'You', color: '#f5b700', roster: ['quacker', 'bread', 'gknight', 'navy', 'scout', 'breadapult'] },
+    { id: 1, name: 'Geese', color: '#5b6b82', roster: ['goose', 'honker'], weights: [3, 1] },
+    { id: 2, name: 'Swans', color: '#ff7eb3', roster: ['swan', 'flinger'], weights: [2, 1] },
+    { id: 3, name: 'Chickens', color: '#e5383b', roster: ['chick', 'egg'], weights: [1, 1] },
+    { id: 4, name: 'Duck Lords', color: '#7b4cff', roster: ['quacker', 'bread', 'gknight', 'breadapult'], weights: [3, 2, 2, 1] }
+  ];
+  const NEUTRAL = -1;
+
+  const UT = {
+    quacker: { name: 'Quacker', cost: 4, hp: 10, atk: 2, def: 2, mv: 2, rng: 1, blurb: 'Sword duck. Cheap and brave.' },
+    bread: { name: 'Bread Thrower', cost: 6, hp: 8, atk: 2, def: 1, mv: 2, rng: 2, blurb: 'Throws bread from 2 tiles away.' },
+    gknight: { name: 'Goose Knight', cost: 10, hp: 16, atk: 3, def: 3, mv: 1, rng: 1, blurb: 'A goose on your side. Slow but super tough.' },
+    navy: { name: 'Pond Navy', cost: 8, hp: 10, atk: 2, def: 2, mv: 3, rng: 2, naval: true, blurb: 'Duck boat. Sails water, shoots 2 tiles.' },
+    scout: { name: 'Duckling Scout', cost: 3, hp: 6, atk: 1, def: 1, mv: 4, rng: 1, vis: 3, blurb: 'Tiny, fast, and sees far away.' },
+    breadapult: { name: 'Breadapult', cost: 12, hp: 8, atk: 4, def: 0.5, mv: 1, rng: 3, siege: true, blurb: 'Launches giant baguettes 3 tiles. Extra hurt vs cities.' },
+    goose: { name: 'Goose', cost: 5, hp: 13, atk: 2, def: 2.5, mv: 2, rng: 1, honk: true, blurb: 'Tough. HONK pushes you back.' },
+    honker: { name: 'Big Honker', cost: 11, hp: 20, atk: 3.5, def: 3.5, mv: 1, rng: 1, honk: true, blurb: 'Huge goose. Very tough. HONK!' },
+    swan: { name: 'Swan', cost: 5, hp: 10, atk: 2.5, def: 1.5, mv: 3, rng: 1, blurb: 'The fastest bird in France.' },
+    flinger: { name: 'Feather Flinger', cost: 7, hp: 8, atk: 2, def: 1, mv: 3, rng: 2, blurb: 'Fast swan that flings feathers.' },
+    chick: { name: 'Chicken', cost: 2, hp: 6, atk: 1.5, def: 1, mv: 2, rng: 1, blurb: 'Weak alone. Comes in swarms.' },
+    egg: { name: 'Egg Shooter', cost: 3, hp: 6, atk: 1.5, def: 1, mv: 2, rng: 2, blurb: 'Chicken with an egg shooter!' }
+  };
+
+  const CAPITAL_NAMES = ['Duckingham Palace', 'Honkville', 'Swanlight', 'Le Coop', 'Mallardia'];
+  const CITY_NAMES = ['Quackseille', 'Lyon-le-Pond', 'Bordeaux Bill', 'Nice Puddle', 'Toulouse Feather',
+    'Waddle-sur-Mer', 'Croissant Creek', 'Baguette Bay', 'Brie-sur-Marsh', 'Fromage Falls', 'Crepe Cove',
+    'Petit Puddle', 'Mont Quack', 'Beakaux', 'Rouen Reeds', 'Plumeville', 'Wingsbourg', 'Le Lily Pad',
+    'Saint-Splash', 'Quiche Hollow'];
+
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  function cheb(ax, ay, bx, by) { return Math.max(Math.abs(ax - bx), Math.abs(ay - by)); }
+  function inB(W, x, y) { return x >= 0 && y >= 0 && x < W.W && y < W.H; }
+  function tile(W, x, y) { return W.tiles[y * W.W + x]; }
+  function setTile(W, x, y, t) { W.tiles[y * W.W + x] = t; }
+  function cityAt(W, x, y) { for (const c of W.cities) if (c.x === x && c.y === y) return c; return null; }
+  function unitAt(W, x, y) { for (const u of W.units) if (u.x === x && u.y === y) return u; return null; }
+  function unitById(W, id) { for (const u of W.units) if (u.id === id) return u; return null; }
+
+  function noiseGrid(S, w, h, cell) {
+    const gw = Math.ceil(w / cell) + 2, gh = Math.ceil(h / cell) + 2, g = [];
+    for (let i = 0; i < gw * gh; i++) g.push(rnd(S));
+    return function (x, y) {
+      const fx = x / cell, fy = y / cell, x0 = Math.floor(fx), y0 = Math.floor(fy);
+      const tx = fx - x0, ty = fy - y0, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+      const a = g[y0 * gw + x0], b = g[y0 * gw + x0 + 1], c = g[(y0 + 1) * gw + x0], d = g[(y0 + 1) * gw + x0 + 1];
+      return (a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy;
+    };
+  }
+
+  function genWar(S, opts) {
+    opts = opts || {};
+    const W = { W: 20, H: 24, tiles: [], cities: [], units: [], turn: 1, nextId: 1, over: null, log: [], explored: [], fog: opts.fog !== false, seed: (rnd(S) * 2147483647) | 0 };
+    const elev = noiseGrid(S, W.W, W.H, 4), moist = noiseGrid(S, W.W, W.H, 3);
+    for (let y = 0; y < W.H; y++) for (let x = 0; x < W.W; x++) {
+      const e = elev(x, y) * 0.75 + rnd(S) * 0.25, m = moist(x, y);
+      let t = 'g';
+      if (e < 0.3) t = 'w'; else if (e > 0.76) t = 'm'; else if (m > 0.6) t = 'f';
+      W.tiles.push(t);
+    }
+    // capitals
+    const anchors = [[2, W.H - 3], [2, 2], [W.W - 3, 2], [W.W - 3, W.H - 3], [Math.floor(W.W / 2), Math.floor(W.H / 2) - 1]];
+    anchors.forEach((a, i) => {
+      const [x, y] = a;
+      for (const [dx, dy] of DIRS.concat([[0, 0]])) if (inB(W, x + dx, y + dy)) setTile(W, x + dx, y + dy, 'g');
+      W.cities.push({ id: i, x, y, name: CAPITAL_NAMES[i], owner: i, cap: true, trained: false });
+    });
+    // neutral cities
+    let minD = 3, tries = 0, ni = 0;
+    while (W.cities.length < 25) {
+      tries++; if (tries > 4000) { minD = 2; }
+      if (tries > 20000) break;
+      const x = ri(S, 1, W.W - 2), y = ri(S, 1, W.H - 2);
+      if (tile(W, x, y) === 'w') continue;
+      if (W.cities.some(c => cheb(c.x, c.y, x, y) < minD)) continue;
+      setTile(W, x, y, 'g');
+      W.cities.push({ id: W.cities.length, x, y, name: CITY_NAMES[ni++], owner: NEUTRAL, cap: false, trained: false });
+    }
+    connectLand(W);
+    // starting armies
+    addUnit(W, 'quacker', 0, W.cities[0].x + 1, W.cities[0].y, true);
+    addUnit(W, 'scout', 0, W.cities[0].x, W.cities[0].y - 1, true);
+    for (let f = 1; f <= 4; f++) {
+      const c = W.cities[f], r = FACTIONS[f].roster[0];
+      const spots = DIRS.map(([dx, dy]) => [c.x + dx, c.y + dy]).filter(([x, y]) => inB(W, x, y) && tile(W, x, y) !== 'w' && !unitAt(W, x, y));
+      if (spots[0]) addUnit(W, r, f, spots[0][0], spots[0][1], true);
+    }
+    W.factions = FACTIONS.map(f => ({ id: f.id, bills: f.id === 0 ? CFG.WAR_START_BILLS : 8, alive: true }));
+    W.explored = new Array(W.W * W.H).fill(0);
+    reveal(W);
+    W.units.forEach(u => { u.moved = false; u.attacked = false; });
+    return W;
+  }
+
+  function landComponents(W) {
+    const comp = new Array(W.W * W.H).fill(-1); let n = 0; const sizes = [];
+    for (let i = 0; i < comp.length; i++) {
+      if (comp[i] !== -1 || W.tiles[i] === 'w') continue;
+      const st = [i]; comp[i] = n; let sz = 0;
+      while (st.length) {
+        const k = st.pop(); sz++; const x = k % W.W, y = (k / W.W) | 0;
+        for (const [dx, dy] of DIRS) {
+          const nx = x + dx, ny = y + dy; if (!inB(W, nx, ny)) continue;
+          const j = ny * W.W + nx; if (comp[j] === -1 && W.tiles[j] !== 'w') { comp[j] = n; st.push(j); }
+        }
+      }
+      sizes.push(sz); n++;
+    }
+    return { comp, n, sizes };
+  }
+  function connectLand(W) {
+    for (let guard = 0; guard < 50; guard++) {
+      const { comp, n } = landComponents(W);
+      if (n <= 1) return;
+      const main = comp[W.cities[0].y * W.W + W.cities[0].x];
+      let best = null;
+      for (let i = 0; i < comp.length; i++) {
+        if (comp[i] === -1 || comp[i] === main) continue;
+        for (let j = 0; j < comp.length; j++) {
+          if (comp[j] !== main) continue;
+          const d = cheb(i % W.W, (i / W.W) | 0, j % W.W, (j / W.W) | 0);
+          if (!best || d < best.d) best = { i, j, d };
+        }
+      }
+      let x = best.i % W.W, y = (best.i / W.W) | 0; const tx = best.j % W.W, ty = (best.j / W.W) | 0;
+      while (x !== tx || y !== ty) {
+        x += Math.sign(tx - x); y += Math.sign(ty - y);
+        if (tile(W, x, y) === 'w') setTile(W, x, y, 'b');
+      }
+    }
+  }
+
+  function addUnit(W, t, f, x, y, fresh) {
+    const u = { id: W.nextId++, t, f, x, y, hp: UT[t].hp, moved: !!fresh, attacked: !!fresh, rested: true };
+    W.units.push(u); return u;
+  }
+
+  function reveal(W) {
+    if (!W.fog) return;
+    const mark = (cx, cy, r) => {
+      for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) if (inB(W, x, y)) W.explored[y * W.W + x] = 1;
+    };
+    for (const c of W.cities) if (c.owner === 0) mark(c.x, c.y, c.id === 0 ? 3 : 2);
+    for (const u of W.units) if (u.f === 0) mark(u.x, u.y, UT[u.t].vis || 1);
+  }
+  function isExplored(W, x, y) { return !W.fog || W.explored[y * W.W + x] === 1; }
+
+  function tcost(W, x, y, naval) {
+    const t = tile(W, x, y);
+    if (naval) return t === 'w' ? 1 : Infinity;
+    if (t === 'w') return Infinity;
+    if (t === 'f') return 2;
+    if (t === 'm') return 3;
+    return 1;
+  }
+  function hostile(a, b) { return a !== b; }
+
+  function reachable(W, u) {
+    const T = UT[u.t], out = [];
+    if (u.moved) return out;
+    const best = new Map(), start = u.y * W.W + u.x;
+    best.set(start, 0);
+    const q = [[0, u.x, u.y]];
+    while (q.length) {
+      q.sort((a, b) => a[0] - b[0]);
+      const [c, x, y] = q.shift();
+      if (best.get(y * W.W + x) < c) continue;
+      for (const [dx, dy] of DIRS) {
+        const nx = x + dx, ny = y + dy; if (!inB(W, nx, ny)) continue;
+        const tc = tcost(W, nx, ny, T.naval); if (tc === Infinity) continue;
+        const occ = unitAt(W, nx, ny); if (occ && hostile(occ.f, u.f)) continue;
+        let nc = c + tc;
+        if (nc > T.mv) { if (c === 0) nc = T.mv; else continue; }
+        const k = ny * W.W + nx;
+        if (!best.has(k) || best.get(k) > nc) { best.set(k, nc); if (nc < T.mv) q.push([nc, nx, ny]); }
+      }
+    }
+    for (const [k] of best) {
+      if (k === start) continue;
+      const x = k % W.W, y = (k / W.W) | 0;
+      if (!unitAt(W, x, y)) out.push({ x, y });
+    }
+    return out;
+  }
+
+  function attackTargets(W, u) {
+    if (u.attacked) return [];
+    const T = UT[u.t];
+    return W.units.filter(o => hostile(o.f, u.f) && cheb(o.x, o.y, u.x, u.y) <= T.rng);
+  }
+
+  function defBonus(W, d) {
+    const c = cityAt(W, d.x, d.y);
+    if (c && c.owner === d.f) return c.cap ? 2 : 1.5;
+    const t = tile(W, d.x, d.y);
+    if (t === 'f') return 1.3;
+    if (t === 'm') return 1.5;
+    return 1;
+  }
+  function preview(W, a, d) {
+    const A = UT[a.t], D = UT[d.t];
+    let atk = A.atk; if (A.siege && cityAt(W, d.x, d.y)) atk *= 1.5;
+    const af = atk * a.hp / A.hp, df = D.def * d.hp / D.hp * defBonus(W, d), tot = af + df;
+    const dmg = Math.max(1, Math.round(af / tot * atk * 4.5));
+    const canRet = d.hp - dmg > 0 && cheb(a.x, a.y, d.x, d.y) <= D.rng;
+    const ret = canRet ? Math.round(df / tot * D.def * 4.5) : 0;
+    return { dmg, ret, kills: dmg >= d.hp };
+  }
+
+  function log(W, msg, f) { W.log.push({ t: W.turn, msg, f }); if (W.log.length > 60) W.log.shift(); }
+  function fname(f) { return f === NEUTRAL ? 'Nobody' : FACTIONS[f].name; }
+
+  function doAttack(W, a, d) {
+    const p = preview(W, a, d), ev = { type: 'attack', a: a.id, d: d.id, ax: a.x, ay: a.y, dx: d.x, dy: d.y, dmg: p.dmg, ret: p.ret, killed: false, died: false, pushed: null };
+    d.hp -= p.dmg; a.attacked = true; a.moved = true; a.rested = false;
+    if (d.hp <= 0) { removeUnit(W, d); ev.killed = true; }
+    else {
+      a.hp -= p.ret;
+      if (a.hp <= 0) { removeUnit(W, a); ev.died = true; }
+      if (UT[a.t].honk && !ev.died) {
+        const nx = d.x + Math.sign(d.x - a.x), ny = d.y + Math.sign(d.y - a.y);
+        if (inB(W, nx, ny) && tcost(W, nx, ny, UT[d.t].naval) !== Infinity && !unitAt(W, nx, ny) && !cityAt(W, nx, ny)) {
+          d.x = nx; d.y = ny; ev.pushed = { x: nx, y: ny };
+        }
+      }
+    }
+    return ev;
+  }
+  function removeUnit(W, u) { const i = W.units.indexOf(u); if (i >= 0) W.units.splice(i, 1); }
+
+  function moveUnit(W, u, x, y) {
+    const ok = reachable(W, u).some(p => p.x === x && p.y === y);
+    if (!ok) return { ok: false };
+    const ev = { ok: true, type: 'move', id: u.id, fx: u.x, fy: u.y, x, y, captured: null };
+    u.x = x; u.y = y; u.moved = true; u.rested = false;
+    const c = cityAt(W, x, y);
+    if (c && c.owner !== u.f && !UT[u.t].naval) {
+      const prev = c.owner; c.owner = u.f; u.attacked = true; ev.captured = { city: c.id, prev };
+      W.factions[u.f].bills += CFG.CAPTURE_BONUS;
+      log(W, fname(u.f) + ' took ' + c.name + (prev !== NEUTRAL ? ' from ' + fname(prev) : '') + '!', u.f);
+      checkFactions(W);
+    }
+    if (u.f === 0) reveal(W);
+    return ev;
+  }
+
+  function checkFactions(W) {
+    for (const f of W.factions) {
+      if (!f.alive) continue;
+      if (!W.cities.some(c => c.owner === f.id)) {
+        f.alive = false;
+        W.units = W.units.filter(u => u.f !== f.id);
+        if (f.id !== 0) log(W, FACTIONS[f.id].name + ' have been defeated!', f.id);
+      }
+    }
+    if (!W.factions[0].alive) W.over = 'lose';
+    else if (W.cities.every(c => c.owner === 0)) W.over = 'win';
+  }
+
+  function cityIncome(W, f) {
+    let s = 0;
+    for (const c of W.cities) if (c.owner === f) s += c.cap ? (c.id === 0 ? CFG.PALACE_INCOME : CFG.CAPITAL_INCOME) : CFG.CITY_INCOME;
+    return s;
+  }
+  function income(W, f) { const s = cityIncome(W, f); return f === 0 ? s : Math.round(s * CFG.AI_INCOME_MULT * (W.easy ? 0.5 : 1)); }
+
+  function trainSpot(W, c, t) {
+    if (UT[t].naval) {
+      for (const [dx, dy] of DIRS) { const x = c.x + dx, y = c.y + dy; if (inB(W, x, y) && tile(W, x, y) === 'w' && !unitAt(W, x, y)) return { x, y }; }
+      return null;
+    }
+    return unitAt(W, c.x, c.y) ? null : { x: c.x, y: c.y };
+  }
+  function canTrain(W, cityId, t, f) {
+    const c = W.cities[cityId];
+    if (!c || c.owner !== f) return { ok: false, why: 'Not your city.' };
+    if (c.trained) return { ok: false, why: 'This city already trained a unit this turn.' };
+    if (!FACTIONS[f].roster.includes(t)) return { ok: false, why: 'Cannot train that.' };
+    if (W.factions[f].bills < UT[t].cost) return { ok: false, why: 'Not enough bills.' };
+    const owned = W.cities.filter(x => x.owner === f).length;
+    if (W.units.filter(u => u.f === f).length >= owned * CFG.MAX_UNITS_PER_CITY + 3) return { ok: false, why: 'Army is full! Capture more cities.' };
+    const spot = trainSpot(W, c, t);
+    if (!spot) return { ok: false, why: UT[t].naval ? 'Needs an empty water tile next to the city.' : 'Move the unit off the city first.' };
+    return { ok: true, spot };
+  }
+  function train(W, cityId, t, f) {
+    if (f === undefined) f = 0;
+    const r = canTrain(W, cityId, t, f); if (!r.ok) return r;
+    W.factions[f].bills -= UT[t].cost; W.cities[cityId].trained = true;
+    const u = addUnit(W, t, f, r.spot.x, r.spot.y, true);
+    if (f === 0) reveal(W);
+    return { ok: true, unit: u };
+  }
+
+  function startTurn(W, f) {
+    W.factions[f].bills += income(W, f);
+    for (const c of W.cities) if (c.owner === f) c.trained = false;
+    for (const u of W.units) {
+      if (u.f !== f) continue;
+      if (u.rested) {
+        const c = cityAt(W, u.x, u.y), mx = UT[u.t].hp;
+        u.hp = Math.min(mx, u.hp + (c && c.owner === f ? 4 : 2));
+      }
+      u.moved = false; u.attacked = false; u.rested = true;
+    }
+  }
+
+  // ---------- AI ----------
+  function distField(W, f, naval) {
+    const N = W.W * W.H, dist = new Array(N).fill(Infinity);
+    let frontier = [];
+    const seed = (k, d) => { if (d < dist[k]) { dist[k] = d; frontier.push(k); } };
+    const targets = [];
+    for (const c of W.cities) if (c.owner !== f) targets.push([c.x, c.y, W.easy && c.owner === 0 ? 8 : 0]);
+    for (const u of W.units) if (u.f !== f) targets.push([u.x, u.y, 1]);
+    for (const [x, y, d] of targets) {
+      if (!naval) { seed(y * W.W + x, d); continue; }
+      for (let yy = y - 2; yy <= y + 2; yy++) for (let xx = x - 2; xx <= x + 2; xx++)
+        if (inB(W, xx, yy) && tile(W, xx, yy) === 'w') seed(yy * W.W + xx, d);
+    }
+    while (frontier.length) {
+      const next = [];
+      for (const k of frontier) {
+        const x = k % W.W, y = (k / W.W) | 0;
+        const tc = naval ? 1 : (tile(W, x, y) === 'w' ? 1 : tcost(W, x, y, false));
+        for (const [dx, dy] of DIRS) {
+          const nx = x + dx, ny = y + dy; if (!inB(W, nx, ny)) continue;
+          if (tcost(W, nx, ny, naval) === Infinity) continue;
+          const j = ny * W.W + nx, nd = dist[k] + tc;
+          if (nd < dist[j]) { dist[j] = nd; next.push(j); }
+        }
+      }
+      frontier = next;
+    }
+    return dist;
+  }
+
+  function scoreAttack(W, a, d) {
+    const p = preview(W, a, d);
+    if (p.kills) return 100 + UT[d.t].cost;
+    return p.dmg - p.ret * 0.8;
+  }
+  function aiTryAttack(W, u, evs) {
+    const ts = attackTargets(W, u); if (!ts.length) return false;
+    let best = null, bs = -Infinity;
+    for (const d of ts) { const s = scoreAttack(W, u, d); if (s > bs) { bs = s; best = d; } }
+    if (bs <= 0 && !(UT[u.t].rng > 1)) return false;
+    evs.push(doAttack(W, u, best)); return true;
+  }
+
+  function aiTurn(W, f) {
+    const evs = [];
+    if (!W.factions[f].alive || W.over) return evs;
+    startTurn(W, f);
+    const myCities = () => W.cities.filter(c => c.owner === f);
+    const fields = { land: distField(W, f, false), sea: null };
+    // 1) defend threatened empty cities
+    for (const c of myCities()) {
+      if (unitAt(W, c.x, c.y)) continue;
+      const threat = W.units.some(o => o.f !== f && cheb(o.x, o.y, c.x, c.y) <= 2);
+      if (!threat) continue;
+      const mine = W.units.filter(u => u.f === f && !u.moved && !UT[u.t].naval);
+      for (const u of mine) {
+        if (reachable(W, u).some(p => p.x === c.x && p.y === c.y)) { evs.push(moveUnit(W, u, c.x, c.y)); aiTryAttack(W, u, evs); break; }
+      }
+    }
+    // 2) each unit: attack, else move toward target, then attack
+    const order = W.units.filter(u => u.f === f).map(u => u.id);
+    for (const id of order) {
+      if (W.over) break;
+      const u = unitById(W, id); if (!u || u.moved) continue;
+      if (aiTryAttack(W, u, evs)) continue;
+      const reach = reachable(W, u); if (!reach.length) continue;
+      const naval = !!UT[u.t].naval;
+      // capture an empty city if reachable
+      const cap = !naval && reach.find(p => { const c = cityAt(W, p.x, p.y); return c && c.owner !== f; });
+      // stay as guard if sitting in own city and enemies close
+      const here = cityAt(W, u.x, u.y);
+      if (!cap && here && here.owner === f && W.units.some(o => o.f !== f && cheb(o.x, o.y, u.x, u.y) <= 3)) continue;
+      let dest = cap;
+      if (!dest) {
+        let field = naval ? (fields.sea || (fields.sea = distField(W, f, true))) : fields.land;
+        const T = UT[u.t];
+        let bestScore = Infinity;
+        for (const p of reach) {
+          let s = field[p.y * W.W + p.x];
+          if (T.rng > 1) { // ranged: like to be at range, not adjacent
+            const near = W.units.some(o => o.f !== f && cheb(o.x, o.y, p.x, p.y) <= 1);
+            if (near) s += 1.5;
+          }
+          s += defBonus(W, { x: p.x, y: p.y, f }) > 1 ? -0.3 : 0;
+          s += rnd(W) * 0.2;
+          if (s < bestScore) { bestScore = s; dest = p; }
+        }
+        if (!(bestScore < field[u.y * W.W + u.x] + 0.5)) dest = null;
+      }
+      if (dest) { evs.push(moveUnit(W, u, dest.x, dest.y)); if (!u.attacked) aiTryAttack(W, u, evs); }
+    }
+    // 3) train
+    const F = FACTIONS[f];
+    for (const c of myCities()) {
+      const opts = F.roster.filter(t => !UT[t].naval);
+      const ws = F.weights || opts.map(() => 1);
+      let tot = 0; ws.forEach(w => tot += w);
+      let r = rnd(W) * tot, choice = opts[0];
+      for (let i = 0; i < opts.length; i++) { r -= ws[i]; if (r <= 0) { choice = opts[i]; break; } }
+      if (!canTrain(W, c.id, choice, f).ok) choice = opts[0];
+      const res = train(W, c.id, choice, f);
+      if (res.ok) evs.push({ type: 'train', f, id: res.unit.id });
+    }
+    return evs;
+  }
+
+  // Player ends turn: AIs move, then player's new turn starts.
+  function endTurn(W) {
+    const evs = [];
+    if (W.over) return evs;
+    for (let f = 1; f <= 4; f++) { evs.push(...aiTurn(W, f)); if (W.over) return evs; }
+    W.turn++;
+    startTurn(W, 0);
+    reveal(W);
+    return evs;
+  }
+
+  function startWar(G, easy) {
+    const W = genWar(G);
+    W.easy = !!easy;
+    G.war = W; G.act = 3;
+    startTurn(W, 0); W.factions[0].bills = CFG.WAR_START_BILLS;
+    return W;
+  }
+
+  function serialize(G) { return JSON.stringify(G); }
+  function deserialize(s) { const G = JSON.parse(s); if (!G || G.v !== 1) throw new Error('bad save'); return G; }
+
+  const api = {
+    CFG, HATS, JOBS, BUILDINGS, FACTIONS, UT, NEUTRAL, DIRS,
+    rnd, ri, pick, newGame, nextBuilding, hasB, jobMult, hasCook, jobPay, doJob, buyFood, sleep, buyBuilding,
+    shopRate, shopUpgradeCost, upgradeShop, tickShop,
+    genWar, startWar, reachable, attackTargets, preview, doAttack, moveUnit, train, canTrain, endTurn, aiTurn, startTurn,
+    cityAt, unitAt, unitById, tile, inB, cheb, income, isExplored, reveal, checkFactions, landComponents, serialize, deserialize
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LOTD = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>/* Lord of the Ducks: cartoon art, all drawn in code. */
+(function (root) {
+  'use strict';
+  const INK = '#22304a';
+
+  function lighten(hex, amt) {
+    let n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    const f = v => Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt)));
+    return '#' + ((1 << 24) + (f(r) << 16) + (f(g) << 8) + f(b)).toString(16).slice(1);
+  }
+  function E(ctx, x, y, rx, ry, fill, rot, lw) {
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (lw !== 0) { ctx.lineWidth = lw || 3; ctx.strokeStyle = INK; ctx.stroke(); }
+  }
+  function C(ctx, x, y, r, fill, lw) { E(ctx, x, y, r, r, fill, 0, lw); }
+  function P(ctx, pts, fill, lw, close) {
+    ctx.beginPath(); ctx.moveTo(pts[0], pts[1]);
+    for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+    if (close !== false) ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (lw !== 0) { ctx.lineWidth = lw || 3; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke(); }
+  }
+  function R(ctx, x, y, w, h, r, fill, lw) {
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (lw !== 0) { ctx.lineWidth = lw || 3; ctx.strokeStyle = INK; ctx.stroke(); }
+  }
+
+  // ---------- Hats (drawn at head-top, local coords) ----------
+  function hat(ctx, id) {
+    switch (id) {
+      case 'beret':
+        E(ctx, 2, -4, 22, 9, '#2b59c3', -0.15); C(ctx, 2, -13, 3, '#2b59c3'); break;
+      case 'tophat':
+        R(ctx, -20, -6, 40, 7, 3, '#2a2a33'); R(ctx, -12, -36, 24, 31, 3, '#2a2a33');
+        R(ctx, -12, -13, 24, 6, 0, '#e5383b', 2); break;
+      case 'cap':
+        E(ctx, 0, -2, 19, 13, '#e5383b', 0); R(ctx, 8, -6, 22, 7, 4, '#c22f32'); C(ctx, 0, -14, 3, '#fff', 2); break;
+      case 'cowboy':
+        E(ctx, 0, -2, 32, 7, '#a0652d'); R(ctx, -14, -24, 28, 22, 8, '#b8773a'); R(ctx, -14, -8, 28, 5, 0, '#5a3618', 2); break;
+      case 'pirate':
+        P(ctx, [-26, -2, 26, -2, 18, -22, 0, -14, -18, -22], '#22222a'); C(ctx, 0, -10, 4, '#fff', 2); break;
+      case 'viking':
+        P(ctx, [-16, -8, -30, -26, -20, -6], '#f4ecd8'); P(ctx, [16, -8, 30, -26, 20, -6], '#f4ecd8');
+        E(ctx, 0, -4, 19, 15, '#9aa3ad'); R(ctx, -20, -4, 40, 6, 3, '#c79a2b', 2); break;
+      case 'party':
+        P(ctx, [-14, -2, 14, -2, 0, -38], '#7b4cff'); ctx.save(); ctx.clip();
+        ctx.fillStyle = '#ffd23f'; for (let i = 0; i < 4; i++) ctx.fillRect(-20, -8 - i * 9, 40, 4); ctx.restore();
+        P(ctx, [-14, -2, 14, -2, 0, -38], null); C(ctx, 0, -40, 5, '#ff7eb3'); break;
+      case 'flower':
+        for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5; C(ctx, 10 + Math.cos(a) * 7, -6 + Math.sin(a) * 7, 6, '#ff7eb3', 2); }
+        C(ctx, 10, -6, 5, '#ffd23f', 2); break;
+      case 'bow':
+        P(ctx, [0, -6, -16, -16, -16, 4], '#e5383b'); P(ctx, [0, -6, 16, -16, 16, 4], '#e5383b'); C(ctx, 0, -6, 5, '#c22f32', 2); break;
+      case 'crown':
+        P(ctx, [-18, 0, -20, -22, -10, -10, 0, -26, 10, -10, 20, -22, 18, 0], '#ffc93c');
+        C(ctx, 0, -26, 3, '#e5383b', 2); C(ctx, -20, -22, 3, '#2b59c3', 2); C(ctx, 20, -22, 3, '#2b59c3', 2); break;
+      case 'helmet':
+        E(ctx, 0, -2, 20, 15, '#9aa3ad'); R(ctx, -3, -18, 6, 10, 2, '#e5383b', 2); break;
+      default: break;
+    }
+  }
+
+  // ---------- Birds (origin = feet center, facing right, s = approx height px) ----------
+  function duck(ctx, x, y, s, o) {
+    o = o || {};
+    const mallard = !!o.mallard;
+    const body = o.color || (mallard ? '#b7b0a4' : '#ffd23f');
+    ctx.save(); ctx.translate(x, y); ctx.scale((o.face || 1) * s / 100, s / 100);
+    if (o.bob) ctx.translate(0, Math.sin(o.bob) * 2);
+    E(ctx, -12, -3, 11, 5, '#ff8c1a'); E(ctx, 12, -3, 11, 5, '#ff8c1a');
+    P(ctx, [-30, -36, -50, -52, -26, -22], body);
+    E(ctx, 0, -30, 36, 25, body);
+    if (mallard) E(ctx, 14, -34, 16, 15, '#7a4a2a', 0, 0);
+    E(ctx, -6, -30, 19, 12, lighten(body, -0.18), 0.2);
+    const head = mallard ? '#1f7a4d' : body;
+    C(ctx, 20, -66, 21, head);
+    if (mallard) { ctx.lineWidth = 5; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.arc(20, -66, 21, 0.9, 2.2); ctx.stroke(); C(ctx, 20, -66, 21, null); }
+    E(ctx, 40, -61, 15, 7, '#ff8c1a');
+    ctx.beginPath(); ctx.moveTo(28, -60); ctx.lineTo(54, -60); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+    C(ctx, 27, -72, 7, '#fff', 2); C(ctx, 29, -72, 3.6, INK, 0); C(ctx, 30.5, -73.5, 1.3, '#fff', 0);
+    if (!mallard) { ctx.globalAlpha = 0.5; E(ctx, 22, -56, 6, 4, '#ff9b9b', 0, 0); ctx.globalAlpha = 1; }
+    ctx.save(); ctx.translate(18, -84); hat(ctx, o.hat); ctx.restore();
+    ctx.restore();
+  }
+
+  function goose(ctx, x, y, s, o) {
+    o = o || {};
+    ctx.save(); ctx.translate(x, y); ctx.scale((o.face || 1) * s / 100, s / 100);
+    if (o.bob) ctx.translate(0, Math.sin(o.bob) * 2);
+    E(ctx, -12, -3, 11, 5, '#3a3a3a'); E(ctx, 12, -3, 11, 5, '#3a3a3a');
+    P(ctx, [-34, -34, -54, -44, -30, -22], '#efe9df');
+    E(ctx, -2, -30, 38, 25, '#bdb3a5');
+    E(ctx, -8, -32, 22, 13, '#9b8f80', 0.15);
+    E(ctx, 26, -34, 12, 14, '#efe9df');
+    // long black neck
+    ctx.lineCap = 'round'; ctx.lineWidth = 19; ctx.strokeStyle = INK;
+    ctx.beginPath(); ctx.moveTo(24, -40); ctx.quadraticCurveTo(30, -64, 22, -78); ctx.stroke();
+    ctx.lineWidth = 13; ctx.strokeStyle = '#2b2b2b'; ctx.stroke();
+    C(ctx, 24, -84, 14, '#2b2b2b');
+    E(ctx, 22, -80, 6, 5, '#fff', 0, 0);
+    E(ctx, 42, -82, 12, 5, '#2b2b2b');
+    C(ctx, 28, -89, 4.5, '#fff', 2); C(ctx, 29, -89, 2.2, INK, 0);
+    // angry brow
+    ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.moveTo(22, -96); ctx.lineTo(34, -92); ctx.stroke();
+    if (o.hat) { ctx.save(); ctx.translate(23, -96); ctx.scale(0.75, 0.75); hat(ctx, o.hat); ctx.restore(); }
+    ctx.restore();
+  }
+
+  function swan(ctx, x, y, s, o) {
+    o = o || {};
+    ctx.save(); ctx.translate(x, y); ctx.scale((o.face || 1) * s / 100, s / 100);
+    if (o.bob) ctx.translate(0, Math.sin(o.bob) * 2);
+    E(ctx, -12, -3, 10, 5, '#3a3a3a'); E(ctx, 12, -3, 10, 5, '#3a3a3a');
+    P(ctx, [-30, -38, -52, -60, -28, -24], '#ffffff');
+    E(ctx, -4, -30, 37, 24, '#ffffff');
+    E(ctx, -10, -34, 22, 14, '#f1e9ff', 0.3);
+    ctx.lineCap = 'round'; ctx.lineWidth = 17; ctx.strokeStyle = INK;
+    ctx.beginPath(); ctx.moveTo(22, -40); ctx.bezierCurveTo(46, -56, 4, -74, 20, -96); ctx.stroke();
+    ctx.lineWidth = 11; ctx.strokeStyle = '#fff'; ctx.stroke();
+    C(ctx, 24, -98, 12, '#fff');
+    P(ctx, [32, -102, 50, -96, 32, -92], '#ff8c1a');
+    C(ctx, 32, -98, 3.5, INK, 0);
+    C(ctx, 25, -101, 3.5, INK, 0); C(ctx, 26, -102, 1.2, '#fff', 0);
+    ctx.globalAlpha = 0.55; E(ctx, 20, -94, 4, 3, '#ff7eb3', 0, 0); ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function chicken(ctx, x, y, s, o) {
+    o = o || {};
+    ctx.save(); ctx.translate(x, y); ctx.scale((o.face || 1) * s / 100, s / 100);
+    if (o.bob) ctx.translate(0, Math.sin(o.bob) * 2);
+    ctx.lineWidth = 4; ctx.strokeStyle = '#e8a000';
+    ctx.beginPath(); ctx.moveTo(-8, -12); ctx.lineTo(-10, 0); ctx.moveTo(8, -12); ctx.lineTo(10, 0); ctx.stroke();
+    P(ctx, [-28, -40, -44, -66, -38, -40, -50, -50, -30, -26], '#fff');
+    E(ctx, 0, -36, 30, 26, '#fff');
+    E(ctx, -6, -36, 16, 11, '#eee6da', 0.2);
+    C(ctx, 18, -66, 16, '#fff');
+    P(ctx, [8, -80, 12, -92, 18, -82, 24, -94, 28, -80], '#e5383b');
+    P(ctx, [32, -68, 46, -64, 32, -59], '#ffb000');
+    E(ctx, 30, -54, 5, 7, '#e5383b', 0, 2);
+    C(ctx, 23, -70, 4, INK, 0); C(ctx, 24, -71, 1.3, '#fff', 0);
+    ctx.restore();
+  }
+
+  // ---------- Props ----------
+  function baguette(ctx, x, y, len, rot) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot || 0);
+    R(ctx, -len / 2, -5, len, 10, 5, '#e8b35a', 2);
+    ctx.strokeStyle = '#a8742a'; ctx.lineWidth = 2;
+    for (let i = -len / 2 + 8; i < len / 2 - 4; i += 9) { ctx.beginPath(); ctx.moveTo(i, -3); ctx.lineTo(i + 5, 3); ctx.stroke(); }
+    ctx.restore();
+  }
+  function sword(ctx, x, y, rot) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot || 0);
+    R(ctx, -2, -30, 6, 30, 2, '#dfe6ee', 2); R(ctx, -8, 0, 18, 5, 2, '#c79a2b', 2); R(ctx, -1, 4, 4, 9, 1, '#7a4a2a', 2);
+    ctx.restore();
+  }
+  function shield(ctx, x, y, color) {
+    P(ctx, [x - 12, y - 14, x + 12, y - 14, x + 12, y, x, y + 14, x - 12, y], color || '#5b6b82');
+    C(ctx, x, y - 3, 4, '#ffd23f', 2);
+  }
+  function egg(ctx, x, y, r) { E(ctx, x, y, r * 0.8, r, '#fff7e6', 0, 2); }
+
+  // ---------- Units on the war map ----------
+  // cx,cy = tile center, size = tile size
+  function unit(ctx, u, cx, cy, size, factionColor, opts) {
+    opts = opts || {};
+    const s = size * 0.78, fy = cy + size * 0.38, face = opts.face || 1, bob = opts.bob;
+    ctx.save();
+    if (opts.dim) ctx.globalAlpha = 0.62;
+    E(ctx, cx, fy, size * 0.36, size * 0.11, factionColor, 0, 2);
+    const t = u.t;
+    if (t === 'navy') {
+      P(ctx, [cx - s * 0.45, fy - s * 0.22, cx + s * 0.45, fy - s * 0.22, cx + s * 0.32, fy, cx - s * 0.32, fy], '#9c6a3a', 2);
+      ctx.save(); ctx.beginPath(); ctx.rect(cx - s, fy - s * 1.4, s * 2, s * 1.2); ctx.clip();
+      duck(ctx, cx - s * 0.08, fy - s * 0.08, s * 0.72, { face, hat: 'pirate', bob });
+      ctx.restore();
+      P(ctx, [cx - s * 0.45, fy - s * 0.22, cx + s * 0.45, fy - s * 0.22, cx + s * 0.32, fy, cx - s * 0.32, fy], '#9c6a3a', 2);
+      R(ctx, cx + s * 0.22, fy - s * 0.95, 3, s * 0.75, 1, '#7a4a2a', 1.5);
+      P(ctx, [cx + s * 0.26, fy - s * 0.92, cx + s * 0.55, fy - s * 0.55, cx + s * 0.26, fy - s * 0.4], factionColor, 2);
+    } else if (t === 'breadapult') {
+      R(ctx, cx - s * 0.48, fy - s * 0.2, s * 0.96, s * 0.16, 3, '#9c6a3a', 2);
+      C(ctx, cx - s * 0.32, fy - s * 0.04, s * 0.1, '#7a4a2a', 2); C(ctx, cx + s * 0.32, fy - s * 0.04, s * 0.1, '#7a4a2a', 2);
+      ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(cx - s * 0.1, fy - s * 0.2); ctx.lineTo(cx + s * 0.25, fy - s * 0.7); ctx.stroke();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = '#9c6a3a'; ctx.stroke();
+      baguette(ctx, cx + s * 0.25, fy - s * 0.74, s * 0.55, -0.5);
+      duck(ctx, cx - s * 0.3, fy - s * 0.18, s * 0.5, { face, hat: 'cap', bob, mallard: u.f === 4 });
+    } else if (t === 'goose' || t === 'honker' || t === 'gknight') {
+      const big = t === 'honker' ? 1.12 : 1;
+      goose(ctx, cx, fy, s * big, { face, bob, hat: t === 'gknight' ? 'helmet' : (t === 'honker' ? 'viking' : null) });
+      if (t === 'gknight') shield(ctx, cx + s * 0.22 * face, fy - s * 0.3, factionColor);
+    } else if (t === 'swan' || t === 'flinger') {
+      swan(ctx, cx, fy, s * 0.95, { face, bob });
+      if (t === 'flinger') { E(ctx, cx + s * 0.42 * face, fy - s * 0.45, s * 0.07, s * 0.2, '#fff', 0.6 * face, 2); }
+    } else if (t === 'chick' || t === 'egg') {
+      chicken(ctx, cx, fy, s * 0.82, { face, bob });
+      if (t === 'egg') {
+        R(ctx, cx + (face > 0 ? s * 0.05 : -s * 0.5), fy - s * 0.4, s * 0.45, s * 0.14, 4, '#c7ced6', 2);
+        egg(ctx, cx + s * 0.5 * face, fy - s * 0.33, s * 0.09);
+      }
+    } else {
+      const mal = u.f === 4;
+      const small = t === 'scout' ? 0.68 : 1;
+      if (t === 'quacker') sword(ctx, cx + s * 0.32 * face, fy - s * 0.25, 0.5 * face);
+      duck(ctx, cx - s * 0.04 * face, fy, s * 0.82 * small, { face, bob, mallard: mal, hat: t === 'scout' ? 'cap' : (u.f === 0 ? opts.hat : (t === 'quacker' ? 'helmet' : null)) });
+      if (t === 'bread') baguette(ctx, cx + s * 0.28 * face, fy - s * 0.3, s * 0.55, -0.8 * face);
+    }
+    // HP bar
+    const max = opts.maxHp || 10, w = size * 0.7, x0 = cx - w / 2, y0 = cy + size * 0.42;
+    R(ctx, x0, y0, w, 6, 3, '#22304a', 0);
+    const pct = Math.max(0, u.hp / max);
+    R(ctx, x0 + 1, y0 + 1, (w - 2) * pct, 4, 2, pct > 0.5 ? '#3ddc84' : pct > 0.25 ? '#ffc93c' : '#ff5a5f', 0);
+    ctx.restore();
+  }
+
+  // ---------- Buildings ----------
+  function building(ctx, id, x, y, s) {
+    // x,y bottom center, s width
+    ctx.save(); ctx.translate(x, y); const k = s / 100; ctx.scale(k, k);
+    switch (id) {
+      case 'lot':
+        R(ctx, -40, -10, 80, 10, 4, '#c9a46a'); R(ctx, -3, -50, 6, 42, 2, '#9c6a3a'); R(ctx, -26, -60, 52, 24, 4, '#fff7e6', 2);
+        ctx.fillStyle = INK; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('FOR SALE', 0, -44); break;
+      case 'nest':
+        E(ctx, 0, -14, 44, 16, '#b07a3c'); ctx.strokeStyle = '#7a4a2a'; ctx.lineWidth = 2;
+        for (let i = -36; i < 36; i += 8) { ctx.beginPath(); ctx.moveTo(i, -24); ctx.lineTo(i + 10, -6); ctx.stroke(); }
+        egg(ctx, -10, -26, 9); egg(ctx, 8, -27, 9); break;
+      case 'house':
+        R(ctx, -38, -54, 76, 54, 4, '#ffe2a8'); P(ctx, [-46, -50, 0, -88, 46, -50], '#e5383b');
+        R(ctx, -10, -30, 20, 30, 3, '#9c6a3a'); R(ctx, 16, -42, 14, 14, 2, '#bfe9ff', 2); break;
+      case 'shop':
+        R(ctx, -44, -62, 88, 62, 4, '#fff7e6');
+        for (let i = 0; i < 6; i++) P(ctx, [-48 + i * 16, -62, -32 + i * 16, -62, -32 + i * 16, -50, -48 + i * 16, -50], i % 2 ? '#fff' : '#2a9d8f', 2);
+        R(ctx, -34, -40, 30, 26, 3, '#bfe9ff', 2); R(ctx, 8, -38, 22, 38, 3, '#9c6a3a');
+        R(ctx, -26, -86, 52, 18, 4, '#ffd23f', 2); ctx.fillStyle = INK; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('SHOP', 0, -73); break;
+      case 'mansion':
+        R(ctx, -50, -64, 100, 64, 4, '#f1e9ff'); P(ctx, [-56, -60, 0, -96, 56, -60], '#7b4cff');
+        for (let i = -38; i <= 26; i += 22) R(ctx, i, -50, 12, 16, 2, '#bfe9ff', 2);
+        R(ctx, -9, -26, 18, 26, 3, '#9c6a3a'); C(ctx, 0, -78, 7, '#ffd23f', 2); break;
+      case 'castle':
+        R(ctx, -40, -66, 80, 66, 2, '#c7ced6');
+        for (let i = -40; i < 40; i += 16) R(ctx, i, -76, 10, 12, 1, '#c7ced6', 2);
+        R(ctx, -58, -86, 22, 86, 2, '#b2bac4'); R(ctx, 36, -86, 22, 86, 2, '#b2bac4');
+        P(ctx, [-62, -86, -47, -108, -32, -86], '#2b59c3'); P(ctx, [32, -86, 47, -108, 62, -86], '#2b59c3');
+        R(ctx, -12, -36, 24, 36, 10, '#7a4a2a'); break;
+      case 'palace':
+        R(ctx, -62, -64, 124, 64, 3, '#fff7e6');
+        for (let i = -52; i <= 40; i += 20) R(ctx, i, -54, 10, 20, 3, '#bfe9ff', 2);
+        E(ctx, 0, -78, 26, 22, '#ffc93c'); R(ctx, -2, -112, 4, 14, 1, INK, 0);
+        P(ctx, [2, -112, 18, -106, 2, -100], '#e5383b', 2);
+        E(ctx, -50, -70, 12, 12, '#ffc93c'); E(ctx, 50, -70, 12, 12, '#ffc93c');
+        R(ctx, -12, -30, 24, 30, 10, '#2b59c3'); break;
+    }
+    ctx.restore();
+  }
+
+  // ---------- War map tiles ----------
+  function tileArt(ctx, t, x, y, s, seed) {
+    const r = ((seed * 9301 + 49297) % 233280) / 233280;
+    if (t === 'w' || t === 'b') {
+      ctx.fillStyle = '#4cc3e8'; ctx.fillRect(x, y, s, s);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2;
+      ctx.beginPath(); const wy = y + s * (0.35 + r * 0.3);
+      ctx.moveTo(x + s * 0.2, wy); ctx.quadraticCurveTo(x + s * 0.35, wy - 4, x + s * 0.5, wy); ctx.quadraticCurveTo(x + s * 0.65, wy + 4, x + s * 0.8, wy); ctx.stroke();
+      if (t === 'b') {
+        ctx.fillStyle = '#b07a3c'; ctx.fillRect(x, y + s * 0.3, s, s * 0.4);
+        ctx.strokeStyle = '#7a4a2a'; ctx.lineWidth = 2;
+        for (let i = 1; i < 5; i++) { ctx.beginPath(); ctx.moveTo(x + i * s / 5, y + s * 0.3); ctx.lineTo(x + i * s / 5, y + s * 0.7); ctx.stroke(); }
+      }
+      return;
+    }
+    ctx.fillStyle = r < 0.5 ? '#8fd16a' : '#86c962'; ctx.fillRect(x, y, s, s);
+    if (t === 'f') {
+      const tree = (tx, ty, tr) => { R(ctx, tx - 2, ty, 4, tr * 0.8, 1, '#7a4a2a', 0); C(ctx, tx, ty - tr * 0.2, tr, '#3f9a46', 2); };
+      tree(x + s * 0.3, y + s * 0.5, s * 0.2); tree(x + s * 0.7, y + s * 0.45, s * 0.22); tree(x + s * 0.5, y + s * 0.75, s * 0.16);
+    } else if (t === 'm') {
+      P(ctx, [x + s * 0.08, y + s * 0.9, x + s * 0.45, y + s * 0.15, x + s * 0.82, y + s * 0.9], '#9aa3ad', 2);
+      P(ctx, [x + s * 0.33, y + s * 0.39, x + s * 0.45, y + s * 0.15, x + s * 0.57, y + s * 0.39, x + s * 0.45, y + s * 0.33], '#fff', 1.5);
+      P(ctx, [x + s * 0.5, y + s * 0.92, x + s * 0.72, y + s * 0.45, x + s * 0.95, y + s * 0.92], '#8a939d', 2);
+    } else if (r > 0.82) {
+      C(ctx, x + s * 0.3, y + s * 0.3, 2.5, '#fff', 0); C(ctx, x + s * 0.7, y + s * 0.65, 2.5, '#ffd23f', 0);
+    }
+  }
+
+  function city(ctx, c, x, y, s, color, isPalace) {
+    const cx = x + s / 2, by = y + s * 0.88;
+    E(ctx, cx, by, s * 0.44, s * 0.12, 'rgba(0,0,0,0.12)', 0, 0);
+    if (isPalace) { building(ctx, 'palace', cx, by, s * 0.78); }
+    else if (c.cap) { building(ctx, 'castle', cx, by, s * 0.62); }
+    else {
+      R(ctx, cx - s * 0.32, by - s * 0.34, s * 0.3, s * 0.34, 2, '#fff7e6', 2); P(ctx, [cx - s * 0.36, by - s * 0.32, cx - s * 0.17, by - s * 0.52, cx + 0.02 * s, by - s * 0.32], color, 2);
+      R(ctx, cx + s * 0.02, by - s * 0.46, s * 0.3, s * 0.46, 2, '#ffe2a8', 2); P(ctx, [cx - s * 0.02, by - s * 0.44, cx + s * 0.17, by - s * 0.66, cx + s * 0.36, by - s * 0.44], color, 2);
+    }
+    // flag
+    const fx = cx + s * 0.34, fy = y + s * 0.06;
+    ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy + s * 0.32); ctx.stroke();
+    P(ctx, [fx, fy, fx + s * 0.2, fy + s * 0.07, fx, fy + s * 0.15], color, 2);
+  }
+
+  root.ART = { INK, lighten, E, C, P, R, hat, duck, goose, swan, chicken, baguette, sword, egg, unit, building, tileArt, city };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>/* Lord of the Ducks: screens, input, animation. */
+(function () {
+  'use strict';
+  const L = window.LOTD, A = window.ART;
+  const SAVE_KEY = 'lotd_save_v1';
+  const app = document.getElementById('app');
+  let G = null;
+  let stopScreen = null; // cleanup for the active screen
+  let muted = false;
+
+  // ---------- helpers ----------
+  const $ = (sel, el) => (el || document).querySelector(sel);
+  function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function setupCanvas(cv, w, h) {
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx;
+  }
+  function bill(n) { return '<span class="chip"><span class="billicon">B</span>' + n + '</span>'; }
+  function billsTxt(n) { return n + (n === 1 ? ' bill' : ' bills'); }
+  function save() { try { G.lastSeen = Date.now(); localStorage.setItem(SAVE_KEY, L.serialize(G)); } catch (e) { /* storage may be blocked */ } }
+  function loadSave() { try { const s = localStorage.getItem(SAVE_KEY); return s ? L.deserialize(s) : null; } catch (e) { return null; } }
+  function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } }
+  function show(node) { if (stopScreen) { stopScreen(); stopScreen = null; } app.innerHTML = ''; app.appendChild(node); app.appendChild(el('<div class="toasts" id="toasts"></div>')); return node; }
+  function toast(msg, kind, ms) {
+    const box = $('#toasts'); if (!box) return;
+    const t = el('<div class="toast ' + (kind || '') + '"></div>'); t.textContent = msg; box.appendChild(t);
+    while (box.children.length > 3) box.firstChild.remove();
+    setTimeout(() => t.remove(), ms || 2600);
+  }
+  function modal(o) {
+    const bg = el('<div class="modal-bg"><div class="modal card"></div></div>'), m = bg.firstChild;
+    if (o.title) m.appendChild(el('<h2>' + esc(o.title) + '</h2>'));
+    if (o.art) { const cv = document.createElement('canvas'); m.appendChild(cv); const ctx = setupCanvas(cv, 180, 140); o.art(ctx, 180, 140); }
+    if (o.html) m.appendChild(el('<div style="display:flex;flex-direction:column;gap:8px;align-items:center">' + o.html + '</div>'));
+    const btns = el('<div class="btns"></div>'); m.appendChild(btns);
+    (o.buttons || [{ label: 'OK' }]).forEach(b => {
+      const x = el('<button class="btn ' + (b.cls || '') + '"></button>'); x.textContent = b.label;
+      x.onclick = () => { bg.remove(); b.fn && b.fn(); }; btns.appendChild(x);
+    });
+    app.appendChild(bg); const first = btns.querySelector('button'); if (first) first.focus();
+    return bg;
+  }
+
+  // ---------- sound (tiny synth, starts after a tap) ----------
+  let AC = null;
+  function tone(freq, freq2, dur, type, vol, delay) {
+    if (muted) return;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = AC.currentTime + (delay || 0), o = AC.createOscillator(), g = AC.createGain();
+      o.type = type || 'square'; o.frequency.setValueAtTime(freq, t0); o.frequency.exponentialRampToValueAtTime(freq2 || freq, t0 + dur);
+      g.gain.setValueAtTime(vol || 0.08, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g).connect(AC.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) { /* audio unavailable */ }
+  }
+  const sfx = {
+    quack() { tone(700, 320, 0.12, 'sawtooth', 0.07); tone(650, 300, 0.12, 'sawtooth', 0.06, 0.15); },
+    coin() { tone(988, 988, 0.08, 'square', 0.05); tone(1319, 1319, 0.18, 'square', 0.05, 0.08); },
+    tap() { tone(520, 640, 0.06, 'triangle', 0.08); },
+    bad() { tone(220, 120, 0.25, 'square', 0.06); },
+    hit() { tone(180, 60, 0.15, 'square', 0.08); },
+    honk() { tone(250, 200, 0.22, 'sawtooth', 0.08); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.18, 'square', 0.05, i * 0.12)); },
+    build() { [392, 523, 659].forEach((f, i) => tone(f, f, 0.14, 'triangle', 0.09, i * 0.09)); }
+  };
+
+  // ======================================================================
+  // TITLE
+  // ======================================================================
+  function titleScreen() {
+    const existing = loadSave();
+    const s = show(el(`<section class="screen pad"><div class="title-wrap">
+      <canvas id="tduck" style="width:220px;height:200px"></canvas>
+      <h1 class="logo">Lord of the Ducks<small>The Road to Duckingham Palace</small></h1>
+      <p class="tag">From a poor little duck to the ruler of all of France.</p>
+      <div class="stack">
+        ${existing ? '<button class="btn go big" id="cont">Continue</button>' : ''}
+        <button class="btn big ${existing ? 'alt' : 'go'}" id="new">New Game</button>
+        <button class="btn small alt" id="mute">${muted ? 'Sound: Off' : 'Sound: On'}</button>
+      </div>
+      <p class="muted" style="font-size:.8rem;margin:0">Designed by Devin. Made with Claude.</p>
+    </div></section>`));
+    const cv = $('#tduck', s), ctx = setupCanvas(cv, 220, 200);
+    let raf, t = 0;
+    const loop = () => {
+      t += 0.05; ctx.clearRect(0, 0, 220, 200);
+      A.E(ctx, 110, 186, 70, 10, 'rgba(34,48,74,.15)', 0, 0);
+      A.duck(ctx, 110, 182 - Math.abs(Math.sin(t)) * 8, 170, { hat: 'crown', face: Math.sin(t * 0.25) > 0 ? 1 : -1 });
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+    stopScreen = () => cancelAnimationFrame(raf);
+    if (existing) $('#cont', s).onclick = () => { sfx.quack(); G = existing; resume(); };
+    $('#new', s).onclick = () => {
+      sfx.quack();
+      if (existing) modal({ title: 'Start over?', html: '<p>Your saved duck will be gone.</p>', buttons: [{ label: 'Start over', cls: 'red', fn: createScreen }, { label: 'Keep it', cls: 'alt' }] });
+      else createScreen();
+    };
+    $('#mute', s).onclick = e => { muted = !muted; e.target.textContent = muted ? 'Sound: Off' : 'Sound: On'; sfx.tap(); };
+  }
+
+  function resume() {
+    if (G.act === 3 && G.war) return warScreen();
+    const earned = L.tickShop(G, Date.now());
+    townScreen();
+    if (earned > 0) modal({ title: 'Welcome back!', html: '<p>While you were away, your shop made</p><div class="big-num">+' + earned + '</div><p>bills!</p>', buttons: [{ label: 'Yay!', cls: 'go', fn: () => sfx.coin() }] });
+  }
+
+  // ======================================================================
+  // CREATE YOUR DUCK
+  // ======================================================================
+  function createScreen() {
+    let hatSel = 'beret';
+    const s = show(el(`<section class="screen pad"><div class="create">
+      <h2 style="font-size:1.8rem;text-align:center">Make your duck</h2>
+      <div class="card preview"><canvas id="pv"></canvas><div style="min-width:0;flex:1">
+        <label for="dname">Your duck's name</label>
+        <input id="dname" maxlength="16" value="Sir Quacks" autocomplete="off">
+        <p class="muted" style="margin:6px 0 0;font-size:.85rem">Every duck in this story is yellow!</p>
+      </div></div>
+      <div class="card"><label>Pick a hat</label><div class="hats" id="hats" style="margin-top:8px"></div></div>
+      <button class="btn go big" id="start">Start the Story</button>
+    </div></section>`));
+    const pv = setupCanvas($('#pv', s), 110, 110);
+    const drawPv = () => { pv.clearRect(0, 0, 110, 110); A.duck(pv, 55, 104, 92, { hat: hatSel }); };
+    const box = $('#hats', s);
+    L.HATS.forEach(h => {
+      const b = el('<button class="hat" aria-pressed="' + (h.id === hatSel) + '"><canvas></canvas>' + esc(h.name) + '</button>');
+      const c = setupCanvas(b.querySelector('canvas'), 56, 56); A.duck(c, 28, 54, 48, { hat: h.id });
+      b.onclick = () => { hatSel = h.id; box.querySelectorAll('.hat').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); drawPv(); sfx.tap(); };
+      box.appendChild(b);
+    });
+    drawPv();
+    $('#start', s).onclick = () => {
+      const name = ($('#dname', s).value || '').trim() || 'Sir Quacks';
+      G = L.newGame(name, hatSel, (Math.random() * 2147483647) | 0, Date.now());
+      save(); sfx.quack();
+      townScreen();
+      modal({
+        title: 'Once upon a time...',
+        art: (c, w, h) => { A.duck(c, w / 2, h - 6, 120, { hat: G.hat }); },
+        html: '<p><b>' + esc(G.name) + '</b> was a poor little duck with zero bills.</p><p>Do jobs around town to earn bills. Food costs <b>5 bills</b>. A home costs <b>10 bills</b>.</p><p>Keep climbing, and one day you will build <b>Duckingham Palace</b>!</p>',
+        buttons: [{ label: "Let's go!", cls: 'go', fn: () => sfx.quack() }]
+      });
+    };
+  }
+
+  // ======================================================================
+  // TOWN (Act 1 and 2)
+  // ======================================================================
+  const TW = 360, TH = 440;
+  const PLACES = [
+    { id: 'bakery', job: 'bread', x: 74, y: 96, label: 'Bakery' },
+    { id: 'market', x: 186, y: 80, label: 'Market' },
+    { id: 'dock', job: 'fish', x: 306, y: 132, label: 'Fishing Dock' },
+    { id: 'pond', job: 'pond', x: 252, y: 240, label: 'The Pond' },
+    { id: 'nests', job: 'nest', x: 72, y: 236, label: 'Nest Row' },
+    { id: 'park', job: 'ducklings', x: 76, y: 372, label: 'Reedy Park' },
+    { id: 'home', x: 196, y: 366, label: 'Your Home' },
+    { id: 'shop', x: 304, y: 380, label: 'Your Shop', when: () => G.shopLevel > 0 }
+  ];
+  const PLAZA = { x: 176, y: 226 };
+  let duckPos = { x: PLAZA.x, y: PLAZA.y + 14 };
+
+  function hudHTML() {
+    const loaves = L.hasCook(G) ? '<span class="chip plain">Cook</span>' :
+      '<span class="chip plain tummy" title="Tummy">' + Array.from({ length: L.CFG.TUMMY_MAX }, (_, i) => '<i class="loaf ' + (i < G.tummy ? '' : 'empty') + '"></i>').join('') + '</span>';
+    return `<div class="name">${esc(G.name)}</div><button class="iconbtn" id="menu">Menu</button>
+      <div class="chips">${bill(G.bills)}${loaves}<span class="chip plain">Day ${G.day}</span><span class="chip plain">Jobs ${L.CFG.JOBS_PER_DAY - G.jobsToday}/${L.CFG.JOBS_PER_DAY}</span></div>`;
+  }
+
+  function townScreen() {
+    const s = show(el(`<section class="screen">
+      <div class="hud pad" id="hud"></div>
+      <div class="world" id="world"><canvas id="town"></canvas></div>
+      <div class="sheet pad" id="sheet"></div>
+    </section>`));
+    const world = $('#world', s), cv = $('#town', s);
+    let ctx, scale = 1, ox = 0, oy = 0, cw = 0, ch = 0;
+    const resize = () => {
+      cw = world.clientWidth; ch = world.clientHeight;
+      ctx = setupCanvas(cv, cw, ch);
+      scale = Math.min(cw / TW, ch / TH); ox = (cw - TW * scale) / 2; oy = (ch - TH * scale) / 2;
+    };
+    resize();
+    const ro = new ResizeObserver(resize); ro.observe(world);
+    let selected = null, walkTo = null, face = 1, t = 0, raf, floats = [];
+    const refreshHud = () => { $('#hud', s).innerHTML = hudHTML(); $('#menu', s).onclick = openMenu; };
+    refreshHud();
+
+    function placeVisible(p) { return !p.when || p.when(); }
+    function homeArt() { return G.built > 0 ? L.BUILDINGS[Math.min(G.built, 5) - 1].id : 'lot'; }
+
+    function drawTown() {
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.fillStyle = '#8fd16a'; ctx.fillRect(0, 0, cw, ch);
+      ctx.save(); ctx.translate(ox, oy); ctx.scale(scale, scale);
+      // grass dots
+      ctx.fillStyle = '#7fc35b';
+      for (let i = 0; i < 60; i++) { const x = (i * 73) % TW, y = (i * 131) % TH; ctx.fillRect(x, y, 4, 2); }
+      // roads
+      ctx.lineCap = 'round'; ctx.strokeStyle = '#22304a'; ctx.lineWidth = 26;
+      const roads = PLACES.filter(placeVisible);
+      roads.forEach(p => { ctx.beginPath(); ctx.moveTo(PLAZA.x, PLAZA.y); ctx.lineTo(p.x, p.y + 10); ctx.stroke(); });
+      ctx.strokeStyle = '#e9c98a'; ctx.lineWidth = 20;
+      roads.forEach(p => { ctx.beginPath(); ctx.moveTo(PLAZA.x, PLAZA.y); ctx.lineTo(p.x, p.y + 10); ctx.stroke(); });
+      A.C(ctx, PLAZA.x, PLAZA.y, 30, '#e9c98a');
+      A.C(ctx, PLAZA.x, PLAZA.y, 12, '#4cc3e8'); // fountain
+      // pond
+      A.E(ctx, 262, 236, 76, 54, '#4cc3e8');
+      ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(250 + i * 18, 236 + (i % 2) * 18, 9, 0.2, 2.8); ctx.stroke(); }
+      A.E(ctx, 228, 214, 10, 6, '#3f9a46', 0, 2); A.E(ctx, 292, 258, 11, 7, '#3f9a46', 0, 2);
+      // dock
+      A.R(ctx, 292, 150, 40, 12, 2, '#b07a3c'); A.R(ctx, 300, 160, 8, 20, 2, '#9c6a3a'); A.R(ctx, 320, 160, 8, 20, 2, '#9c6a3a');
+      A.R(ctx, 312, 118, 4, 34, 1, '#7a4a2a', 2);
+      // bakery
+      A.building(ctx, 'house', 74, 96, 74); A.R(ctx, 54, 30, 40, 16, 4, '#fff', 2); A.baguette(ctx, 74, 38, 30, 0);
+      // market stall
+      A.R(ctx, 160, 60, 52, 26, 3, '#fff7e6');
+      for (let i = 0; i < 4; i++) A.P(ctx, [156 + i * 15, 46, 171 + i * 15, 46, 171 + i * 15, 58, 156 + i * 15, 58], i % 2 ? '#fff' : '#e5383b', 2);
+      A.C(ctx, 172, 70, 5, '#e5383b', 2); A.C(ctx, 184, 72, 5, '#ffb000', 2); A.baguette(ctx, 198, 72, 18, -0.3);
+      // nests
+      [[50, 236], [74, 222], [98, 238]].forEach(([x, y]) => { A.E(ctx, x, y, 14, 6, '#b07a3c'); A.egg(ctx, x, y - 6, 4); });
+      A.R(ctx, 40, 244, 70, 6, 3, '#7a4a2a', 2);
+      // park reeds
+      for (let i = 0; i < 6; i++) { const x = 46 + i * 12, y = 380 - (i % 2) * 6; ctx.strokeStyle = '#2f7a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 3, y - 26); ctx.stroke(); A.E(ctx, x - 3, y - 28, 3, 7, '#8b5a2b', 0, 1.5); }
+      A.R(ctx, 54, 384, 46, 7, 3, '#b07a3c', 2);
+      // home + shop
+      A.building(ctx, homeArt(), 196, 372, homeArt() === 'palace' ? 92 : 74);
+      if (G.shopLevel > 0) A.building(ctx, 'shop', 304, 384, 64);
+      // labels + job badges
+      ctx.font = '700 12px "Baloo 2", sans-serif'; ctx.textAlign = 'center';
+      roads.forEach(p => {
+        const w = ctx.measureText(p.label).width + 14;
+        A.R(ctx, p.x - w / 2, p.y + 16, w, 18, 9, selected === p.id ? '#ffd23f' : '#fff', 2);
+        ctx.fillStyle = '#22304a'; ctx.fillText(p.label, p.x, p.y + 29);
+        if (p.job && G.jobsToday < L.CFG.JOBS_PER_DAY) {
+          const by = p.y - 44 + Math.sin(t * 3 + p.x) * 2;
+          A.C(ctx, p.x + 26, by, 9, '#2fa05a', 2); ctx.fillStyle = '#fff'; ctx.font = '400 11px "Lilita One", sans-serif'; ctx.fillText('B', p.x + 26, by + 4);
+          ctx.font = '700 12px "Baloo 2", sans-serif';
+        }
+      });
+      // duck
+      A.E(ctx, duckPos.x, duckPos.y + 2, 14, 4, 'rgba(34,48,74,.2)', 0, 0);
+      A.duck(ctx, duckPos.x, duckPos.y, 46, { hat: G.hat, face, bob: walkTo ? t * 14 : 0 });
+      // floats
+      floats.forEach(f => { ctx.globalAlpha = Math.max(0, f.life); ctx.font = '400 18px "Lilita One", sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = '#22304a'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); ctx.globalAlpha = 1; });
+      ctx.restore();
+    }
+
+    let last = performance.now(), shopTimer = 0, saveTimer = 0;
+    function loop(now) {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+      if (walkTo) {
+        const dx = walkTo.x - duckPos.x, dy = walkTo.y - duckPos.y, d = Math.hypot(dx, dy), sp = 190 * dt;
+        if (Math.abs(dx) > 1) face = dx > 0 ? 1 : -1;
+        if (d <= sp) { duckPos.x = walkTo.x; duckPos.y = walkTo.y; const cb = walkTo.cb; walkTo = null; cb && cb(); }
+        else { duckPos.x += dx / d * sp; duckPos.y += dy / d * sp; }
+      }
+      floats.forEach(f => { f.y -= 30 * dt; f.life -= dt * 0.8; }); floats = floats.filter(f => f.life > 0);
+      shopTimer += dt; saveTimer += dt;
+      if (shopTimer >= 1) {
+        shopTimer = 0; const e = L.tickShop(G, Date.now());
+        if (e > 0) { floats.push({ x: 304, y: 330, text: '+' + e, color: '#3ddc84', life: 1 }); refreshHud(); if (selected) renderSheet(); }
+      }
+      if (saveTimer > 5) { saveTimer = 0; save(); }
+      drawTown(); raf = requestAnimationFrame(loop);
+    }
+    raf = requestAnimationFrame(loop);
+    stopScreen = () => { cancelAnimationFrame(raf); ro.disconnect(); };
+
+    cv.addEventListener('pointerdown', e => {
+      const r = cv.getBoundingClientRect(), x = (e.clientX - r.left - ox) / scale, y = (e.clientY - r.top - oy) / scale;
+      let best = null, bd = 48;
+      PLACES.filter(placeVisible).forEach(p => { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } });
+      if (!best) return;
+      sfx.tap(); selected = best.id; renderSheet();
+      const route = [{ x: PLAZA.x, y: PLAZA.y + 10 }, { x: best.x + 18, y: best.y + 12 }];
+      walkTo = { x: route[0].x, y: route[0].y, cb: () => { walkTo = { x: route[1].x, y: route[1].y, cb: null }; } };
+      if (Math.hypot(duckPos.x - route[1].x, duckPos.y - route[1].y) < 4) walkTo = null;
+    });
+
+    function renderSheet() {
+      const sh = $('#sheet', s), p = PLACES.find(x => x.id === selected), nb = L.nextBuilding(G);
+      const goal = nb ? `<div class="row"><span style="font-weight:800">Goal: ${esc(nb.name)}</span><div class="bar"><i style="width:${Math.min(100, G.bills / nb.cost * 100)}%"></i></div><span class="muted" style="font-weight:800">${Math.min(G.bills, nb.cost)}/${nb.cost}</span></div>` : '';
+      if (!p) { sh.innerHTML = `<h3>${G.act === 1 ? 'You are a poor duck' : 'Climb to the palace'}</h3><p>Tap a place in town to walk there. Places with a green <b>B</b> have jobs.</p>${goal}`; return; }
+      let h = '<h3>' + esc(p.label) + '</h3>';
+      if (p.job) {
+        const J = L.JOBS.find(j => j.id === p.job), lo = L.jobPay(G, 0.3), hi = L.jobPay(G, 1);
+        const tired = G.jobsToday >= L.CFG.JOBS_PER_DAY, hungry = !L.hasCook(G) && G.tummy <= 0;
+        h += `<p><b>${esc(J.name)}</b>: ${esc(J.desc)}</p><p class="muted">Pays about ${lo} to ${hi} bills.</p>`;
+        if (tired) h += '<p class="warn">You are too tired. Go home and sleep.</p>';
+        else if (hungry) h += '<p class="warn">Your tummy is empty! Working hungry drops bills. Buy food at the Market.</p>';
+        h += `<div class="row"><button class="btn go" id="act" ${tired ? 'disabled' : ''}>Start Job</button></div>`;
+      } else if (p.id === 'market') {
+        if (L.hasCook(G)) h += '<p>Your cook at the mansion makes all your food for free now!</p>';
+        else h += `<p>A bag of bread and fish fills your tummy all the way up.</p><div class="row"><button class="btn" id="act" ${G.tummy >= L.CFG.TUMMY_MAX || G.bills < L.CFG.FOOD_COST ? 'disabled' : ''}>Buy Food (${L.CFG.FOOD_COST} bills)</button>${G.tummy >= L.CFG.TUMMY_MAX ? '<span class="muted">Tummy is full</span>' : ''}</div>`;
+      } else if (p.id === 'home') {
+        const cur = G.built > 0 ? L.BUILDINGS[G.built - 1].name : 'No home yet. You sleep under a bush.';
+        h += `<p>${esc(cur)}</p>`;
+        if (nb) h += `<div class="row"><button class="btn go" id="build" ${G.bills < nb.cost ? 'disabled' : ''}>Build ${esc(nb.name)} (${nb.cost})</button></div><p class="muted">${esc(nb.perk)}</p>`;
+        h += `<div class="row"><button class="btn alt" id="sleep">Sleep (start Day ${G.day + 1})</button></div>`;
+      } else if (p.id === 'shop') {
+        const up = L.shopUpgradeCost(G);
+        h += `<p>Level ${G.shopLevel}. Makes <b>${Math.round(L.shopRate(G))} bills a minute</b>, even when you are away!</p>`;
+        h += up !== null ? `<div class="row"><button class="btn go" id="up" ${G.bills < up ? 'disabled' : ''}>Hire a Helper (${up})</button><span class="muted">+${Math.round(L.shopRate(G) / G.shopLevel)} a minute</span></div>` : '<p>Your shop is the best in town!</p>';
+      }
+      sh.innerHTML = h + goal;
+      const act = $('#act', sh);
+      if (act && p.job) act.onclick = () => startJob(p.job);
+      if (act && p.id === 'market') act.onclick = () => { const r = L.buyFood(G); if (r.ok) { sfx.coin(); toast('Yum! Tummy is full.', 'good'); } else toast(r.why, 'bad'); after(); };
+      const bb = $('#build', sh); if (bb) bb.onclick = () => { const r = L.buyBuilding(G); if (r.ok) { sfx.build(); after(); celebrate(r.building); } else toast(r.why, 'bad'); };
+      const sl = $('#sleep', sh); if (sl) sl.onclick = () => { L.sleep(G); sfx.quack(); toast('Good morning! Day ' + G.day + '.', 'good'); after(); };
+      const ub = $('#up', sh); if (ub) ub.onclick = () => { const r = L.upgradeShop(G); if (r.ok) { sfx.coin(); toast('New helper hired!', 'good'); } else toast(r.why, 'bad'); after(); };
+    }
+    function after() { save(); refreshHud(); renderSheet(); }
+
+    function startJob(jobId) {
+      runMinigame(jobId, score => {
+        const r = L.doJob(G, jobId, score);
+        after();
+        let html = '<div class="big-num">+' + r.pay + '</div><p>bills earned!</p>';
+        if (r.fainted) html = '<p class="warn">You were SO hungry you fainted!</p><p>The day starts over. Buy food at the Market before working.</p>';
+        else if (r.hungry) html += '<p class="warn">Your tummy was empty, so you dropped ' + r.lost + ' bills.</p>';
+        const nb = L.nextBuilding(G);
+        if (!r.fainted && nb && G.bills >= nb.cost) html += '<p><b>You can build a ' + esc(nb.name) + ' now!</b> Go to Your Home.</p>';
+        else if (!r.fainted && !L.hasCook(G) && G.tummy === 0) html += '<p>Your tummy is empty. Time for food!</p>';
+        if (G.jobsToday >= L.CFG.JOBS_PER_DAY && !r.fainted) html += '<p>That was your last job today. Go home and sleep.</p>';
+        r.fainted ? sfx.bad() : sfx.coin();
+        modal({ title: r.fainted ? 'Oh no!' : 'Great job!', html, buttons: [{ label: 'OK', cls: 'go' }] });
+      });
+    }
+
+    function celebrate(b) {
+      if (b.id === 'palace') return palaceCutscene();
+      modal({
+        title: 'You built a ' + b.name + '!',
+        art: (c, w, h) => { A.building(c, b.id, w / 2 - 20, h - 8, 110); A.duck(c, w / 2 + 58, h - 6, 56, { hat: G.hat }); },
+        html: '<p>' + esc(b.perk) + '</p>' + (b.id === 'nest' ? '<p>You are not a poor duck anymore! Next: a House, a Shop, a Mansion, a Castle, then Duckingham Palace.</p>' : ''),
+        buttons: [{ label: 'Hooray!', cls: 'go', fn: () => sfx.quack() }]
+      });
+    }
+    renderSheet();
+  }
+
+  function openMenu() {
+    modal({
+      title: 'Menu', html: '<p>Your game saves by itself.</p>',
+      buttons: [{ label: 'Keep playing', cls: 'go' }, { label: muted ? 'Sound On' : 'Sound Off', cls: 'alt', fn: () => { muted = !muted; } }, { label: 'Title screen', cls: 'alt', fn: () => { save(); titleScreen(); } }]
+    });
+  }
+
+  // ======================================================================
+  // MINI-GAMES
+  // ======================================================================
+  const MW = 360, MH = 480, MG_TIME = 15;
+  const MINI = {
+    bread: () => {
+      const houses = []; for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) houses.push({ x: 100 + c * 160, y: 150 + r * 130, want: 0, done: 0 });
+      let spawn = 0.4, hits = 0, flying = [];
+      return {
+        goal: 10, get n() { return hits; },
+        update(dt, T) {
+          spawn -= dt; houses.forEach(h => { h.want = Math.max(0, h.want - dt); h.done = Math.max(0, h.done - dt); });
+          if (spawn <= 0) { const free = houses.filter(h => h.want <= 0); if (free.length) free[Math.floor(Math.random() * free.length)].want = Math.max(0.9, 1.6 - T * 0.04); spawn = Math.max(0.55, 1.1 - T * 0.03); }
+          flying.forEach(f => f.t += dt * 3); flying = flying.filter(f => f.t < 1);
+        },
+        draw(c) {
+          houses.forEach(h => {
+            A.building(c, 'house', h.x, h.y + 40, 90);
+            if (h.want > 0) { A.R(c, h.x - 30, h.y - 74, 60, 30, 12, '#fff', 3); A.baguette(c, h.x, h.y - 59, 40, 0); }
+            if (h.done > 0) { c.font = '400 22px "Lilita One"'; c.textAlign = 'center'; c.fillStyle = '#2fa05a'; c.fillText('Thanks!', h.x, h.y - 50); }
+          });
+          flying.forEach(f => A.baguette(c, 180 + (f.x - 180) * f.t, 470 + (f.y - 470) * f.t - Math.sin(f.t * Math.PI) * 80, 36, f.t * 6));
+        },
+        tap(x, y) {
+          const h = houses.find(h => Math.abs(h.x - x) < 60 && y > h.y - 90 && y < h.y + 50);
+          if (h && h.want > 0) { h.want = 0; h.done = 0.6; hits++; flying.push({ x: h.x, y: h.y - 20, t: 0 }); return 'good'; }
+          return 'miss';
+        }
+      };
+    },
+    fish: () => {
+      let fish = [], spawn = 0, n = 0, splashes = [];
+      return {
+        goal: 12, bg: ['#8fd16a', '#4cc3e8', 82], get n() { return n; },
+        update(dt) {
+          spawn -= dt;
+          if (spawn <= 0) { const left = Math.random() < 0.5; fish.push({ x: left ? -30 : MW + 30, y: 120 + Math.random() * 320, v: (left ? 1 : -1) * (70 + Math.random() * 90), ph: Math.random() * 6, col: ['#ff8c1a', '#ff7eb3', '#7b4cff', '#2b59c3'][Math.floor(Math.random() * 4)] }); spawn = 0.55; }
+          fish.forEach(f => { f.x += f.v * dt; f.ph += dt * 6; }); fish = fish.filter(f => f.x > -60 && f.x < MW + 60);
+          splashes.forEach(s => s.t += dt * 2); splashes = splashes.filter(s => s.t < 1);
+        },
+        draw(c) {
+          c.fillStyle = '#4cc3e8'; c.fillRect(0, 90, MW, MH - 90);
+          c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 2;
+          for (let i = 0; i < 6; i++) { c.beginPath(); c.arc(40 + i * 60, 100 + (i % 3) * 120, 14, 0.3, 2.8); c.stroke(); }
+          A.R(c, -10, 70, MW + 20, 24, 0, '#b07a3c');
+          fish.forEach(f => {
+            c.save(); c.translate(f.x, f.y + Math.sin(f.ph) * 5); c.scale(f.v > 0 ? 1 : -1, 1);
+            A.P(c, [-30, 0, -44, -12, -44, 12], f.col, 2.5); A.E(c, 0, 0, 30, 15, f.col, 0, 2.5); A.C(c, 16, -4, 4, '#fff', 2); A.C(c, 17, -4, 2, '#22304a', 0);
+            c.restore();
+          });
+          splashes.forEach(s => { c.globalAlpha = 1 - s.t; A.C(c, s.x, s.y, 10 + s.t * 30, null, 3); c.globalAlpha = 1; });
+        },
+        tap(x, y) {
+          const i = fish.findIndex(f => Math.hypot(f.x - x, f.y - y) < 34);
+          if (i >= 0) { const f = fish.splice(i, 1)[0]; splashes.push({ x: f.x, y: f.y, t: 0 }); n++; return 'good'; }
+          return 'miss';
+        }
+      };
+    },
+    pond: () => {
+      let items = [], spawn = 0, n = 0, pops = [];
+      return {
+        goal: 12, bg: ['#3fb6a8', '#3fb6a8', 0], get n() { return Math.max(0, n); },
+        update(dt) {
+          spawn -= dt;
+          if (spawn <= 0) { const frog = Math.random() < 0.3; items.push({ frog, kind: Math.floor(Math.random() * 3), x: 40 + Math.random() * 280, y: MH + 30, v: 55 + Math.random() * 50, ph: Math.random() * 6 }); spawn = 0.5; }
+          items.forEach(i => { i.y -= i.v * dt; i.ph += dt * 3; }); items = items.filter(i => i.y > 60);
+          pops.forEach(p => p.t += dt * 1.5); pops = pops.filter(p => p.t < 1);
+        },
+        draw(c) {
+          c.fillStyle = '#3fb6a8'; c.fillRect(0, 0, MW, MH);
+          A.E(c, 60, 140, 22, 12, '#3f9a46', 0, 2); A.E(c, 300, 380, 24, 13, '#3f9a46', 0, 2);
+          items.forEach(i => {
+            const x = i.x + Math.sin(i.ph) * 8, y = i.y;
+            if (i.frog) { A.E(c, x, y, 22, 16, '#5ec24a', 0, 2.5); A.C(c, x - 9, y - 14, 7, '#5ec24a', 2.5); A.C(c, x + 9, y - 14, 7, '#5ec24a', 2.5); A.C(c, x - 9, y - 14, 3, '#22304a', 0); A.C(c, x + 9, y - 14, 3, '#22304a', 0); c.lineWidth = 2; c.strokeStyle = '#22304a'; c.beginPath(); c.arc(x, y - 2, 8, 0.3, 2.8); c.stroke(); }
+            else if (i.kind === 0) { A.R(c, x - 12, y - 18, 24, 36, 5, '#e5383b'); A.R(c, x - 12, y - 6, 24, 10, 0, '#fff', 2); }
+            else if (i.kind === 1) { A.R(c, x - 9, y - 16, 18, 34, 7, '#9fe3d2'); A.R(c, x - 4, y - 26, 8, 12, 2, '#9fe3d2'); }
+            else { A.P(c, [x - 14, y - 22, x + 2, y - 22, x + 2, y + 2, x + 20, y + 4, x + 20, y + 16, x - 14, y + 16], '#7a4a2a'); }
+          });
+          pops.forEach(p => { c.globalAlpha = 1 - p.t; c.font = '400 22px "Lilita One"'; c.textAlign = 'center'; c.lineWidth = 4; c.strokeStyle = '#22304a'; c.strokeText(p.txt, p.x, p.y - p.t * 30); c.fillStyle = p.col; c.fillText(p.txt, p.x, p.y - p.t * 30); c.globalAlpha = 1; });
+        },
+        tap(x, y) {
+          const i = items.findIndex(it => Math.hypot(it.x + Math.sin(it.ph) * 8 - x, it.y - y) < 32);
+          if (i < 0) return 'miss';
+          const it = items.splice(i, 1)[0];
+          if (it.frog) { n--; pops.push({ x, y, t: 0, txt: 'Ribbit!', col: '#ff6b6e' }); return 'bad'; }
+          n++; pops.push({ x, y, t: 0, txt: 'Clean!', col: '#3ddc84' }); return 'good';
+        }
+      };
+    },
+    nest: () => {
+      const nests = []; for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) nests.push({ x: 70 + c * 110, y: 150 + r * 120, hole: 0, fixed: 0 });
+      let spawn = 0.3, n = 0;
+      return {
+        goal: 14, bg: ['#6fbf4f', '#6fbf4f', 0], get n() { return n; },
+        update(dt, T) {
+          spawn -= dt; nests.forEach(k => { k.hole = Math.max(0, k.hole - dt); k.fixed = Math.max(0, k.fixed - dt); });
+          if (spawn <= 0) { const free = nests.filter(k => k.hole <= 0); if (free.length) free[Math.floor(Math.random() * free.length)].hole = Math.max(0.75, 1.2 - T * 0.02); spawn = Math.max(0.4, 0.75 - T * 0.02); }
+        },
+        draw(c) {
+          c.fillStyle = '#6fbf4f'; c.fillRect(0, 0, MW, MH);
+          nests.forEach(k => {
+            A.R(c, k.x - 50, k.y + 14, 100, 10, 5, '#7a4a2a');
+            A.E(c, k.x, k.y, 44, 22, '#b07a3c');
+            c.strokeStyle = '#7a4a2a'; c.lineWidth = 2; for (let i = -34; i < 34; i += 9) { c.beginPath(); c.moveTo(k.x + i, k.y - 16); c.lineTo(k.x + i + 10, k.y + 14); c.stroke(); }
+            if (k.hole > 0) { A.E(c, k.x, k.y + 2, 18, 10, '#22304a', 0, 0); c.font = '400 18px "Lilita One"'; c.textAlign = 'center'; c.fillStyle = '#ff6b6e'; c.fillText('FIX!', k.x, k.y - 28); }
+            if (k.fixed > 0) { A.egg(c, k.x - 10, k.y - 10, 9); A.egg(c, k.x + 10, k.y - 10, 9); }
+          });
+        },
+        tap(x, y) {
+          const k = nests.find(k => Math.abs(k.x - x) < 52 && Math.abs(k.y - y) < 40);
+          if (k && k.hole > 0) { k.hole = 0; k.fixed = 0.5; n++; return 'good'; }
+          return 'miss';
+        }
+      };
+    },
+    ducklings: () => {
+      const reeds = []; for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) reeds.push({ x: 50 + c * 87, y: 170 + r * 120, hid: false, found: 0, rustle: 0 });
+      let n = 0;
+      const hide = () => { reeds.forEach(r => { r.hid = false; }); const idx = reeds.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, 3); idx.forEach(i => { reeds[i].hid = true; }); };
+      hide();
+      return {
+        goal: 9, bg: ['#7cc95a', '#7cc95a', 0], get n() { return n; },
+        update(dt) { reeds.forEach(r => { r.found = Math.max(0, r.found - dt); r.rustle = Math.max(0, r.rustle - dt); }); },
+        draw(c) {
+          c.fillStyle = '#7cc95a'; c.fillRect(0, 0, MW, MH);
+          reeds.forEach(r => {
+            if (r.found > 0) A.duck(c, r.x, r.y + 10, 44, {});
+            const sh = Math.sin(r.rustle * 40) * 4 * (r.rustle > 0 ? 1 : 0);
+            for (let i = 0; i < 5; i++) {
+              const x = r.x - 24 + i * 12 + sh, h = 56 + (i % 2) * 12;
+              c.strokeStyle = '#22304a'; c.lineWidth = 6; c.beginPath(); c.moveTo(x, r.y + 20); c.lineTo(x - 3, r.y + 20 - h); c.stroke();
+              c.strokeStyle = '#2f7a3a'; c.lineWidth = 3.5; c.stroke();
+              if (r.found <= 0) A.E(c, x - 3, r.y + 18 - h, 4, 9, '#8b5a2b', 0, 1.5);
+            }
+          });
+        },
+        tap(x, y) {
+          const r = reeds.find(r => Math.abs(r.x - x) < 40 && y > r.y - 60 && y < r.y + 30);
+          if (!r || r.found > 0) return 'miss';
+          if (r.hid) { r.hid = false; r.found = 1.2; n++; if (!reeds.some(q => q.hid)) setTimeout(hide, 600); return 'good'; }
+          r.rustle = 0.4; return 'miss';
+        }
+      };
+    }
+  };
+
+  function runMinigame(jobId, done) {
+    const J = L.JOBS.find(j => j.id === jobId), game = MINI[jobId]();
+    const ov = el(`<div class="mg"><div class="mg-top pad"><b>${esc(J.name)}</b><div class="timer"><i id="tbar" style="width:100%"></i></div><span class="chip plain" id="mgn">0/${game.goal}</span></div><div class="world"><canvas id="mgc"></canvas></div></div>`);
+    app.appendChild(ov);
+    const world = ov.querySelector('.world'), cv = $('#mgc', ov);
+    let cw, ch, ctx, scale, ox, oy;
+    const resize = () => { cw = world.clientWidth; ch = world.clientHeight; ctx = setupCanvas(cv, cw, ch); scale = Math.min(cw / MW, ch / MH); ox = (cw - MW * scale) / 2; oy = (ch - MH * scale) / 2; };
+    resize();
+    let T = 0, running = false, raf, last = 0, endT = null;
+    const frame = now => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      if (running) { T += dt; game.update(dt, T); if (T >= MG_TIME) finish(); }
+      const bg = game.bg || ['#8fd16a', '#8fd16a', 0];
+      ctx.fillStyle = bg[1]; ctx.fillRect(0, 0, cw, ch);
+      ctx.fillStyle = bg[0]; ctx.fillRect(0, 0, cw, oy + bg[2] * scale);
+      ctx.save(); ctx.translate(ox, oy); ctx.scale(scale, scale);
+      game.draw(ctx);
+      ctx.restore();
+      $('#tbar', ov).style.width = Math.max(0, 100 - T / MG_TIME * 100) + '%';
+      $('#mgn', ov).textContent = game.n + '/' + game.goal;
+      raf = requestAnimationFrame(frame);
+    };
+    last = performance.now(); raf = requestAnimationFrame(frame);
+    cv.addEventListener('pointerdown', e => {
+      if (!running) return;
+      const r = cv.getBoundingClientRect(), x = (e.clientX - r.left - ox) / scale, y = (e.clientY - r.top - oy) / scale;
+      const res = game.tap(x, y);
+      if (res === 'good') sfx.coin(); else if (res === 'bad') sfx.bad();
+    });
+    function finish() {
+      if (endT) return; running = false; endT = true;
+      setTimeout(() => { cancelAnimationFrame(raf); ov.remove(); done(Math.min(1, game.n / game.goal)); }, 500);
+    }
+    modal({ title: J.name, html: '<p>' + esc(J.desc) + '</p><p class="muted">You have ' + MG_TIME + ' seconds. Get ' + game.goal + ' for top pay!</p>', buttons: [{ label: 'Go!', cls: 'go', fn: () => { running = true; sfx.quack(); } }] });
+  }
+
+  // ======================================================================
+  // PALACE + WAR (Act 3)
+  // ======================================================================
+  function palaceCutscene() {
+    save();
+    modal({
+      title: 'Duckingham Palace!',
+      art: (c, w, h) => { A.building(c, 'palace', w / 2 - 10, h - 8, 120); A.duck(c, w / 2 + 62, h - 4, 60, { hat: 'crown' }); },
+      html: '<p>All the ducks bow to <b>' + esc(G.name) + ', Lord of the Ducks!</b></p><p>But the Geese, the Swans, the Chickens, and the rival Duck Lords all want France for themselves.</p><p>Build an army, protect your cities, and conquer all <b>25 cities of France</b>!</p>',
+      buttons: [{ label: 'To war!', cls: 'royal', fn: () => { sfx.win(); L.startWar(G, false); save(); warScreen(true); } }, { label: 'Easy war', cls: 'alt', fn: () => { sfx.win(); L.startWar(G, true); save(); warScreen(true); } }]
+    });
+  }
+
+  const TS = 44;
+  function warScreen(first) {
+    const W = G.war;
+    const s = show(el(`<section class="screen">
+      <div class="hud pad" id="whud"></div>
+      <div class="world" id="wworld"><canvas id="wmap"></canvas></div>
+      <div class="sheet pad" id="wsheet"></div>
+    </section>`));
+    const world = $('#wworld', s), cv = $('#wmap', s);
+    let ctx, cw, ch;
+    const WW = W.W * TS, WH = W.H * TS;
+    // pre-render terrain
+    const terr = document.createElement('canvas'), TD = 2;
+    terr.width = WW * TD; terr.height = WH * TD;
+    const tctx = terr.getContext('2d'); tctx.scale(TD, TD);
+    for (let y = 0; y < W.H; y++) for (let x = 0; x < W.W; x++) A.tileArt(tctx, L.tile(W, x, y), x * TS, y * TS, TS, x * 31 + y * 17);
+    let cam = { x: 0, y: 0 };
+    const clampCam = () => { cam.x = Math.max(Math.min(0, cw - WW) - 20, Math.min(20, cam.x)); cam.y = Math.max(Math.min(0, ch - WH) - 20, Math.min(20, cam.y)); if (WW < cw) cam.x = (cw - WW) / 2; if (WH < ch) cam.y = (ch - WH) / 2; };
+    const centerOn = (tx, ty) => { cam.x = cw / 2 - (tx + 0.5) * TS; cam.y = ch / 2 - (ty + 0.5) * TS; clampCam(); };
+    const resize = () => { cw = world.clientWidth; ch = world.clientHeight; ctx = setupCanvas(cv, cw, ch); clampCam(); };
+    resize();
+    const ro = new ResizeObserver(resize); ro.observe(world);
+    centerOn(W.cities[0].x + 2, W.cities[0].y - 2);
+
+    let sel = null, moves = [], targets = [], busy = false, t = 0, raf;
+    let anims = new Map(), floats = [], shots = [];
+    const color = f => f < 0 ? '#c7ced6' : L.FACTIONS[f].color;
+
+    function refreshHud() {
+      const owned = W.cities.filter(c => c.owner === 0).length;
+      $('#whud', s).innerHTML = `<div class="name">${esc(G.name)} &middot; Turn ${W.turn}</div><button class="iconbtn" id="wmenu">Menu</button><div class="chips">${bill(W.factions[0].bills)}<span class="chip plain">+${L.income(W, 0)} a turn</span><span class="chip plain">Cities ${owned}/25</span></div>`;
+      $('#wmenu', s).onclick = warMenu;
+    }
+    function warMenu() {
+      modal({ title: 'Menu', html: '<p>Your war saves after every move.</p><p class="muted">Enemies left: ' + W.factions.filter(f => f.id && f.alive).map(f => L.FACTIONS[f.id].name).join(', ') + '</p>', buttons: [{ label: 'Keep fighting', cls: 'go' }, { label: muted ? 'Sound On' : 'Sound Off', cls: 'alt', fn: () => { muted = !muted; } }, { label: 'Title screen', cls: 'alt', fn: () => { save(); titleScreen(); } }] });
+    }
+
+    function unitPos(u) {
+      const a = anims.get(u.id);
+      if (a) { const k = Math.min(1, a.t); const e = k * (2 - k); return { x: (a.fx + (u.x - a.fx) * e) * TS, y: (a.fy + (u.y - a.fy) * e) * TS }; }
+      return { x: u.x * TS, y: u.y * TS };
+    }
+
+    function draw() {
+      ctx.fillStyle = '#22304a'; ctx.fillRect(0, 0, cw, ch);
+      ctx.save(); ctx.translate(Math.round(cam.x), Math.round(cam.y));
+      ctx.drawImage(terr, 0, 0, WW, WH);
+      const x0 = Math.max(0, Math.floor(-cam.x / TS)), y0 = Math.max(0, Math.floor(-cam.y / TS));
+      const x1 = Math.min(W.W - 1, Math.ceil((cw - cam.x) / TS)), y1 = Math.min(W.H - 1, Math.ceil((ch - cam.y) / TS));
+      // territory tint
+      for (const c of W.cities) {
+        if (!L.isExplored(W, c.x, c.y)) continue;
+        ctx.globalAlpha = 0.18; ctx.fillStyle = color(c.owner); ctx.fillRect((c.x - 1) * TS, (c.y - 1) * TS, TS * 3, TS * 3); ctx.globalAlpha = 1;
+      }
+      for (const c of W.cities) if (L.isExplored(W, c.x, c.y)) {
+        A.city(ctx, c, c.x * TS, c.y * TS, TS, color(c.owner), c.id === 0 && c.owner === 0);
+      }
+      // highlights
+      moves.forEach(m => { ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(m.x * TS + 2, m.y * TS + 2, TS - 4, TS - 4); A.C(ctx, m.x * TS + TS / 2, m.y * TS + TS / 2, 6, '#2b59c3', 2); });
+      if (sel && sel.kind === 'city') { const c = W.cities[sel.id]; ctx.lineWidth = 4; ctx.strokeStyle = '#ffd23f'; ctx.strokeRect(c.x * TS + 2, c.y * TS + 2, TS - 4, TS - 4); }
+      // units
+      const sorted = W.units.slice().sort((a, b) => a.y - b.y);
+      for (const u of sorted) {
+        if (u.f !== 0 && !L.isExplored(W, u.x, u.y)) continue;
+        const p = unitPos(u);
+        if (sel && sel.kind === 'unit' && sel.id === u.id) { A.E(ctx, p.x + TS / 2, p.y + TS * 0.82, TS * 0.46, TS * 0.18, '#ffd23f', 0, 3); }
+        A.unit(ctx, u, p.x + TS / 2, p.y + TS / 2, TS, color(u.f), { face: u.f === 0 ? 1 : -1, bob: t * 4 + u.id, dim: u.f === 0 && u.moved && u.attacked, maxHp: L.UT[u.t].hp, hat: G.hat });
+      }
+      targets.forEach(d => { const p = unitPos(d); ctx.lineWidth = 4; ctx.strokeStyle = '#ff3b3f'; ctx.beginPath(); ctx.arc(p.x + TS / 2, p.y + TS / 2, TS * 0.48, 0, Math.PI * 2); ctx.stroke(); });
+      // fog
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        if (L.isExplored(W, x, y)) continue;
+        ctx.fillStyle = '#2c3d5e'; ctx.fillRect(x * TS, y * TS, TS, TS);
+        ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.arc(x * TS + TS * 0.35, y * TS + TS * 0.45, TS * 0.28, 0, 7); ctx.arc(x * TS + TS * 0.68, y * TS + TS * 0.55, TS * 0.22, 0, 7); ctx.fill();
+      }
+      // shots
+      shots.forEach(sh => {
+        const k = Math.min(1, sh.t), x = sh.x0 + (sh.x1 - sh.x0) * k, y = sh.y0 + (sh.y1 - sh.y0) * k - Math.sin(k * Math.PI) * 30;
+        if (sh.kind === 'bread') A.baguette(ctx, x, y, 22, k * 8); else if (sh.kind === 'egg') A.egg(ctx, x, y, 6); else if (sh.kind === 'feather') A.E(ctx, x, y, 4, 9, '#fff', k * 6, 2); else A.C(ctx, x, y, 5, '#ffd23f', 2);
+      });
+      floats.forEach(f => { ctx.globalAlpha = Math.max(0, f.life); ctx.font = '400 20px "Lilita One", sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#22304a'; ctx.strokeText(f.text, f.x, f.y); ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y); ctx.globalAlpha = 1; });
+      ctx.restore();
+    }
+    let last = performance.now();
+    const loop = now => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+      anims.forEach((a, id) => { a.t += dt * 3.2; if (a.t >= 1) anims.delete(id); });
+      shots.forEach(sh => sh.t += dt * 2.6); shots = shots.filter(sh => sh.t < 1);
+      floats.forEach(f => { f.y -= 26 * dt; f.life -= dt * 0.7; }); floats = floats.filter(f => f.life > 0);
+      draw(); raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    stopScreen = () => { cancelAnimationFrame(raf); ro.disconnect(); };
+
+    // ----- input: drag to pan, tap to act -----
+    let down = null;
+    cv.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false }; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => {
+      if (!down) return;
+      const dx = e.clientX - down.x, dy = e.clientY - down.y;
+      if (Math.hypot(dx, dy) > 8) down.moved = true;
+      if (down.moved) { cam.x = down.cx + dx; cam.y = down.cy + dy; clampCam(); }
+    });
+    cv.addEventListener('pointerup', e => {
+      if (!down) return; const wasDrag = down.moved; down = null;
+      if (wasDrag || busy || W.over) return;
+      const r = cv.getBoundingClientRect(), tx = Math.floor((e.clientX - r.left - cam.x) / TS), ty = Math.floor((e.clientY - r.top - cam.y) / TS);
+      if (!L.inB(W, tx, ty)) return;
+      onTap(tx, ty);
+    });
+
+    function selectUnit(u) { sel = { kind: 'unit', id: u.id }; moves = u.f === 0 ? L.reachable(W, u) : []; targets = u.f === 0 ? L.attackTargets(W, u).filter(d => L.isExplored(W, d.x, d.y)) : []; renderSheet(); }
+    function clearSel() { sel = null; moves = []; targets = []; renderSheet(); }
+
+    function onTap(tx, ty) {
+      const u = L.unitAt(W, tx, ty), c = L.cityAt(W, tx, ty), explored = L.isExplored(W, tx, ty);
+      const me = sel && sel.kind === 'unit' ? L.unitById(W, sel.id) : null;
+      if (me && me.f === 0) {
+        const tgt = targets.find(d => d.x === tx && d.y === ty);
+        if (tgt) return playerAttack(me, tgt);
+        if (moves.some(m => m.x === tx && m.y === ty)) return playerMove(me, tx, ty);
+      }
+      sfx.tap();
+      if (u && (u.f === 0 || explored)) { if (me && me.id === u.id && c && c.owner === 0) { sel = { kind: 'city', id: c.id }; moves = []; targets = []; renderSheet(); return; } return selectUnit(u); }
+      if (c && explored) { sel = { kind: 'city', id: c.id }; moves = []; targets = []; renderSheet(); return; }
+      clearSel();
+    }
+
+    function playerMove(u, x, y) {
+      const fx = u.x, fy = u.y;
+      const ev = L.moveUnit(W, u, x, y);
+      if (!ev.ok) return;
+      anims.set(u.id, { fx, fy, t: 0 }); sfx.quack();
+      if (ev.captured) { sfx.win(); toast('You took ' + W.cities[ev.captured.city].name + '!', 'good'); floats.push({ x: x * TS + TS / 2, y: y * TS, text: '+' + L.CFG.CAPTURE_BONUS + ' bills', color: '#3ddc84', life: 1.2 }); }
+      afterAction(); if (L.unitById(W, u.id)) selectUnit(u);
+    }
+    function shotKind(t) { return t === 'bread' || t === 'breadapult' ? 'bread' : t === 'egg' ? 'egg' : t === 'flinger' ? 'feather' : t === 'navy' ? 'ball' : null; }
+    function showAttack(ev, aType) {
+      const k = shotKind(aType);
+      if (k && L.cheb(ev.ax, ev.ay, ev.dx, ev.dy) > 1) shots.push({ kind: k, x0: ev.ax * TS + TS / 2, y0: ev.ay * TS + TS / 2, x1: ev.dx * TS + TS / 2, y1: ev.dy * TS + TS / 2, t: 0 });
+      floats.push({ x: ev.dx * TS + TS / 2, y: ev.dy * TS + 6, text: ev.killed ? 'BONK!' : '-' + ev.dmg, color: '#ff6b6e', life: 1.2 });
+      if (ev.ret) floats.push({ x: ev.ax * TS + TS / 2, y: ev.ay * TS + 6, text: '-' + ev.ret, color: '#ff6b6e', life: 1.2 });
+      if (ev.pushed) { floats.push({ x: ev.ax * TS + TS / 2, y: ev.ay * TS - 8, text: 'HONK!', color: '#fff', life: 1.2 }); sfx.honk(); }
+    }
+    function playerAttack(u, d) {
+      const aType = u.t;
+      const ev = L.doAttack(W, u, d);
+      showAttack(ev, aType); sfx.hit();
+      if (ev.killed) toast('Defeated the enemy ' + L.UT[d.t].name + '!', 'good');
+      if (ev.died) toast('Your ' + L.UT[aType].name + ' was defeated.', 'bad');
+      L.checkFactions(W);
+      afterAction();
+      const still = L.unitById(W, u.id); if (still) selectUnit(still); else clearSel();
+    }
+    function afterAction() { save(); refreshHud(); if (W.over) setTimeout(endWar, 700); }
+
+    function endTurn() {
+      if (busy || W.over) return;
+      busy = true; clearSel(); renderSheet('Enemies are moving...');
+      const before = new Map(W.units.map(u => [u.id, { x: u.x, y: u.y, t: u.t, f: u.f }]));
+      const logLen = W.log.length;
+      setTimeout(() => {
+        const evs = L.endTurn(W);
+        // animate visible moves and attacks
+        for (const ev of evs) {
+          if (ev.type === 'move' && ev.ok) { const b = before.get(ev.id); if (b && (L.isExplored(W, ev.x, ev.y))) anims.set(ev.id, { fx: b.x, fy: b.y, t: 0 }); }
+          if (ev.type === 'attack' && L.isExplored(W, ev.dx, ev.dy)) { const b = before.get(ev.a); showAttack(ev, b ? b.t : ''); }
+        }
+        if (evs.some(e => e.type === 'attack' && e.pushed)) sfx.honk(); else if (evs.some(e => e.type === 'attack')) sfx.hit();
+        const mineLost = W.log.slice(logLen).filter(l => /from You/.test(l.msg));
+        mineLost.forEach(l => toast(l.msg, 'bad', 3600));
+        W.log.slice(logLen).filter(l => /defeated!/.test(l.msg)).forEach(l => toast(l.msg, 'good', 3600));
+        const myLost = [...before.keys()].filter(id => !L.unitById(W, id)).filter(id => (before.get(id) || {}).f === 0).length;
+        if (myLost) toast('You lost ' + myLost + (myLost === 1 ? ' unit' : ' units') + ' this turn.', 'bad', 3200);
+        busy = false; save(); refreshHud(); renderSheet();
+        if (W.over) setTimeout(endWar, 900);
+        else toast('Turn ' + W.turn + ': +' + L.income(W, 0) + ' bills', 'good');
+      }, 350);
+    }
+
+    function nextUnit() {
+      const ready = W.units.filter(u => u.f === 0 && (!u.moved || (!u.attacked && L.attackTargets(W, u).length)));
+      if (!ready.length) { toast('All your units have moved. Tap End Turn!'); return; }
+      const cur = sel && sel.kind === 'unit' ? ready.findIndex(u => u.id === sel.id) : -1;
+      const u = ready[(cur + 1) % ready.length]; centerOn(u.x, u.y); selectUnit(u); sfx.tap();
+    }
+
+    function portrait(cv2, u) { const c = setupCanvas(cv2, 64, 64); c.fillStyle = L.UT[u.t].naval ? '#4cc3e8' : '#8fd16a'; c.fillRect(0, 0, 64, 64); A.unit(c, u, 32, 30, 60, color(u.f), { face: 1, maxHp: L.UT[u.t].hp, hat: G.hat }); }
+
+    function renderSheet(busyMsg) {
+      const sh = $('#wsheet', s);
+      const endBtn = `<button class="btn royal" id="end" ${busy ? 'disabled' : ''}>End Turn</button>`;
+      const nextBtn = `<button class="btn alt small" id="next">Next unit</button>`;
+      let h = '';
+      if (busyMsg) h = `<h3>${esc(busyMsg)}</h3><p class="muted">The Geese, Swans, Chickens, and Duck Lords are taking their turns.</p>`;
+      else if (sel && sel.kind === 'unit') {
+        const u = L.unitById(W, sel.id); if (!u) { sel = null; return renderSheet(); }
+        const T = L.UT[u.t], mine = u.f === 0;
+        let status = '';
+        if (mine) status = u.moved && u.attacked ? 'Done for this turn.' : u.moved ? (targets.length ? 'Tap a red circle to attack!' : 'Moved. Nothing to attack here.') : (targets.length ? 'Tap a blue dot to move or a red circle to attack.' : 'Tap a blue dot to move.');
+        h = `<div class="unitinfo"><canvas id="por"></canvas><div>
+          <h3>${esc(T.name)} <span class="muted" style="font-size:.9rem">${mine ? 'Yours' : L.FACTIONS[u.f].name}</span></h3>
+          <div class="stats"><span class="stat">HP ${u.hp}/${T.hp}</span><span class="stat">ATK ${T.atk}</span><span class="stat">DEF ${T.def}</span><span class="stat">MOVE ${T.mv}</span><span class="stat">RANGE ${T.rng}</span></div>
+          <p class="muted">${esc(T.blurb)}</p>${mine ? '<p><b>' + esc(status) + '</b></p>' : ''}</div></div>
+          <div class="row spread">${nextBtn}${mine && L.cityAt(W, u.x, u.y) && L.cityAt(W, u.x, u.y).owner === 0 ? '<button class="btn alt small" id="tocity">City</button>' : ''}${endBtn}</div>`;
+      } else if (sel && sel.kind === 'city') {
+        const c = W.cities[sel.id], mine = c.owner === 0;
+        const inc = c.cap ? (c.id === 0 ? L.CFG.PALACE_INCOME : L.CFG.CAPITAL_INCOME) : L.CFG.CITY_INCOME;
+        h = `<h3>${esc(c.name)} <span class="muted" style="font-size:.9rem">${c.owner < 0 ? 'Free city' : mine ? 'Yours' : L.FACTIONS[c.owner].name}</span></h3>`;
+        if (mine) {
+          h += `<p class="muted">Makes ${inc} bills a turn. ${c.trained ? 'Already trained a unit this turn.' : 'Train a soldier:'}</p><div class="trainlist" id="tl"></div>`;
+        } else h += `<p>${c.owner < 0 ? 'Walk any land unit in to take it. Free cities have no guards!' : 'Defeat the guard, then walk in to capture it.'} It makes ${inc} bills a turn.</p>`;
+        h += `<div class="row spread">${nextBtn}${endBtn}</div>`;
+      } else {
+        h = `<h3>The War for France</h3><p>Tap your units to move them. Tap your cities to train soldiers. Drag to look around.</p><div class="row spread">${nextBtn}${endBtn}</div>`;
+      }
+      sh.innerHTML = h;
+      const por = $('#por', sh); if (por) portrait(por, L.unitById(W, sel.id));
+      const tl = $('#tl', sh);
+      if (tl) {
+        const c = W.cities[sel.id];
+        L.FACTIONS[0].roster.forEach(tp => {
+          const T = L.UT[tp], chk = L.canTrain(W, c.id, tp, 0);
+          const b = el(`<button class="trainbtn" title="${esc(chk.ok ? T.blurb : chk.why)}"><canvas></canvas><b>${esc(T.name)}</b><span><i class="billicon">B</i>${T.cost}</span></button>`);
+          const cc = setupCanvas(b.querySelector('canvas'), 60, 60); A.unit(cc, { t: tp, f: 0, hp: T.hp }, 30, 28, 56, color(0), { maxHp: T.hp, hat: G.hat });
+          b.onclick = () => {
+            const r = L.train(W, c.id, tp, 0);
+            if (r.ok) { sfx.build(); toast(T.name + ' trained! Ready next turn.', 'good'); afterAction(); renderSheet(); }
+            else { sfx.bad(); toast(r.why, 'bad'); }
+          };
+          if (!chk.ok) { b.onclick = () => { sfx.bad(); toast(chk.why, 'bad'); }; b.setAttribute('aria-disabled', 'true'); b.style.opacity = '.45'; b.style.boxShadow = 'none'; }
+          tl.appendChild(b);
+        });
+      }
+      const eb = $('#end', sh); if (eb) eb.onclick = () => { sfx.tap(); endTurn(); };
+      const nb = $('#next', sh); if (nb) nb.onclick = nextUnit;
+      const tc = $('#tocity', sh); if (tc) tc.onclick = () => { const u = L.unitById(W, sel.id), c = L.cityAt(W, u.x, u.y); sel = { kind: 'city', id: c.id }; moves = []; targets = []; sfx.tap(); renderSheet(); };
+    }
+
+    function endWar() {
+      save();
+      if (W.over === 'win') {
+        sfx.win();
+        modal({
+          title: 'You conquered France!',
+          art: (c, w, h) => { A.building(c, 'palace', w / 2 - 20, h - 8, 120); A.duck(c, w / 2 + 60, h - 4, 70, { hat: 'crown' }); },
+          html: '<p><b>' + esc(G.name) + '</b> is the one true <b>Lord of the Ducks</b>!</p><p>It took ' + W.turn + ' turns.</p>',
+          buttons: [{ label: 'New war', cls: 'go', fn: newWar }, { label: 'Title screen', cls: 'alt', fn: () => { clearSave(); titleScreen(); } }]
+        });
+      } else {
+        sfx.bad();
+        modal({
+          title: 'France has fallen...', art: (c, w, h) => { A.goose(c, w / 2, h - 6, 120, {}); },
+          html: '<p>Your last city was captured. Every great duck gets back up. Try again?</p>',
+          buttons: [{ label: 'New war', cls: 'go', fn: newWar }, { label: 'Title screen', cls: 'alt', fn: titleScreen }]
+        });
+      }
+    }
+    function newWar() {
+      modal({ title: 'New war', html: '<p>Pick how tough the enemies are.</p>', buttons: [{ label: 'Normal', cls: 'royal', fn: () => { L.startWar(G, false); save(); warScreen(true); } }, { label: 'Easy', cls: 'alt', fn: () => { L.startWar(G, true); save(); warScreen(true); } }] });
+    }
+
+    window.__LOTD_UI.tileToScreen = (x, y) => { const r = cv.getBoundingClientRect(); return { x: r.left + cam.x + (x + 0.5) * TS, y: r.top + cam.y + (y + 0.5) * TS }; };
+    window.__LOTD_UI.centerOn = centerOn;
+    refreshHud(); renderSheet();
+    if (first) {
+      modal({
+        title: 'How to fight',
+        art: (c, w, h) => { A.unit(c, { t: 'quacker', f: 0, hp: 10 }, 50, 70, 80, '#f5b700', { hat: G.hat }); A.unit(c, { t: 'goose', f: 1, hp: 13 }, 130, 70, 80, '#5b6b82', { face: -1, maxHp: 13 }); },
+        html: '<p>Tap a unit. <b>Blue dots</b> are where it can walk. <b>Red circles</b> are enemies it can attack.</p><p>Walk into a city to capture it. Tap your city to train soldiers with bills.</p><p>Every city gives you more bills each turn!</p>',
+        buttons: [{ label: 'Got it!', cls: 'go' }]
+      });
+    }
+  }
+
+  // ======================================================================
+  // BOOT
+  // ======================================================================
+  function boot() {
+    if (location.hash === '#war') { // grown-up shortcut for testing the war
+      G = L.newGame('Sir Quacks', 'beret', (Math.random() * 2147483647) | 0, Date.now()); G.built = 6; L.startWar(G); save(); warScreen(true); return;
+    }
+    titleScreen();
+  }
+  window.__LOTD_UI = window.__LOTD_UI || {};
+  Object.defineProperty(window.__LOTD_UI, 'G', { get() { return G; } });
+  try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: G ? L.serialize(G) : null })); } catch (e) { /* no viewer hook */ }
+  const start = data => { if (data && data.save) { try { G = L.deserialize(data.save); resume(); return; } catch (e) { /* fall through */ } } boot(); };
+  if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+})();
+</script>
+
+</body></html>

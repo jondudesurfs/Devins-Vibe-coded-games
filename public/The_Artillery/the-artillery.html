@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="The Artillery">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2b2417">
+<title>The Artillery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ead3;
+    --paper-line:#d9cba6;
+    --ink:#2b2417;
+    --fort:#7d7468;
+    --brass:#e8902a;
+    --friend:#2f6fd6;
+    --foe:#d8412f;
+    --teal:#1fb5a4;
+    --gold:#f5c518;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Nunito',system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      repeating-linear-gradient(0deg, transparent 0 31px, var(--paper-line) 31px 32px),
+      repeating-linear-gradient(90deg, transparent 0 31px, var(--paper-line) 31px 32px),
+      var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    min-height:100%; padding:14px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #stage{
+    width:min(96vw, 960px);
+    background:var(--paper);
+    border:5px solid var(--ink);
+    border-radius:18px;
+    box-shadow:10px 10px 0 rgba(43,36,23,.22);
+    overflow:hidden;
+  }
+  .topbar{
+    display:flex; align-items:center; gap:14px;
+    padding:10px 16px;
+    background:var(--ink);
+    color:var(--paper);
+    flex-wrap:wrap;
+  }
+  .title{
+    font-family:'Bungee',sans-serif;
+    font-size:clamp(20px,3.4vw,30px);
+    letter-spacing:1px;
+    color:var(--gold);
+    text-shadow:2px 2px 0 var(--foe);
+    margin-right:auto;
+  }
+  .stat{
+    font-weight:900; font-size:13px; text-transform:uppercase;
+    letter-spacing:.5px; line-height:1; white-space:nowrap;
+  }
+  .stat span{display:block; font-family:'Bungee'; font-size:18px; color:var(--gold);}
+  .hpwrap{min-width:130px;}
+  .hpbar{
+    height:14px; background:#4a4234; border-radius:8px; overflow:hidden;
+    border:2px solid #000; margin-top:3px;
+  }
+  .hpfill{height:100%; width:100%; background:linear-gradient(90deg,#39d353,#9be15d); transition:width .15s;}
+  #mute{
+    cursor:pointer; background:var(--paper); color:var(--ink);
+    border:3px solid #000; border-radius:10px; font-weight:900;
+    font-size:13px; padding:5px 10px; font-family:'Nunito';
+  }
+  .canvas-wrap{position:relative; line-height:0;}
+  canvas{display:block; width:100%; height:auto; touch-action:none; cursor:crosshair;}
+  .overlay{
+    position:absolute; inset:0;
+    background:rgba(43,36,23,.86);
+    color:var(--paper);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:18px; gap:12px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .overlay.hidden{display:none;}
+  .overlay h1{
+    font-family:'Bungee'; font-size:clamp(26px,5vw,52px);
+    color:var(--gold); text-shadow:3px 3px 0 var(--foe);
+    line-height:.95;
+  }
+  .overlay h2{font-family:'Bungee'; font-size:clamp(22px,4.5vw,38px); color:var(--foe);}
+  .howto{
+    max-width:560px; background:rgba(243,234,211,.12);
+    border:2px dashed var(--paper); border-radius:14px;
+    padding:12px 14px; text-align:left; font-weight:700;
+    font-size:clamp(12px,2.6vw,15px); line-height:1.45;
+  }
+  .howto b{color:var(--gold);}
+  .btn{
+    font-family:'Bungee'; font-size:clamp(17px,3.4vw,20px); letter-spacing:1px;
+    background:var(--brass); color:var(--ink);
+    border:4px solid #000; border-radius:14px;
+    padding:12px 30px; cursor:pointer; flex:none;
+    box-shadow:4px 4px 0 #000; transition:transform .06s;
+  }
+  .btn:active{transform:translate(4px,4px); box-shadow:0 0 0 #000;}
+  .finalscore{font-family:'Bungee'; font-size:28px; color:var(--gold);}
+  .tag{font-weight:900; opacity:.85; font-size:14px;}
+  .shoptitle{font-family:'Bungee'; font-size:clamp(20px,4vw,32px); color:var(--gold); text-shadow:2px 2px 0 var(--foe);}
+  .coinline{font-family:'Bungee'; font-size:clamp(14px,3vw,18px); color:var(--paper);}
+  .shopgrid{
+    display:grid; gap:8px; width:100%; max-width:640px;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .upg{
+    text-align:left; background:var(--paper); color:var(--ink);
+    border:3px solid #000; border-radius:12px; padding:8px 10px;
+    cursor:pointer; font-family:'Nunito'; box-shadow:3px 3px 0 #000;
+    display:flex; flex-direction:column; gap:2px; transition:transform .05s;
+  }
+  .upg:active{transform:translate(3px,3px); box-shadow:0 0 0 #000;}
+  .upg:disabled{opacity:.5; cursor:default; box-shadow:1px 1px 0 #000;}
+  .upg .un{font-weight:900; font-size:13px;}
+  .upg .ud{font-size:11px; line-height:1.25; opacity:.8;}
+  .upg .ur{display:flex; justify-content:space-between; align-items:center; margin-top:2px; font-weight:900; font-size:12px;}
+  .upg .ucost{color:#b5731a;}
+  .upg .umax{color:#1f8a3f;}
+  .pips{letter-spacing:1px;}
+  .shopsub{font-family:'Bungee'; font-size:clamp(12px,2.6vw,15px); color:var(--paper); opacity:.9; margin-top:2px;}
+  .histcard{
+    max-width:600px; background:var(--paper); color:var(--ink);
+    border:4px solid #000; border-radius:16px; padding:16px 18px;
+    box-shadow:5px 5px 0 rgba(0,0,0,.3); text-align:center;
+  }
+  .histtag{font-family:'Bungee'; font-size:clamp(10px,2.2vw,12px); letter-spacing:1px; color:var(--brass); margin-bottom:8px;}
+  #histName{font-family:'Bungee'; font-size:clamp(18px,3.6vw,26px); color:var(--ink); line-height:1.08; margin-bottom:5px;}
+  .histmeta{font-weight:900; color:var(--foe); font-size:clamp(11px,2.4vw,13px); margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;}
+  .histbody{font-weight:600; font-size:clamp(13px,2.7vw,16px); line-height:1.5; text-align:left;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="topbar">
+    <div class="title">The Artillery</div>
+    <div class="stat">Score<span id="scoreVal">0</span></div>
+    <div class="stat">Coins<span id="coinsVal">0</span></div>
+    <div class="stat">Wave<span id="waveVal">1</span></div>
+    <div class="stat">Fort Lvl<span id="levelVal">1</span></div>
+    <div class="stat hpwrap">Fort Health
+      <div class="hpbar"><div class="hpfill" id="hpFill"></div></div>
+    </div>
+    <button id="mute">🔊 Sound</button>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="game" width="960" height="600"></canvas>
+
+    <div class="overlay" id="startScreen">
+      <h1>The Artillery</h1>
+      <button class="btn" id="startBtn">Start Battle</button>
+      <div class="howto">
+        Defend your fortress! Here is how:
+        <br>• <b>Aim the cannon</b> by moving your mouse. It auto-fires every couple of seconds and BOOMS a whole group.
+        <br>• <b>Swordsmen</b> charge out of your fort on their own to fight the enemy.
+        <br>• <b>Click the glowing side circles</b> to send your <b>2 flank fighters</b> there. They shoot enemies marching past.
+        <br>• <b>Every 100 points your fort levels up:</b> the cannon fires faster, archers march out to shoot from long range, and the fort gains health, but the enemy army gets stronger too!
+        <br>• <b>Every enemy you defeat drops coins</b> (🪙 1 for red, 3 for purple, 10 for a boss). <b>After each wave the Upgrade Shop opens</b>, spend coins to power up your cannon, swordsmen, and archers, buy <b>extra flank fighters</b>, or <b>recruit whole batches of troops</b> at once! Upgrades cost more each time, and the enemy grows bigger and faster every wave.
+        <br>• <b>Level 3:</b> an armored <b>Knight</b> roams the whole battlefield hunting enemies, and a <b>second cannon</b> appears that auto-fires every 3 seconds.
+        <br>• <b>The world changes every 4 levels!</b> Level 4 is the <b>Wild West</b> (cowboys join you and outlaws attack), Level 8 is the <b>High Seas</b> (everyone fights from rowboats, friendly pirates roam and shoot, and enemy pirates row in from the sides), Level 12 returns to the <b>Castle</b>, and it keeps rotating.
+        <br>• <b>Every level-up sends a mini-boss</b>: lots of health, hits hard. Gang up on it!
+        <br>• Don't let the red army reach your fort!
+      </div>
+      <div class="tag">Made for you. Good luck, Commander.</div>
+    </div>
+
+    <div class="overlay hidden" id="overScreen">
+      <h2>The Fort Has Fallen!</h2>
+      <button class="btn" id="againBtn">Fight Again</button>
+      <div class="finalscore" id="finalScore">Score: 0</div>
+      <div class="tag" id="finalWave">You survived 1 wave</div>
+    </div>
+
+    <div class="overlay hidden" id="shopScreen">
+      <h2 class="shoptitle">⚒️ Upgrade Shop</h2>
+      <div class="coinline">🪙 <span id="shopCoins">0</span> coins to spend</div>
+      <div class="shopgrid" id="shopGrid"></div>
+      <div class="shopsub">🐎 Recruit Troops (instant reinforcements)</div>
+      <div class="shopgrid" id="recruitGrid"></div>
+      <button class="btn" id="nextWaveBtn">Next Wave →</button>
+    </div>
+
+    <div class="overlay hidden" id="historyScreen">
+      <div class="histcard">
+        <div class="histtag">⚔️ A TRUE CASTLE BATTLE FROM HISTORY ⚔️</div>
+        <h2 id="histName">Battle</h2>
+        <div class="histmeta" id="histMeta">Place • Year</div>
+        <p class="histbody" id="histBody">…</p>
+      </div>
+      <button class="btn" id="toBattleBtn">⚔️ To Battle!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Setup ----------
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = 960, H = 600;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  // World layout
+  const FORT_FRONT = 150;            // enemies attack when they reach here
+  const CANNON = { x: 96, y: 300 };  // cannon pivot
+  const PATH_TOP = 110, PATH_BOT = 490;
+
+  // Flank circles (the only spots side fighters can stand)
+  const CIRCLES = [
+    {x:340,y:78},  {x:560,y:78},  {x:780,y:78},
+    {x:340,y:522}, {x:560,y:522}, {x:780,y:522}
+  ];
+  const CIRCLE_R = 26;
+
+  // ---------- Sound ----------
+  let audioCtx = null, soundOn = true;
+  function ensureAudio(){ if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+  function beep(freq, dur, type, vol){
+    if(!soundOn || !audioCtx) return;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type||'square'; o.frequency.value = freq;
+    g.gain.value = vol||0.06;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (dur||0.12));
+    o.start(t); o.stop(t + (dur||0.12));
+  }
+  const sfx = {
+    boom(){ beep(70,0.28,'sawtooth',0.09); beep(120,0.18,'square',0.05); },
+    clang(){ beep(420,0.05,'square',0.03); },
+    shot(){ beep(700,0.04,'triangle',0.025); },
+    hurt(){ beep(160,0.18,'sawtooth',0.07); }
+  };
+
+  // ---------- Music: a loose, synthesized homage to Wagner's "Ride of the Valkyries" ----------
+  // (Wagner's melody is public domain; this is an original chiptune-style arrangement of the motif.)
+  const N = {E2:82.41,B2:123.47,E3:164.81,F3S:185.00,B3:246.94,D4:293.66,E4:329.63,
+             F4S:369.99,G4:392.00,A4:440.00,B4:493.88,C5S:554.37,D5:587.33,E5:659.25,F5S:739.99};
+  // The galloping dotted "long-short-long" rising-arpeggio figure, two phrases, then it loops.
+  const mSeq = [
+    {f:N.B3,d:0.30,k:true,b:N.E2},{f:N.E4,d:0.15},{f:N.G4,d:0.45},
+    {f:N.G4,d:0.30,k:true,b:N.E2},{f:N.B4,d:0.15},{f:N.E5,d:0.45},
+    {f:N.E5,d:0.30,k:true,b:N.E2},{f:N.B4,d:0.15},{f:N.G4,d:0.60},
+    {f:N.B3,d:0.30,k:true,b:N.E2},{f:N.E4,d:0.15},{f:N.G4,d:0.45},
+    {f:N.B4,d:0.30,k:true,b:N.B2},{f:N.G4,d:0.15},{f:N.E4,d:0.60},
+    {f:N.F4S,d:0.30,k:true,b:N.B2},{f:N.A4,d:0.15},{f:N.D5,d:0.45},
+    {f:N.D5,d:0.30,k:true,b:N.B2},{f:N.A4,d:0.15},{f:N.F4S,d:0.45},
+    {f:N.B4,d:0.30,k:true,b:N.E2},{f:N.F5S,d:0.15},{f:N.E5,d:0.75},
+    {f:null,d:0.30}
+  ];
+  let musicGain = null;
+  const music = { playing:false, idx:0, nextTime:0, timer:null };
+
+  function mVoice(freq,start,dur,type,vol){
+    if(!audioCtx) return;
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,start);
+    o.connect(g); g.connect(musicGain);
+    g.gain.setValueAtTime(0.0001,start);
+    g.gain.exponentialRampToValueAtTime(vol,start+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+    o.start(start); o.stop(start+dur+0.03);
+  }
+  function mKick(start){
+    if(!audioCtx) return;
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(165,start);
+    o.frequency.exponentialRampToValueAtTime(48,start+0.12);
+    o.connect(g); g.connect(musicGain);
+    g.gain.setValueAtTime(0.0001,start);
+    g.gain.exponentialRampToValueAtTime(0.32,start+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,start+0.18);
+    o.start(start); o.stop(start+0.2);
+  }
+  function musicScheduler(){
+    if(!audioCtx || !music.playing) return;
+    while(music.nextTime < audioCtx.currentTime + 0.12){
+      const n = mSeq[music.idx], t = music.nextTime;
+      if(n.f) mVoice(n.f, t, n.d*0.92, 'sawtooth', 0.18);
+      if(n.b){ mVoice(n.b, t, n.d*1.7, 'triangle', 0.22); mVoice(n.b*2, t, n.d*0.9, 'sawtooth', 0.05); }
+      if(n.k) mKick(t);
+      music.nextTime += n.d;
+      music.idx = (music.idx+1) % mSeq.length;
+    }
+  }
+  function startMusic(){
+    ensureAudio();
+    if(!audioCtx || music.playing) return;
+    if(audioCtx.resume) audioCtx.resume();
+    if(!musicGain){ musicGain = audioCtx.createGain(); musicGain.connect(audioCtx.destination); }
+    const now = audioCtx.currentTime;
+    musicGain.gain.cancelScheduledValues(now);
+    musicGain.gain.setValueAtTime(0.0001, now);
+    musicGain.gain.exponentialRampToValueAtTime(soundOn?0.5:0.0001, now+1.0);
+    music.playing = true; music.idx = 0; music.nextTime = now + 0.1;
+    music.timer = setInterval(musicScheduler, 25);
+  }
+  function stopMusic(){
+    music.playing = false;
+    if(music.timer){ clearInterval(music.timer); music.timer = null; }
+    if(musicGain && audioCtx){ musicGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.4); }
+  }
+
+  // ---------- Game State ----------
+  let state = 'start';
+  let enemies, swordsmen, balls, bolts, fx;
+  let archers, arrows, archerTimer, archersUnlocked;
+  let knights, knightUnlocked, knightRespawn;
+  let cannon2Active, cannon2cd, cannon2angle;
+  let cowboys, bullets, cowboyTimer, cowboysUnlocked;
+  let pirateAllies, seaPirateTimer, recruitBought;
+  let theme;   // 'castle' | 'cowboy' | 'pirate' (rotates every 4 levels from L4)
+  let fortHP, maxFortHP, score, wave, level, enemyPower, cannonInterval;
+  let cannonAngle, cannonCooldown, swordTimer;
+  let waveCountdown, enemiesToSpawn, spawnTimer, betweenWaves, banner, bannerT;
+  let flanks; // exactly 2 units
+  let nextFlank;
+  let mouse = {x: 600, y: 300};
+
+  const CANNON_INTERVAL_BASE = 1.9;
+  const SWORD_INTERVAL = 2.6;
+  const SWORD_BASE_MAX = 5;
+  const ARCHER_INTERVAL = 4.5;
+  const MAX_ARCHERS = 3;
+  const CANNON2 = { x: 196, y: 300 };   // second cannon, in front of the main one
+  const CANNON2_INTERVAL = 3.0;
+  const KNIGHT_RESPAWN = 7.0;
+  const MAX_COWBOYS = 3;
+  const MAX_SEA_PIRATES = 3;
+  const SEA_PIRATE_INTERVAL = 3.2;
+  const COWBOY_INTERVAL = 3.8;
+
+  // Themes rotate every 4 levels starting at L4: castle 1-3, cowboy 4-7, pirate 8-11, castle 12-15...
+  function themeForLevel(L){
+    if(L < 4) return 'castle';
+    return ['cowboy','pirate','castle'][Math.floor((L-4)/4) % 3];
+  }
+
+  // ----- Coins & upgrade shop -----
+  let coins, up, maxSwords, cannonSplash, cannonDamage, archerRange;
+  const UPMETA = [
+    {key:'fireRate', label:'⚡ Cannon Fire Rate', desc:'Cannon shoots more often',  max:6, c0:8},
+    {key:'splash',   label:'💥 Cannon Splash',    desc:'Bigger explosion radius',   max:6, c0:8},
+    {key:'cdmg',     label:'🧨 Cannon Damage',     desc:'Each blast hits harder',    max:6, c0:8},
+    {key:'scatter',  label:'🗡️ Swordsmen Scatter', desc:'More swordsmen, and they chase enemies all over the map (even the ones on the sides)', max:5, c0:10},
+    {key:'shield',   label:'🛡️ Swordsmen Shields', desc:'Swordsmen take less damage and last longer', max:4, c0:10},
+    {key:'arange',   label:'🏹 Archer Range',       desc:'Archers shoot 20% farther across the screen', max:3, c0:8},
+    {key:'flame',    label:'🔥 Flaming Arrows',     desc:'Arrows set enemies on fire', max:4, c0:12},
+    {key:'flanks',   label:'➕ Extra Flank Fighter', desc:'Adds another fighter you can place on the side circles', max:4, c0:14},
+  ];
+  // Instant batch recruiting (repeatable; spawns troops right now)
+  const RECRUITS = [
+    {key:'sword',  label:'🗡️ Recruit Swordsmen ×3', n:3, cost:12, need:()=>true,              make:()=>spawnSwordsman()},
+    {key:'arch',   label:'🏹 Recruit Archers ×3',    n:3, cost:16, need:()=>archersUnlocked,   make:()=>spawnArcher()},
+    {key:'cowboy', label:'🤠 Recruit Cowboys ×2',    n:2, cost:18, need:()=>cowboysUnlocked,   make:()=>spawnCowboy()},
+  ];
+  function makeUpgrades(){ const o={}; for(const m of UPMETA) o[m.key]={lvl:0}; return o; }
+  function upCost(key){ const m=UPMETA.find(x=>x.key===key); return Math.round(m.c0 * Math.pow(2, up[key].lvl)); }
+  function recomputeStats(){
+    cannonInterval = Math.max(0.45, CANNON_INTERVAL_BASE * Math.pow(0.82, level-1) * Math.pow(0.86, up.fireRate.lvl));
+    cannonSplash   = 78 + up.splash.lvl*22;
+    cannonDamage   = 48 + up.cdmg.lvl*22;
+    archerRange    = W * Math.min(0.8, 0.2 + 0.2*up.arange.lvl);
+    maxSwords      = SWORD_BASE_MAX + up.scatter.lvl;
+  }
+
+  function reset(){
+    enemies = []; swordsmen = []; balls = []; bolts = []; fx = [];
+    archers = []; arrows = []; archerTimer = ARCHER_INTERVAL; archersUnlocked = false;
+    knights = []; knightUnlocked = false; knightRespawn = KNIGHT_RESPAWN;
+    cannon2Active = false; cannon2cd = CANNON2_INTERVAL; cannon2angle = 0;
+    cowboys = []; bullets = []; cowboyTimer = COWBOY_INTERVAL; cowboysUnlocked = false;
+    pirateAllies = []; seaPirateTimer = SEA_PIRATE_INTERVAL; recruitBought = {sword:0, arch:0, cowboy:0};
+    theme = 'castle';
+    level = 1; maxFortHP = 100; fortHP = maxFortHP; enemyPower = 1;
+    coins = 0; up = makeUpgrades(); cannonInterval = CANNON_INTERVAL_BASE; recomputeStats();
+    score = 0; wave = 0;
+    cannonAngle = 0; cannonCooldown = 1.0; swordTimer = 1.2;
+    betweenWaves = true; waveCountdown = 2.2; enemiesToSpawn = 0; spawnTimer = 0;
+    banner = ''; bannerT = 0;
+    flanks = [ makeFlank(), makeFlank() ];
+    nextFlank = 0;
+    updateHUD();
+  }
+
+  function makeFlank(){ return { deployed:false, x:0, y:0, circle:-1, cd:0, hp:60, maxhp:60 }; }
+  function spawnKnight(){
+    knights.push({ x:FORT_FRONT+10, y:300, r:18, speed:74,
+                   hp:200+level*40, maxhp:200+level*40, atkcd:0, dmg:30 });
+  }
+  function spawnSwordsman(){
+    const sh = up.shield.lvl, hp = 55 + sh*25;
+    swordsmen.push({ x: FORT_FRONT-6, y: 240 + Math.random()*120, r:12, speed:46, hp, maxhp:hp, atkcd:0, target:null, shield:sh });
+  }
+  function spawnArcher(){
+    archers.push({ x: FORT_FRONT-4, y: 160 + Math.random()*280, hold: 210 + Math.random()*70, r:11, hp:40, maxhp:40, cd: Math.random()*0.5 });
+  }
+  function spawnCowboy(){
+    cowboys.push({ x: FORT_FRONT-4, y: 170 + Math.random()*260, hold: 250 + Math.random()*80, r:12, hp:50, maxhp:50, cd: Math.random()*0.4 });
+  }
+  function spawnSeaPirate(){
+    pirateAllies.push({ x: FORT_FRONT+12, y: 200 + Math.random()*200, r:13, speed:66, hp:75, maxhp:75, cd: Math.random()*0.4 });
+  }
+
+  // ---------- Spawning ----------
+  function startWave(){
+    wave++;
+    enemiesToSpawn = 5 + Math.floor(wave * 2.5);   // more enemies each wave
+    spawnTimer = 0;
+    betweenWaves = false;
+    banner = 'Wave ' + wave; bannerT = 1.8;
+    updateHUD();
+  }
+  function spawnInterval(){ return Math.max(0.32, 1.4 - wave * 0.085); }  // they come faster too
+
+  // Every 100 points: cannon fires faster, fort upgrades (more health),
+  // archers join the fight, and the enemy gets stronger too.
+  function levelUp(){
+    level++;
+    const newMax = 100 + (level-1)*40;
+    fortHP += (newMax - maxFortHP);   // upgrade heals + raises the ceiling
+    maxFortHP = newMax;
+    enemyPower = 1 + (level-1)*0.24;   // enemies grow tougher
+    recomputeStats();                  // level speeds up the cannon
+    const prevTheme = theme;
+    theme = themeForLevel(level);
+    if(theme !== 'pirate') pirateAllies = [];   // sailors go home when we leave the sea
+    const themeChanged = theme !== prevTheme;
+    if(level === 2){
+      archersUnlocked = true;
+      banner = 'FORT LEVEL 2!  Archers + Boss!';
+    } else if(level === 3){
+      archersUnlocked = true;
+      cannon2Active = true;
+      knightUnlocked = true; knightRespawn = 0;   // knight marches out now
+      banner = 'FORT LEVEL 3!  Knight + 2nd Cannon!';
+    } else if(level === 4){
+      cowboysUnlocked = true;     // cowboys ride out alongside your archers
+      banner = 'LEVEL 4: THE WILD WEST!  Cowboys ride out!';
+    } else if(themeChanged && theme === 'pirate'){
+      banner = 'LEVEL ' + level + ': THE HIGH SEAS!  Pirates incoming!';
+    } else if(themeChanged && theme === 'cowboy'){
+      banner = 'LEVEL ' + level + ': BACK TO THE WILD WEST!';
+    } else if(themeChanged && theme === 'castle'){
+      banner = 'LEVEL ' + level + ': RETURN TO THE CASTLE!';
+    } else {
+      banner = 'FORT LEVEL ' + level + '!  Boss incoming!';
+    }
+    bannerT = 2.6;
+    if(level === 4) spawnLevel4Assault();   // two mini-bosses + a MEGA boss
+    else spawnBoss();                        // a mini-boss caps off every other level-up
+    sfx.boom();
+    updateHUD();
+  }
+
+  // A boss: mult scales its health & damage (1 = mini-boss, 4 = MEGA boss).
+  function spawnBoss(mult, r, y, xoff){
+    mult = mult || 1; r = r || 26; xoff = xoff || 0;
+    if(y === undefined) y = PATH_TOP + 40 + Math.random() * (PATH_BOT - PATH_TOP - 80);
+    const hp = Math.round((170 + level*55) * (0.85 + 0.15*enemyPower) * mult);
+    enemies.push({ x:W+40+xoff, y, r, speed: mult>=4 ? 13 : 18, hp, maxhp:hp,
+                   armored:true, boss:true, mega: mult>=4, atkcd:0,
+                   atkFort:16*mult, atkUnit:28*mult, worth:5*mult, coin:10*mult,
+                   burnTime:0, burnDps:0, target:null, bob:Math.random()*6 });
+  }
+  function spawnLevel4Assault(){
+    spawnBoss(1, 26, 210, 0);     // mini-boss (upper lane)
+    spawnBoss(1, 26, 390, 0);     // mini-boss (lower lane)
+    spawnBoss(4, 40, 300, 150);   // MEGA boss, 4x health & strength, trailing behind
+  }
+
+  function spawnEnemy(){
+    // fast runners: outlaws in the West, swabbies at sea
+    const runner = (theme==='cowboy' || theme==='pirate') && Math.random() < 0.30;
+    const armored = !runner && wave >= 3 && Math.random() < 0.22;
+    let baseHp, baseSpeed, r;
+    if(runner){ baseHp = 22 + wave*3;  baseSpeed = 72 + Math.random()*20; r = 12; }
+    else if(armored){ baseHp = 70 + wave*8; baseSpeed = 26; r = 16; }
+    else { baseHp = 30 + wave*5; baseSpeed = 38 + Math.random()*14; r = 13; }
+    const hp = Math.round(baseHp * enemyPower);
+    const spd = baseSpeed * (1 + (level-1)*0.05) * (1 + wave*0.05);   // faster as waves go on
+    const e = {
+      r, speed: spd, hp, maxhp: hp,
+      armored, bandit: runner, theme,
+      atkcd: 0, atkFort: armored ? 6 : 4, atkUnit: runner ? 8 : 12,
+      worth: 1, coin: armored ? 3 : 1,
+      burnTime: 0, burnDps: 0, target: null, bob: Math.random()*6,
+      fromSide: false, ty: 0
+    };
+    // In the pirate theme, some pirates row in from the top or bottom edge
+    if(theme==='pirate' && Math.random() < 0.4){
+      e.fromSide = true;
+      e.x = 420 + Math.random()*(W-460);
+      const top = Math.random() < 0.5;
+      e.y = top ? PATH_TOP - 40 : PATH_BOT + 40;
+      e.ty = PATH_TOP + 30 + Math.random()*(PATH_BOT - PATH_TOP - 60);  // lane to settle into
+    } else {
+      e.x = W + 30;
+      e.y = PATH_TOP + 20 + Math.random() * (PATH_BOT - PATH_TOP - 40);
+    }
+    enemies.push(e);
+  }
+
+  // ---------- Update ----------
+  function update(dt){
+    // waves
+    if(betweenWaves){
+      waveCountdown -= dt;
+      if(waveCountdown <= 0) startWave();
+    } else {
+      if(enemiesToSpawn > 0){
+        spawnTimer -= dt;
+        if(spawnTimer <= 0){ spawnEnemy(); enemiesToSpawn--; spawnTimer = spawnInterval(); }
+      } else if(enemies.length === 0){
+        openShop();   // chance to spend coins before the next wave
+      }
+    }
+    if(bannerT > 0) bannerT -= dt;
+
+    // cannon aim + auto fire
+    let ang = Math.atan2(mouse.y - CANNON.y, mouse.x - CANNON.x);
+    ang = Math.max(-1.25, Math.min(1.25, ang));
+    cannonAngle += (ang - cannonAngle) * Math.min(1, dt*12);
+    cannonCooldown -= dt;
+    if(cannonCooldown <= 0){
+      fireCannon();
+      cannonCooldown = cannonInterval;
+    }
+
+    // spawn swordsmen
+    swordTimer -= dt;
+    if(swordTimer <= 0 && swordsmen.length < maxSwords && state==='playing'){
+      spawnSwordsman();
+      swordTimer = SWORD_INTERVAL;
+    }
+
+    // spawn archers (unlocked at Fort Level 2). They hold back and shoot long range.
+    if(archersUnlocked){
+      archerTimer -= dt;
+      if(archerTimer <= 0 && archers.length < MAX_ARCHERS && state==='playing'){
+        spawnArcher();
+        archerTimer = ARCHER_INTERVAL;
+      }
+    }
+
+    // spawn cowboys (unlocked at Level 4 / Wild West). Gunslingers with fast shots.
+    if(cowboysUnlocked){
+      cowboyTimer -= dt;
+      if(cowboyTimer <= 0 && cowboys.length < MAX_COWBOYS && state==='playing'){
+        spawnCowboy();
+        cowboyTimer = COWBOY_INTERVAL;
+      }
+    }
+
+    // spawn friendly pirates during sea levels. They roam the map and fire at any enemy.
+    if(theme === 'pirate'){
+      seaPirateTimer -= dt;
+      if(seaPirateTimer <= 0 && pirateAllies.length < MAX_SEA_PIRATES && state==='playing'){
+        spawnSeaPirate();
+        seaPirateTimer = SEA_PIRATE_INTERVAL;
+      }
+    }
+
+    // enemies
+    for(const e of enemies){
+      e.bob += dt*8;
+      if(e.burnTime > 0){
+        e.burnTime -= dt; e.hp -= e.burnDps*dt;
+        if(Math.random() < 0.4) fx.push({x:e.x+rand(-6,6), y:e.y-6, vx:rand(-15,15), vy:rand(-50,-15), life:0.35, r:3, c:Math.random()<0.5?'#ff9024':'#ffd24a'});
+      }
+      // find a defender (swordsman, archer, knight, or cowboy) to fight if close
+      e.target = null;
+      let best=null; const rng=(e.r+22); let bd=rng*rng;
+      for(const s of swordsmen){
+        const dx=s.x-e.x, dy=s.y-e.y, d=dx*dx+dy*dy;
+        if(d < bd){ bd=d; best=s; }
+      }
+      for(const a of archers){
+        const dx=a.x-e.x, dy=a.y-e.y, d=dx*dx+dy*dy;
+        if(d < bd){ bd=d; best=a; }
+      }
+      for(const c of cowboys){
+        const dx=c.x-e.x, dy=c.y-e.y, d=dx*dx+dy*dy;
+        if(d < bd){ bd=d; best=c; }
+      }
+      for(const p of pirateAllies){
+        const dx=p.x-e.x, dy=p.y-e.y, d=dx*dx+dy*dy;
+        if(d < bd){ bd=d; best=p; }
+      }
+      for(const k of knights){
+        const dx=k.x-e.x, dy=k.y-e.y, d=dx*dx+dy*dy;
+        if(d < bd){ bd=d; best=k; }
+      }
+      if(best){
+        e.target = best;
+        e.atkcd -= dt;
+        if(e.atkcd<=0){ const red = best.shield?(1-Math.min(0.6,0.15*best.shield)):1; best.hp -= e.atkUnit*red; e.atkcd=0.7; sfx.clang(); spark(best.x,best.y,'#fff'); }
+      } else if(e.x > FORT_FRONT + e.r){
+        if(e.fromSide){
+          // angle in from the edge toward the fort
+          const tx = FORT_FRONT + 24, ty = e.ty;
+          const dx = tx - e.x, dy = ty - e.y, m = Math.hypot(dx,dy) || 1;
+          e.x += dx/m * e.speed * dt;
+          e.y += dy/m * e.speed * dt;
+          if(Math.abs(e.y - ty) < 6) e.fromSide = false;  // settled into the lane
+        } else {
+          e.x -= e.speed * dt;
+        }
+      } else {
+        // attacking fort
+        e.atkcd -= dt;
+        if(e.atkcd<=0){ fortHP -= e.atkFort; e.atkcd=0.8; sfx.hurt(); spark(FORT_FRONT, e.y, '#d8412f'); updateHUD(); }
+      }
+    }
+
+    // swordsmen (with Scatter upgrade they chase enemies anywhere on the map)
+    const scatter = up.scatter.lvl > 0;
+    for(const s of swordsmen){
+      s.target = null;
+      let best=null, bd=1e9;
+      for(const e of enemies){
+        const dx=e.x-s.x, dy=e.y-s.y, d=dx*dx+dy*dy;
+        if(d<bd){ bd=d; best=e; }
+      }
+      if(best){
+        const reach = best.r + 20;
+        if(bd <= reach*reach){
+          s.target=best; s.atkcd-=dt;
+          if(s.atkcd<=0){ best.hp-=16; s.atkcd=0.6; sfx.clang(); spark(best.x,best.y,'#ffe27a'); }
+        } else if(scatter){
+          const dx=best.x-s.x, dy=best.y-s.y, m=Math.hypot(dx,dy)||1;
+          s.x += dx/m*s.speed*dt; s.y += dy/m*s.speed*dt;
+        } else {
+          s.x += s.speed*dt; if(s.x > W-20) s.x = W-20;
+        }
+      } else if(!scatter){
+        s.x += s.speed*dt; if(s.x > W-20) s.x = W-20;
+      }
+      s.y = Math.max(80, Math.min(H-80, s.y));
+    }
+
+    // knight (Level 3): roams the WHOLE screen hunting the nearest enemy
+    for(const k of knights){
+      let best=null, bd=1e9;
+      for(const e of enemies){
+        const dx=e.x-k.x, dy=e.y-k.y, d=dx*dx+dy*dy;
+        if(d<bd){ bd=d; best=e; }
+      }
+      if(best){
+        const reach = best.r + k.r + 4;
+        if(bd > reach*reach){
+          const dx=best.x-k.x, dy=best.y-k.y, m=Math.hypot(dx,dy)||1;
+          k.x += dx/m*k.speed*dt; k.y += dy/m*k.speed*dt;
+        } else {
+          k.atkcd-=dt;
+          if(k.atkcd<=0){ best.hp-=k.dmg; k.atkcd=0.5; sfx.clang(); spark(best.x,best.y,'#ffffff'); }
+        }
+      }
+      k.x = Math.max(FORT_FRONT, Math.min(W-16, k.x));
+      k.y = Math.max(44, Math.min(H-44, k.y));
+    }
+
+    // second cannon (Level 3): auto-aims at the nearest enemy, fires every 3 seconds
+    if(cannon2Active){
+      let best=null, bd=1e9;
+      for(const e of enemies){
+        const dx=e.x-CANNON2.x, dy=e.y-CANNON2.y, d=dx*dx+dy*dy;
+        if(d<bd){ bd=d; best=e; }
+      }
+      if(best){
+        const ta = Math.atan2(best.y-CANNON2.y, best.x-CANNON2.x);
+        cannon2angle += (ta-cannon2angle)*Math.min(1, dt*8);
+      }
+      cannon2cd -= dt;
+      if(cannon2cd<=0 && best){ launchBall(CANNON2.x+Math.cos(cannon2angle)*34, CANNON2.y+Math.sin(cannon2angle)*34, cannon2angle, 600); cannon2cd=CANNON2_INTERVAL; }
+      else if(cannon2cd<0){ cannon2cd=0; }
+    }
+
+    // cowboys: hold a line and fire fast gunshots at the nearest enemy
+    for(const c of cowboys){
+      if(c.x < c.hold) c.x += 44*dt;
+      c.cd -= dt;
+      if(c.cd <= 0){
+        let best=null, bd=340*340;
+        for(const e of enemies){
+          const dx=e.x-c.x, dy=e.y-c.y, d=dx*dx+dy*dy;
+          if(d<bd){ bd=d; best=e; }
+        }
+        if(best){
+          const dx=best.x-c.x, dy=best.y-c.y, m=Math.hypot(dx,dy)||1;
+          bullets.push({ x:c.x+10, y:c.y-4, vx:dx/m*760, vy:dy/m*760, life:1.0 });
+          c.cd = 0.5; beep(900,0.03,'square',0.02);
+        } else { c.cd = 0.2; }
+      }
+    }
+    // friendly pirates: roam the whole map like the knight, but fire at enemies
+    for(const p of pirateAllies){
+      let best=null, bd=1e9;
+      for(const e of enemies){
+        const dx=e.x-p.x, dy=e.y-p.y, d=dx*dx+dy*dy;
+        if(d<bd){ bd=d; best=e; }
+      }
+      if(best){
+        const dist = Math.sqrt(bd);
+        if(dist > 150){
+          const dx=best.x-p.x, dy=best.y-p.y, m=dist||1;
+          p.x += dx/m*p.speed*dt; p.y += dy/m*p.speed*dt;
+        }
+        p.cd -= dt;
+        if(p.cd<=0 && dist<340){
+          const dx=best.x-p.x, dy=best.y-p.y, m=Math.hypot(dx,dy)||1;
+          bullets.push({ x:p.x+8, y:p.y-4, vx:dx/m*720, vy:dy/m*720, life:1.1 });
+          p.cd = 0.7; beep(780,0.03,'square',0.02);
+        }
+      }
+      p.x = Math.max(FORT_FRONT, Math.min(W-16, p.x));
+      p.y = Math.max(44, Math.min(H-44, p.y));
+    }
+
+    // bullets
+    for(const bu of bullets){
+      bu.x += bu.vx*dt; bu.y += bu.vy*dt; bu.life -= dt;
+      for(const e of enemies){
+        const dx=e.x-bu.x, dy=e.y-bu.y;
+        if(dx*dx+dy*dy < (e.r+4)*(e.r+4)){ e.hp -= 18; bu.life=0; spark(bu.x,bu.y,'#ffe27a'); break; }
+      }
+    }
+
+    // archers: walk to a holding line near the fort, then fire long-range arrows
+    for(const a of archers){
+      if(a.x < a.hold) a.x += 42*dt;
+      a.cd -= dt;
+      if(a.cd <= 0){
+        let best=null, bd=archerRange*archerRange;
+        for(const e of enemies){
+          const dx=e.x-a.x, dy=e.y-a.y, d=dx*dx+dy*dy;
+          if(d<bd){ bd=d; best=e; }
+        }
+        if(best){
+          const dx=best.x-a.x, dy=best.y-a.y, m=Math.hypot(dx,dy)||1;
+          arrows.push({ x:a.x+8, y:a.y-6, vx:dx/m*520, vy:dy/m*520, life:1.8, flame:up.flame.lvl });
+          a.cd = 1.05; sfx.shot();
+        } else { a.cd = 0.25; }
+      }
+    }
+
+    // arrows (flaming arrows set enemies on fire)
+    for(const ar of arrows){
+      ar.x += ar.vx*dt; ar.y += ar.vy*dt; ar.life -= dt;
+      for(const e of enemies){
+        const dx=e.x-ar.x, dy=e.y-ar.y;
+        if(dx*dx+dy*dy < (e.r+5)*(e.r+5)){
+          e.hp -= 20 + (ar.flame||0)*6;
+          if(ar.flame>0){ e.burnTime = 2.4; e.burnDps = 7*ar.flame; spark(ar.x,ar.y,'#ff9024'); }
+          else spark(ar.x,ar.y,'#7a4a1f');
+          ar.life=0; break;
+        }
+      }
+    }
+
+    // flank units shoot
+    for(const f of flanks){
+      if(!f.deployed) continue;
+      f.cd -= dt;
+      if(f.cd<=0){
+        let best=null, bd=170*170;
+        for(const e of enemies){
+          const dx=e.x-f.x, dy=e.y-f.y, d=dx*dx+dy*dy;
+          if(d<bd){ bd=d; best=e; }
+        }
+        if(best){
+          const dx=best.x-f.x, dy=best.y-f.y, m=Math.hypot(dx,dy)||1;
+          bolts.push({x:f.x, y:f.y, vx:dx/m*420, vy:dy/m*420, life:1.2});
+          f.cd = 0.85; sfx.shot();
+        } else { f.cd = 0.2; }
+      }
+    }
+
+    // bolts
+    for(const b of bolts){
+      b.x += b.vx*dt; b.y += b.vy*dt; b.life -= dt;
+      for(const e of enemies){
+        const dx=e.x-b.x, dy=e.y-b.y;
+        if(dx*dx+dy*dy < (e.r+5)*(e.r+5)){ e.hp -= 14; b.life=0; spark(b.x,b.y,'#1fb5a4'); break; }
+      }
+    }
+
+    // cannonballs
+    for(const c of balls){
+      c.x += c.vx*dt; c.y += c.vy*dt; c.dist += Math.hypot(c.vx,c.vy)*dt;
+      let hit=false;
+      for(const e of enemies){
+        const dx=e.x-c.x, dy=e.y-c.y;
+        if(dx*dx+dy*dy < (e.r+7)*(e.r+7)){ hit=true; break; }
+      }
+      if(hit || c.dist > 860 || c.x>W+40 || c.y<0 || c.y>H){ explode(c.x,c.y); c.dead=true; }
+    }
+
+    // remove dead + score
+    for(const e of enemies){ if(e.hp<=0 && !e.counted){ e.counted=true; score += (e.worth||1); coins += (e.coin||0); bursts(e.x,e.y,e.boss?'#ffcf3a':'#d8412f'); } }
+    enemies = enemies.filter(e=>e.hp>0);
+    swordsmen = swordsmen.filter(s=>s.hp>0);
+    archers = archers.filter(a=>a.hp>0);
+    knights = knights.filter(k=>k.hp>0);
+    cowboys = cowboys.filter(c=>c.hp>0);
+    pirateAllies = pirateAllies.filter(p=>p.hp>0);
+    balls = balls.filter(c=>!c.dead);
+    bolts = bolts.filter(b=>b.life>0);
+    arrows = arrows.filter(a=>a.life>0);
+    bullets = bullets.filter(b=>b.life>0);
+    for(const p of fx){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=200*dt; p.life-=dt; }
+    fx = fx.filter(p=>p.life>0);
+
+    // keep one knight on the field once unlocked
+    if(knightUnlocked){
+      if(knights.length>0){ knightRespawn = KNIGHT_RESPAWN; }
+      else { knightRespawn -= dt; if(knightRespawn<=0){ spawnKnight(); knightRespawn = KNIGHT_RESPAWN; } }
+    }
+
+    while(score >= level*100) levelUp();   // every 100 points = upgrade
+    if(score !== lastScore){ lastScore=score; updateHUD(); }
+    if(fortHP <= 0){ fortHP=0; gameOver(); }
+  }
+  let lastScore = 0;
+
+  function launchBall(x, y, angle, speed){
+    balls.push({ x, y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed, dist:0 });
+    sfx.boom();
+    for(let i=0;i<6;i++){
+      fx.push({x,y,vx:Math.cos(angle)*60+rand(-40,40),vy:Math.sin(angle)*60+rand(-40,40),life:0.4,r:6,c:'#bbb'});
+    }
+  }
+  function fireCannon(){
+    launchBall(CANNON.x + Math.cos(cannonAngle)*46, CANNON.y + Math.sin(cannonAngle)*46, cannonAngle, 640);
+  }
+
+  function explode(x,y){
+    fx.push({x,y,vx:0,vy:0,life:0.32,r:8,c:'#ffae34',ring:true, maxr:cannonSplash});
+    const r2 = cannonSplash*cannonSplash;
+    for(const e of enemies){
+      const dx=e.x-x, dy=e.y-y;
+      if(dx*dx+dy*dy < r2){ e.hp -= cannonDamage; spark(e.x,e.y,'#ffae34'); }
+    }
+    bursts(x,y,'#ff7a2a');
+    sfx.boom();
+  }
+
+  function spark(x,y,c){ fx.push({x,y,vx:rand(-50,50),vy:rand(-90,-10),life:0.35,r:3,c}); }
+  function bursts(x,y,c){ for(let i=0;i<10;i++) fx.push({x,y,vx:rand(-140,140),vy:rand(-160,40),life:rand(0.3,0.6),r:rand(2,4),c}); }
+  function rand(a,b){ return a + Math.random()*(b-a); }
+
+  // Pirate theme: each character rides a little rowboat that sways on the waves.
+  function pirateWob(y){ return Math.sin(performance.now()/450 + y*0.06) * 4; }
+  function drawBoat(x,y,r){
+    ctx.fillStyle='#7a5230';
+    ctx.beginPath(); ctx.ellipse(x, y+r*0.9, r*1.3, r*0.55, 0, 0, Math.PI); ctx.fill();
+    ctx.fillStyle='#5d3d22';
+    ctx.fillRect(x-r*1.3, y+r*0.82, r*2.6, 3);
+  }
+  function withBoat(u, fn){
+    if(theme==='pirate'){
+      ctx.save();
+      ctx.translate(pirateWob(u.y), 0);
+      drawBoat(u.x, u.y, u.r||12);
+      fn();
+      ctx.restore();
+    } else fn();
+  }
+
+  // ---------- Render ----------
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // battlefield band — green grass, desert sand, or blue sea by theme
+    const bandCol = theme==='pirate' ? '#3f86bf' : theme==='cowboy' ? '#e3c489' : '#cfe0a8';
+    ctx.fillStyle = bandCol;
+    ctx.fillRect(0, PATH_TOP, W, PATH_BOT-PATH_TOP);
+    if(theme==='pirate'){
+      // rolling wave lines on the sea
+      ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=2;
+      const tm = performance.now()/600;
+      for(let yy=PATH_TOP+24; yy<PATH_BOT; yy+=34){
+        ctx.beginPath();
+        for(let xx=0; xx<=W; xx+=24){ const yo=Math.sin(xx*0.05 + tm + yy)*3; xx===0?ctx.moveTo(xx,yy+yo):ctx.lineTo(xx,yy+yo); }
+        ctx.stroke();
+      }
+    } else {
+      ctx.strokeStyle = theme==='cowboy' ? 'rgba(120,90,40,.30)' : 'rgba(80,90,40,.25)';
+      ctx.lineWidth = 2; ctx.setLineDash([10,10]);
+      ctx.beginPath(); ctx.moveTo(FORT_FRONT, PATH_TOP); ctx.lineTo(W, PATH_TOP); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(FORT_FRONT, PATH_BOT); ctx.lineTo(W, PATH_BOT); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if(theme==='cowboy') drawDesertDecor();
+
+    drawCircles();
+    drawFort();
+
+    // entities (in the pirate theme each one rides a bobbing rowboat)
+    for(const e of enemies) withBoat(e, ()=>drawEnemy(e));
+    for(const s of swordsmen){
+      withBoat(s, ()=>{
+        drawFighter(s, '#2f6fd6', '#1c4a99');
+        if(s.shield){ ctx.strokeStyle='#cfe0ff'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(s.x-s.r*0.7, s.y, s.r*0.7, -1.2, 1.2); ctx.stroke(); }
+      });
+    }
+    for(const a of archers) withBoat(a, ()=>drawArcher(a));
+    for(const c of cowboys) withBoat(c, ()=>drawCowboy(c));
+    for(const p of pirateAllies) withBoat(p, ()=>drawSeaPirate(p));
+    for(const k of knights) withBoat(k, ()=>drawKnight(k));
+    for(const f of flanks){ if(f.deployed) drawFlank(f); }
+    if(cannon2Active) drawCannon2();
+    drawCannon();
+    for(const c of balls){ ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(c.x,c.y,7,0,7); ctx.fill(); }
+    for(const bu of bullets){
+      ctx.strokeStyle='#ffd24a'; ctx.lineWidth=2.5; ctx.beginPath();
+      ctx.moveTo(bu.x,bu.y); ctx.lineTo(bu.x-bu.vx*0.012,bu.y-bu.vy*0.012); ctx.stroke();
+    }
+    for(const b of bolts){
+      ctx.strokeStyle='#0f8a7d'; ctx.lineWidth=3; ctx.beginPath();
+      ctx.moveTo(b.x,b.y); ctx.lineTo(b.x-b.vx*0.02,b.y-b.vy*0.02); ctx.stroke();
+    }
+    for(const ar of arrows){
+      ctx.strokeStyle = ar.flame ? '#ff7a18' : '#5a3a17'; ctx.lineWidth=3; ctx.beginPath();
+      ctx.moveTo(ar.x,ar.y); ctx.lineTo(ar.x-ar.vx*0.022,ar.y-ar.vy*0.022); ctx.stroke();
+    }
+    for(const p of fx){
+      ctx.globalAlpha = Math.max(0, p.life*2);
+      ctx.fillStyle = p.c;
+      if(p.ring){
+        const rr = (0.32-p.life)/0.32 * (p.maxr||78);
+        ctx.globalAlpha = Math.max(0,p.life*3);
+        ctx.lineWidth=5; ctx.strokeStyle=p.c;
+        ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,7); ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r||3,0,7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // banner
+    if(bannerT > 0){
+      ctx.globalAlpha = Math.min(1, bannerT);
+      ctx.font = "900 46px Bungee, sans-serif";
+      ctx.textAlign='center';
+      ctx.fillStyle='#2b2417';
+      ctx.fillText(banner, W/2+3, 200+3);
+      ctx.fillStyle='#f5c518';
+      ctx.fillText(banner, W/2, 200);
+      ctx.globalAlpha=1; ctx.textAlign='left';
+    }
+  }
+
+  function drawCircles(){
+    for(let i=0;i<CIRCLES.length;i++){
+      const c = CIRCLES[i];
+      const occupied = flanks.some(f=>f.deployed && f.circle===i);
+      const pulse = 0.5 + 0.5*Math.sin(performance.now()/300 + i);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = occupied ? 'rgba(31,181,164,.9)' : `rgba(31,181,164,${0.35+0.45*pulse})`;
+      ctx.fillStyle = occupied ? 'rgba(31,181,164,.18)' : 'rgba(31,181,164,.08)';
+      ctx.beginPath(); ctx.arc(c.x,c.y,CIRCLE_R,0,7); ctx.fill(); ctx.stroke();
+      if(!occupied){
+        ctx.fillStyle = `rgba(31,181,164,${0.5+0.5*pulse})`;
+        ctx.font='900 18px Nunito'; ctx.textAlign='center';
+        ctx.fillText('+', c.x, c.y+6); ctx.textAlign='left';
+      }
+    }
+  }
+
+  function drawFort(){
+    const wood = (theme==='cowboy' || theme==='pirate');
+    const wall = theme==='pirate' ? '#5a4636' : theme==='cowboy' ? '#8a5a32' : '#6f665a';
+    const wallTop = theme==='pirate' ? '#6e5742' : theme==='cowboy' ? '#a06a3c' : '#857b6d';
+    const gate = theme==='pirate' ? '#332417' : theme==='cowboy' ? '#5a3a1c' : '#3f372c';
+    // thick fort on the left
+    ctx.fillStyle = wall;
+    ctx.fillRect(0, 60, FORT_FRONT-30, H-120);
+    ctx.fillStyle = wallTop;
+    ctx.fillRect(0, 60, FORT_FRONT-30, 26);
+    // tops: pointed stockade (cowboy) or battlements (castle/pirate)
+    ctx.fillStyle = wall;
+    for(let y=70; y<H-90; y+=44){
+      if(theme==='cowboy'){ ctx.beginPath(); ctx.moveTo(FORT_FRONT-30,y); ctx.lineTo(FORT_FRONT-22,y-12); ctx.lineTo(FORT_FRONT-14,y); ctx.fill(); }
+      else ctx.fillRect(FORT_FRONT-30, y, 16, 28);
+    }
+    // planks (wood) or bricks (stone)
+    ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=2;
+    if(wood){ for(let x=14;x<FORT_FRONT-30;x+=22){ ctx.beginPath(); ctx.moveTo(x,60); ctx.lineTo(x,H-60); ctx.stroke(); } }
+    else { for(let y=92;y<H-86;y+=26){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(FORT_FRONT-30,y); ctx.stroke(); } }
+    // gate
+    ctx.fillStyle=gate;
+    ctx.beginPath();
+    ctx.moveTo(FORT_FRONT-30, 250);
+    ctx.lineTo(FORT_FRONT-30, 350);
+    ctx.lineTo(FORT_FRONT-58, 350);
+    ctx.arc(FORT_FRONT-58, 300, 50, Math.PI/2, -Math.PI/2, false);
+    ctx.lineTo(FORT_FRONT-30, 250);
+    ctx.fill();
+    // flag
+    ctx.fillStyle='#2b2417'; ctx.fillRect(40, 24, 5, 44);
+    ctx.fillStyle = theme==='pirate' ? '#1a1a1a' : theme==='cowboy' ? '#b5402f' : '#f5c518';
+    ctx.beginPath(); ctx.moveTo(45,26); ctx.lineTo(92,36); ctx.lineTo(45,46); ctx.fill();
+    if(theme==='pirate'){ ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(60,36,3,0,7); ctx.fill(); }  // skull dot
+    // level badge
+    ctx.fillStyle = theme==='cowboy' ? '#d8a012' : theme==='pirate' ? '#c9b27a' : '#f5c518';
+    ctx.beginPath(); ctx.arc(60, 120, 18, 0, 7); ctx.fill();
+    ctx.lineWidth=3; ctx.strokeStyle='#2b2417'; ctx.stroke();
+    ctx.fillStyle='#2b2417'; ctx.font='900 11px Bungee, sans-serif'; ctx.textAlign='center';
+    ctx.fillText('LV', 60, 114); ctx.font='900 16px Bungee, sans-serif';
+    ctx.fillText(level, 60, 128); ctx.textAlign='left';
+  }
+
+  function drawDesertDecor(){
+    // cacti and a few rocks along the edges
+    const cacti = [[300,PATH_TOP+14],[640,PATH_TOP+10],[860,PATH_BOT-14],[440,PATH_BOT-12],[760,PATH_TOP+16]];
+    for(const [cx,cy] of cacti){
+      ctx.fillStyle='#3f7d3a';
+      ctx.fillRect(cx-4, cy-22, 8, 30);
+      ctx.fillRect(cx-4, cy-14, 16, 6); ctx.fillRect(cx+8, cy-22, 6, 12);
+      ctx.fillRect(cx-18, cy-10, 14, 6); ctx.fillRect(cx-18, cy-20, 6, 14);
+    }
+    ctx.fillStyle='rgba(120,90,50,.5)';
+    for(const [rx,ry] of [[520,PATH_TOP+18],[700,PATH_BOT-16],[380,PATH_BOT-18]]){
+      ctx.beginPath(); ctx.ellipse(rx,ry,9,5,0,0,7); ctx.fill();
+    }
+  }
+
+  function drawCowboy(c){
+    drawFighter({x:c.x,y:c.y,r:c.r,hp:c.hp,maxhp:c.maxhp}, '#b9863f', '#7c5526');
+    // cowboy hat
+    ctx.fillStyle='#5a3a1c';
+    ctx.fillRect(c.x-9, c.y-c.r*0.7, 18, 3);
+    ctx.fillRect(c.x-5, c.y-c.r*0.7-6, 10, 6);
+    // revolver
+    ctx.strokeStyle='#2b2417'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(c.x+5,c.y); ctx.lineTo(c.x+14,c.y-2); ctx.stroke();
+  }
+  function drawSeaPirate(p){
+    drawFighter({x:p.x,y:p.y,r:p.r,hp:p.hp,maxhp:p.maxhp}, '#2f8f86', '#1c5a55');
+    // red captain's bandana + black tricorn
+    ctx.fillStyle='#c0392b'; ctx.fillRect(p.x-6, p.y-p.r*0.55, 12, 3);
+    ctx.fillStyle='#1a1a1a';
+    ctx.beginPath(); ctx.moveTo(p.x-10,p.y-p.r*0.62); ctx.lineTo(p.x+10,p.y-p.r*0.62); ctx.lineTo(p.x,p.y-p.r*1.05); ctx.closePath(); ctx.fill();
+    // flintlock pistol
+    ctx.strokeStyle='#2b2417'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(p.x+5,p.y); ctx.lineTo(p.x+14,p.y-3); ctx.stroke();
+  }
+
+  function drawCannon(){
+    ctx.save();
+    ctx.translate(CANNON.x, CANNON.y);
+    // wheel
+    ctx.fillStyle='#3f372c'; ctx.beginPath(); ctx.arc(0,18,18,0,7); ctx.fill();
+    ctx.fillStyle='#5a4f3f'; ctx.beginPath(); ctx.arc(0,18,7,0,7); ctx.fill();
+    // barrel
+    ctx.rotate(cannonAngle);
+    const ready = cannonCooldown < 0.18;
+    ctx.fillStyle = ready ? '#ffb44d' : '#e8902a';
+    ctx.beginPath();
+    ctx.moveTo(0,-13); ctx.lineTo(46,-10); ctx.lineTo(46,10); ctx.lineTo(0,13);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#b96f15'; ctx.fillRect(44,-11,6,22);
+    ctx.restore();
+    // base mount
+    ctx.fillStyle='#5a4f3f'; ctx.beginPath(); ctx.arc(CANNON.x,CANNON.y,12,0,7); ctx.fill();
+    // reload ring
+    ctx.strokeStyle='rgba(43,36,23,.35)'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(CANNON.x,CANNON.y,28,0,7); ctx.stroke();
+    const frac = 1 - Math.max(0,cannonCooldown)/cannonInterval;
+    ctx.strokeStyle='#f5c518';
+    ctx.beginPath(); ctx.arc(CANNON.x,CANNON.y,28,-Math.PI/2,-Math.PI/2 + frac*Math.PI*2); ctx.stroke();
+  }
+
+  function drawEnemy(e){
+    const yo = Math.sin(e.bob)*1.5;
+    if(e.boss){
+      // boss: big, dark, with horns and a health bar
+      const body = e.mega ? '#5a1414' : '#3a2240', dark = e.mega ? '#2a0a0a' : '#1a0f1f';
+      drawFighter({x:e.x,y:e.y+yo,r:e.r,hp:e.hp,maxhp:e.maxhp}, body, dark);
+      ctx.fillStyle = e.mega ? '#b51f1f' : '#7a1f1f';
+      ctx.beginPath(); ctx.moveTo(e.x-e.r*0.4,e.y-e.r*0.7+yo); ctx.lineTo(e.x-e.r*0.62,e.y-e.r*1.3+yo); ctx.lineTo(e.x-e.r*0.15,e.y-e.r*0.8+yo); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(e.x+e.r*0.4,e.y-e.r*0.7+yo); ctx.lineTo(e.x+e.r*0.62,e.y-e.r*1.3+yo); ctx.lineTo(e.x+e.r*0.15,e.y-e.r*0.8+yo); ctx.fill();
+      if(e.mega){ // crown
+        ctx.fillStyle='#ffcf3a';
+        ctx.beginPath(); ctx.moveTo(e.x-14,e.y-e.r-2+yo); ctx.lineTo(e.x-14,e.y-e.r-14+yo); ctx.lineTo(e.x-6,e.y-e.r-6+yo); ctx.lineTo(e.x,e.y-e.r-16+yo); ctx.lineTo(e.x+6,e.y-e.r-6+yo); ctx.lineTo(e.x+14,e.y-e.r-14+yo); ctx.lineTo(e.x+14,e.y-e.r-2+yo); ctx.fill();
+      }
+      ctx.fillStyle='#ffcf3a'; ctx.font='900 '+(e.mega?'12':'9')+'px Bungee, sans-serif'; ctx.textAlign='center';
+      ctx.fillText(e.mega?'MEGA BOSS':'BOSS', e.x, e.y-e.r-(e.mega?20:12)+yo); ctx.textAlign='left';
+      return;
+    }
+    if(e.theme === 'cowboy'){
+      // Wild West outlaws
+      if(e.bandit){
+        drawFighter({x:e.x,y:e.y+yo,r:e.r,hp:e.hp,maxhp:e.maxhp}, '#8a5a8a', '#4f314f');
+      } else {
+        drawFighter({x:e.x,y:e.y+yo,r:e.r,hp:e.hp,maxhp:e.maxhp}, e.armored?'#5a4636':'#b06a3a', e.armored?'#33271c':'#6e3f1e');
+        if(e.armored){ ctx.fillStyle='#b9bfc4'; ctx.fillRect(e.x-7, e.y-4+yo, 14, 9); }
+      }
+      ctx.fillStyle='#2b2417';                       // hat
+      ctx.fillRect(e.x-9, e.y-e.r*0.6+yo, 18, 3);
+      ctx.fillRect(e.x-5, e.y-e.r*0.6-6+yo, 10, 6);
+      ctx.fillStyle='#c0392b';                       // bandana
+      ctx.fillRect(e.x-6, e.y-e.r*0.18+yo, 12, 4);
+      return;
+    }
+    if(e.theme === 'pirate'){
+      // pirate buccaneers
+      if(e.bandit){
+        drawFighter({x:e.x,y:e.y+yo,r:e.r,hp:e.hp,maxhp:e.maxhp}, '#3f8a86', '#235b58');
+      } else {
+        drawFighter({x:e.x,y:e.y+yo,r:e.r,hp:e.hp,maxhp:e.maxhp}, e.armored?'#444f57':'#9c4030', e.armored?'#262d33':'#5e231a');
+        if(e.armored){ ctx.fillStyle='#c7ccd1'; ctx.fillRect(e.x-7, e.y-4+yo, 14, 9); }
+      }
+      ctx.fillStyle='#1a1a1a';                        // red bandana / black hat
+      ctx.fillRect(e.x-8, e.y-e.r*0.62+yo, 16, 4);
+      ctx.fillStyle='#fff';                           // white shirt stripe
+      ctx.fillRect(e.x-5, e.y+e.r*0.05+yo, 10, 3);
+      ctx.fillStyle='#111';                           // eyepatch dot
+      ctx.beginPath(); ctx.arc(e.x-3, e.y-e.r*0.42+yo, 1.6, 0, 7); ctx.fill();
+      return;
+    }
+    // medieval soldiers
+    drawFighter({x:e.x,y:e.y+yo,r:e.r,hp:e.hp,maxhp:e.maxhp}, e.armored?'#9b2f7a':'#d8412f', e.armored?'#641b4f':'#9c2a1d');
+    if(e.armored){
+      ctx.fillStyle='#cccccc'; ctx.fillRect(e.x-7, e.y-4+yo, 14, 10); // armor plate
+    }
+  }
+
+  function drawKnight(k){
+    // bigger, silver armored champion with a plume and sword
+    ctx.fillStyle='rgba(0,0,0,.15)';
+    ctx.beginPath(); ctx.ellipse(k.x, k.y+k.r+2, k.r, k.r*0.4, 0,0,7); ctx.fill();
+    drawFighter({x:k.x,y:k.y,r:k.r,hp:k.hp,maxhp:k.maxhp}, '#9aa6b2', '#5b6672');
+    // plume
+    ctx.fillStyle='#d8412f';
+    ctx.beginPath(); ctx.arc(k.x, k.y-k.r*0.95, 4, 0, 7); ctx.fill();
+    // sword
+    ctx.strokeStyle='#eef2f6'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(k.x+k.r*0.5, k.y); ctx.lineTo(k.x+k.r*1.3, k.y-k.r*0.9); ctx.stroke();
+  }
+
+  function drawCannon2(){
+    ctx.save();
+    ctx.translate(CANNON2.x, CANNON2.y);
+    ctx.fillStyle='#3f372c'; ctx.beginPath(); ctx.arc(0,16,15,0,7); ctx.fill();
+    ctx.rotate(cannon2angle);
+    ctx.fillStyle='#caa24a';
+    ctx.beginPath(); ctx.moveTo(0,-10); ctx.lineTo(36,-8); ctx.lineTo(36,8); ctx.lineTo(0,10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#9c7a25'; ctx.fillRect(34,-9,5,18);
+    ctx.restore();
+    ctx.fillStyle='#5a4f3f'; ctx.beginPath(); ctx.arc(CANNON2.x,CANNON2.y,10,0,7); ctx.fill();
+    // reload ring
+    ctx.strokeStyle='rgba(43,36,23,.3)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(CANNON2.x,CANNON2.y,22,0,7); ctx.stroke();
+    const frac = 1 - Math.max(0,cannon2cd)/CANNON2_INTERVAL;
+    ctx.strokeStyle = '#caa24a';
+    ctx.beginPath(); ctx.arc(CANNON2.x,CANNON2.y,22,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.stroke();
+  }
+
+  // generic little soldier
+  function drawFighter(u, body, dark){
+    const x=u.x, y=u.y, r=u.r||12;
+    // shadow
+    ctx.fillStyle='rgba(0,0,0,.12)';
+    ctx.beginPath(); ctx.ellipse(x, y+r+2, r*0.9, r*0.4, 0,0,7); ctx.fill();
+    // body
+    ctx.fillStyle=body;
+    ctx.beginPath(); ctx.roundRect(x-r*0.55, y-r*0.2, r*1.1, r*1.2, 4); ctx.fill();
+    // head
+    ctx.fillStyle='#ffd9a8';
+    ctx.beginPath(); ctx.arc(x, y-r*0.55, r*0.5, 0, 7); ctx.fill();
+    // helmet
+    ctx.fillStyle=dark;
+    ctx.beginPath(); ctx.arc(x, y-r*0.62, r*0.5, Math.PI, 0); ctx.fill();
+    // hp bar
+    if(u.hp < u.maxhp){
+      const w=r*1.6;
+      ctx.fillStyle='#000'; ctx.fillRect(x-w/2-1, y-r-9, w+2, 5);
+      ctx.fillStyle='#39d353'; ctx.fillRect(x-w/2, y-r-8, w*Math.max(0,u.hp/u.maxhp), 3);
+    }
+  }
+
+  function drawFlank(f){
+    // platform glow
+    ctx.fillStyle='rgba(31,181,164,.25)';
+    ctx.beginPath(); ctx.arc(f.x,f.y,CIRCLE_R,0,7); ctx.fill();
+    drawFighter({x:f.x,y:f.y,r:13,hp:f.hp,maxhp:f.maxhp}, '#1fb5a4', '#0f7064');
+    // little crossbow nub
+    ctx.fillStyle='#0f7064'; ctx.fillRect(f.x+6,f.y-2,8,4);
+  }
+
+  function drawArcher(a){
+    drawFighter({x:a.x,y:a.y,r:11,hp:a.hp,maxhp:a.maxhp}, '#3f8a3f', '#235123');
+    // bow
+    ctx.strokeStyle='#5a3a17'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(a.x+9, a.y, 9, -1.1, 1.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a.x+9, a.y-8); ctx.lineTo(a.x+9, a.y+8); ctx.stroke();
+  }
+
+  // ---------- HUD ----------
+  function updateHUD(){
+    document.getElementById('scoreVal').textContent = score|0;
+    const cv = document.getElementById('coinsVal'); if(cv) cv.textContent = coins|0;
+    document.getElementById('waveVal').textContent = Math.max(1,wave);
+    const lv = document.getElementById('levelVal'); if(lv) lv.textContent = level;
+    const pct = Math.max(0, fortHP/maxFortHP*100);
+    document.getElementById('hpFill').style.width = pct + '%';
+    const fill = document.getElementById('hpFill');
+    fill.style.background = pct>50 ? 'linear-gradient(90deg,#39d353,#9be15d)'
+      : pct>25 ? 'linear-gradient(90deg,#f5c518,#ffd75e)'
+      : 'linear-gradient(90deg,#d8412f,#ff7a5e)';
+  }
+
+  // ---------- Input ----------
+  function toWorld(ev){
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);
+    const cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+    return { x:(cx-rect.left)/rect.width*W, y:(cy-rect.top)/rect.height*H };
+  }
+  canvas.addEventListener('mousemove', e=>{ mouse = toWorld(e); });
+  canvas.addEventListener('touchmove', e=>{ mouse = toWorld(e); e.preventDefault(); }, {passive:false});
+
+  function handleTap(p){
+    if(state!=='playing') return;
+    for(let i=0;i<CIRCLES.length;i++){
+      const c=CIRCLES[i];
+      if(Math.hypot(p.x-c.x,p.y-c.y) <= CIRCLE_R+6){
+        // already someone here?
+        if(flanks.some(f=>f.deployed && f.circle===i)) return;
+        const f = flanks[nextFlank];
+        f.deployed=true; f.circle=i; f.x=c.x; f.y=c.y; f.cd=0.2;
+        nextFlank=(nextFlank+1)%flanks.length;
+        sfx.shot();
+        return;
+      }
+    }
+  }
+  canvas.addEventListener('click', e=>{ ensureAudio(); handleTap(toWorld(e)); });
+  canvas.addEventListener('touchstart', e=>{ ensureAudio(); handleTap(toWorld(e)); }, {passive:true});
+
+  document.getElementById('mute').addEventListener('click', ()=>{
+    soundOn = !soundOn; ensureAudio();
+    if(musicGain && audioCtx){
+      musicGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      musicGain.gain.exponentialRampToValueAtTime(soundOn?0.5:0.0001, audioCtx.currentTime+0.3);
+    }
+    document.getElementById('mute').textContent = soundOn ? '🔊 Sound' : '🔇 Muted';
+  });
+
+  // ---------- Pre-battle history: 50 famous castle sieges from around the world ----------
+  const BATTLES = [
+    {name:'Siege of Constantinople', place:'Constantinople (Istanbul), Türkiye', year:'1453', text:"The walls of Constantinople had guarded the city for 1,000 years. In 1453 the young Ottoman Sultan Mehmed II battered them with one of the largest cannons ever built, and even dragged warships overland to slip past the harbor chain. After 53 days, the great walls finally fell."},
+    {name:'Siege of Masada', place:'Judean Desert, Israel', year:'73–74 AD', text:"Masada was a fortress on top of a tall desert cliff, almost impossible to reach. To capture the rebels inside, the Roman army built an enormous earth ramp up the side of the mountain, big enough to roll a siege tower to the top. You can still see that ramp today."},
+    {name:'Siege of Tyre', place:'Tyre, Lebanon', year:'332 BC', text:"The island-city of Tyre felt safe out in the sea, so Alexander the Great simply built a giant stone causeway from the shore all the way to its walls. The island became part of the mainland, and that causeway is still there over 2,000 years later."},
+    {name:'Siege of Jerusalem', place:'Jerusalem', year:'1099', text:"During the First Crusade, knights from Europe attacked the walled city of Jerusalem. They built tall wooden siege towers on wheels and rolled them up against the walls so they could climb over. The city fell after about a month."},
+    {name:'Siege of Antioch', place:'Antioch, Türkiye', year:'1097–1098', text:"The Crusaders camped outside Antioch's huge walls for eight months and still couldn't get in, until a guard secretly let them climb a rope up a tower at night. Then the attackers became the defenders when a brand-new army surrounded them!"},
+    {name:'Siege of Acre', place:'Acre, Israel', year:'1189–1191', text:"Two famous kings, Richard the Lionheart of England and Philip of France, joined forces to capture the seaside fortress of Acre from the great Muslim leader Saladin. After nearly two years of siege, the city finally surrendered."},
+    {name:'Siege of Krak des Chevaliers', place:'Syria', year:'1271', text:"Krak des Chevaliers is one of the greatest castles ever built, with double walls and round towers. The Crusader knights inside were so well protected that Sultan Baybars tricked them into surrendering with a fake letter pretending to be from their own commander."},
+    {name:'Siege of Rhodes', place:'Rhodes, Greece', year:'1522', text:"The Knights of Rhodes defended their island fortress against a massive army led by Suleiman the Magnificent. The knights held out for months but were finally allowed to leave with honor, and later built a brand-new stronghold on the island of Malta."},
+    {name:'Great Siege of Malta', place:'Malta', year:'1565', text:"A small band of Knights held the island of Malta against a huge Ottoman fleet. Even after losing Fort St. Elmo, they refused to give up. Their leader, Jean de Valette, became so famous that Malta's capital, Valletta, is named after him."},
+    {name:'Siege of Candia', place:'Crete, Greece', year:'1648–1669', text:"This was one of the LONGEST sieges in all of history, lasting an incredible 21 years! The Venetians defended the fortress-city of Candia against the Ottomans for more than two decades before it finally fell."},
+    {name:'Fall of Granada', place:'Granada, Spain', year:'1492', text:"The Alhambra of Granada was the last Muslim stronghold in Spain, a palace-fortress full of fountains and gardens. After a long campaign it surrendered peacefully to King Ferdinand and Queen Isabella in 1492, the very same year Columbus sailed."},
+    {name:'Siege of Vienna', place:'Vienna, Austria', year:'1683', text:"A giant Ottoman army surrounded the walled city of Vienna and dug tunnels to blow up its walls. Just in time, the Polish king Jan Sobieski arrived and led one of the largest cavalry charges in history, with 'winged hussars,' to rescue the city."},
+    {name:'Siege of Belgrade', place:'Belgrade, Serbia', year:'1456', text:"Hungarian hero John Hunyadi broke the Ottoman siege of Belgrade's fortress in a surprise victory. To celebrate, the Pope ordered church bells to ring at noon, a tradition that still happens around the world every single day."},
+    {name:'Siege of Szigetvár', place:'Szigetvár, Hungary', year:'1566', text:"Count Nikola Zrinski and just a few thousand defenders held the castle of Szigetvár against a vast Ottoman army. The aging Sultan Suleiman the Magnificent died during the siege, and the brave defenders made one final, legendary charge."},
+    {name:'Siege of Eger', place:'Eger, Hungary', year:'1552', text:"When a huge Ottoman army attacked Eger Castle, even the women joined the defense, pouring hot pitch and boiling soup down on the attackers. Against all odds, the small garrison drove the enemy away."},
+    {name:'Siege of Marienburg', place:'Malbork, Poland', year:'1410', text:"Marienburg (Malbork) is the largest brick castle in the world, the home of the Teutonic Knights. After losing a great battle, the knights retreated behind its mighty walls and held off a Polish-Lithuanian siege, saving their order."},
+    {name:'Siege of Predjama Castle', place:'Predjama, Slovenia', year:'1480s', text:"Predjama Castle is built right into the mouth of a cliff cave. A rebellious knight named Erazem held out inside because a secret tunnel kept sneaking him food. Legend says he was finally caught by a single lucky cannon shot, while he was in the castle toilet!"},
+    {name:'Siege of Carcassonne', place:'Carcassonne, France', year:'1209', text:"Carcassonne is a storybook city wrapped in double stone walls and 52 towers. During a crusade in southern France, its defenders ran low on water under the summer sun, and the great fortress-town was captured."},
+    {name:'Siege of Château Gaillard', place:'Normandy, France', year:'1203–1204', text:"Richard the Lionheart built Château Gaillard as the perfect castle, bragging he could hold it even if its walls were made of butter. The French finally broke in by climbing up through the castle's toilet chute!"},
+    {name:'Siege of Orléans', place:'Orléans, France', year:'1428–1429', text:"The English had nearly captured the walled city of Orléans when a teenage girl named Joan of Arc arrived with fresh troops and new courage. In just over a week she lifted the siege, turning the tide of the Hundred Years' War."},
+    {name:'Siege of Rochester Castle', place:'Rochester, England', year:'1215', text:"Angry barons holed up in Rochester Castle, so King John dug a tunnel beneath one of its huge towers. He packed the tunnel with the fat of 40 pigs and set it ablaze, collapsing a whole corner of the keep."},
+    {name:'Siege of Dover Castle', place:'Dover, England', year:'1216', text:"Dover Castle is called the 'Key of England' because it guards the coast closest to France. When a French prince invaded and besieged it, the defenders even tunneled out to fight back, and the castle never fell."},
+    {name:'Siege of Kenilworth', place:'Kenilworth, England', year:'1266', text:"Protected by a huge man-made lake, Kenilworth Castle survived almost six months of siege, one of the longest in English history. Catapults hurled stones from both sides, but in the end it was hunger, not the walls, that decided it."},
+    {name:'Siege of Harlech Castle', place:'Harlech, Wales', year:'1461–1468', text:"Perched on a rock above the sea, Harlech Castle held out for seven years during the Wars of the Roses, the longest siege in British history. The famous song 'Men of Harlech' still remembers their stubborn defense."},
+    {name:'Siege of Stirling Castle', place:'Stirling, Scotland', year:'1304', text:"To capture Stirling Castle, King Edward I built a monster catapult called 'Warwolf.' When the defenders tried to surrender, Edward made them wait, just so he could watch his giant machine smash the wall first!"},
+    {name:'Capture of Edinburgh Castle', place:'Edinburgh, Scotland', year:'1314', text:"Edinburgh Castle sits on top of a steep volcanic rock. A small band of Scots led by Thomas Randolph secretly climbed the dark cliffs at night, surprised the English guards, and recaptured the fortress."},
+    {name:'Siege of Bamburgh Castle', place:'Bamburgh, England', year:'1464', text:"Bamburgh became the first castle in England ever defeated by gunpowder cannon. King Edward IV's great guns, nicknamed 'London' and 'Newcastle,' blasted its walls until the mighty seaside fortress finally gave in."},
+    {name:'Siege of Corfe Castle', place:'Corfe, England', year:'1643–1645', text:"While her husband was away, Lady Mary Bankes defended Corfe Castle with only a handful of people, plus her daughters and servants, even hurling stones and hot embers from the walls. She held the attackers off for years."},
+    {name:'Siege of Derry', place:'Derry, Northern Ireland', year:'1689', text:"The walled city of Derry was surrounded for 105 days, and the people inside grew terribly hungry. Their rallying cry was 'No Surrender!' Rescue finally came when a ship smashed through a wooden barrier across the river to bring food."},
+    {name:'Great Siege of Gibraltar', place:'Gibraltar', year:'1779–1783', text:"For nearly four years, Spanish and French forces tried to take the Rock of Gibraltar from the British. The defenders fired heated 'red-hot shot' that set the enemy's floating gun-ships ablaze, and the Rock held firm."},
+    {name:'Siege of Osaka', place:'Osaka, Japan', year:'1614–1615', text:"Osaka Castle had the widest moats in all of Japan. The clever shogun Tokugawa Ieyasu first tricked his enemies into filling in the outer moats during a truce, then attacked again, leaving the great castle defenseless."},
+    {name:'Siege of Xiangyang', place:'Xiangyang, China', year:'1267–1273', text:"This city guarded the path into southern China and held against the Mongols for six long years. The Mongols finally brought in engineers who built giant counterweight catapults powerful enough to shatter its towers."},
+    {name:'Battle of Diaoyu Fortress', place:'Chongqing, China', year:'1259', text:"The mountain fortress of Diaoyucheng held off the seemingly unstoppable Mongol army for decades. The Great Khan Möngke himself died during the campaign here, earning the fortress the nickname 'the place where God broke His whip.'"},
+    {name:'Siege of Chittorgarh', place:'Chittorgarh, India', year:'1568', text:"Chittorgarh was a vast hill-fort and the proud capital of the Rajputs. The Mughal Emperor Akbar surrounded it and dug tunnels packed with gunpowder to blast through its enormous walls."},
+    {name:'Siege of Golconda', place:'Golconda, India', year:'1687', text:"Golconda was a fortress famous for its diamonds, with walls so strong the Mughal army couldn't break them in eight months. The fort fell only when a traitor was bribed to quietly open a secret gate."},
+    {name:'Siege of Ranthambore', place:'Ranthambore, India', year:'1301', text:"Ranthambore is a giant fort on a hilltop surrounded by jungle (today it's a famous tiger reserve!). Sultan Alauddin Khalji besieged its Rajput defenders and, after many months, captured one of India's strongest fortresses."},
+    {name:'Siege of Jinju', place:'Jinju, Korea', year:'1592', text:"When a large Japanese army attacked the fortress of Jinju, Korean commander Kim Si-min and the townspeople fought back with cannon, fire, and courage. Badly outnumbered, they won a famous victory and saved the region."},
+    {name:'Siege of Fort Jesus', place:'Mombasa, Kenya', year:'1696–1698', text:"Omani forces surrounded the Portuguese stronghold of Fort Jesus on the East African coast for almost three years. Disease and hunger slowly wore the defenders down, and after 33 months the great fort changed hands."},
+    {name:'Capture of Elmina Castle', place:'Elmina, Ghana', year:'1637', text:"Elmina Castle was the oldest European fort in all of Africa, first built by the Portuguese. Dutch forces attacked from a hill overlooking it and captured the famous stronghold on the Gold Coast."},
+    {name:'Siege of Cartagena de Indias', place:'Cartagena, Colombia', year:'1741', text:"A huge British fleet attacked the walled Spanish port of Cartagena. The defense was led by Blas de Lezo, a commander who had already lost an eye, an arm, and a leg in earlier battles, yet he drove the enormous fleet away!"},
+    {name:'Battle of Quebec', place:'Quebec City, Canada', year:'1759', text:"The fortified city of Quebec sat atop steep cliffs above a river. British soldiers secretly climbed the cliffs at night and surprised the French on the Plains of Abraham. Both generals, Wolfe and Montcalm, lost their lives."},
+    {name:'Siege of Castillo San Marcos', place:'St. Augustine, Florida, USA', year:'1702', text:"This Spanish fort was built from coquina, a soft stone made of seashells. When the English bombarded it, the cannonballs simply sank into the squishy walls instead of breaking them, and the fort survived."},
+    {name:'Siege of Louisbourg', place:'Louisbourg, Canada', year:'1758', text:"The Fortress of Louisbourg guarded the entrance to Canada. British forces landed through crashing surf, dragged their cannons ashore, and pounded the walls until the powerful French fortress surrendered."},
+    {name:'Siege of Sacsayhuamán', place:'Cuzco, Peru', year:'1536', text:"Sacsayhuamán is a vast Inca fortress built from gigantic stones that fit together perfectly without any cement. The Inca leader Manco Inca used it as a base to besiege the Spanish in the city of Cuzco below."},
+    {name:'Battle of the Alamo', place:'San Antonio, Texas, USA', year:'1836', text:"About 200 Texan defenders held the old mission-fort of the Alamo for 13 days against a much larger Mexican army. Their stand became so famous that 'Remember the Alamo!' turned into a rallying cry."},
+    {name:'Defense of San Juan', place:'San Juan, Puerto Rico', year:'1595', text:"The English captain Sir Francis Drake sailed into the harbor of San Juan to raid its treasure. The cannons of the El Morro fortress fired so fiercely, one shot even struck his own cabin, that the famous sea captain was driven off."},
+    {name:'Siege of Kumamoto Castle', place:'Kumamoto, Japan', year:'1877', text:"During the last great samurai rebellion, Saigō Takamori's warriors surrounded the mighty Kumamoto Castle. Its tall stone walls were curved to be impossible to climb, and the castle held out until help arrived."},
+    {name:'Siege of Maastricht', place:'Maastricht, Netherlands', year:'1673', text:"At Maastricht, a French army used clever new zig-zag trenches to creep up to the walls safely. It was here that the real-life musketeer d'Artagnan, the hero who inspired the famous adventure stories, was killed leading a charge."},
+    {name:'Fall of Tenochtitlan', place:'Mexico City, Mexico', year:'1521', text:"Tenochtitlan was a stunning Aztec city built on an island in the middle of a lake, reached by long causeways. After a months-long siege by Spanish soldiers and their local allies, the great island-capital fell."},
+    {name:'Siege of Pskov', place:'Pskov, Russia', year:'1581', text:"The Polish king Stephen Báthory threw his army again and again at the thick walls of Pskov, but the Russian defenders plugged every breach and held firm through the freezing winter, until the attackers finally gave up."}
+  ];
+  let lastHistoryIdx = -1;
+  function showHistory(){
+    ensureAudio();
+    let i;
+    do { i = Math.floor(Math.random()*BATTLES.length); } while(i===lastHistoryIdx && BATTLES.length>1);
+    lastHistoryIdx = i;
+    const b = BATTLES[i];
+    document.getElementById('histName').textContent = b.name;
+    document.getElementById('histMeta').textContent = b.place + '  •  ' + b.year;
+    document.getElementById('histBody').textContent = b.text;
+    state = 'history';
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('overScreen').classList.add('hidden');
+    document.getElementById('shopScreen').classList.add('hidden');
+    document.getElementById('historyScreen').classList.remove('hidden');
+  }
+  function beginBattle(){
+    document.getElementById('historyScreen').classList.add('hidden');
+    startGame();
+  }
+
+  // ---------- Flow ----------
+  function startGame(){
+    ensureAudio();
+    reset();
+    state='playing';
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('overScreen').classList.add('hidden');
+    document.getElementById('shopScreen').classList.add('hidden');
+    document.getElementById('historyScreen').classList.add('hidden');
+    startMusic();
+  }
+  function gameOver(){
+    if(state!=='playing') return;
+    state='over';
+    stopMusic();
+    document.getElementById('finalScore').textContent = 'Score: ' + (score|0);
+    document.getElementById('finalWave').textContent = 'You held the line through ' + Math.max(1,wave) + (wave===1?' wave':' waves');
+    document.getElementById('overScreen').classList.remove('hidden');
+  }
+
+  // ---------- Upgrade shop ----------
+  function openShop(){
+    state='shop';
+    renderShop();
+    document.getElementById('shopScreen').classList.remove('hidden');
+  }
+  function pips(lvl,max){
+    let s=''; for(let i=0;i<max;i++) s += (i<lvl?'●':'○'); return s;
+  }
+  function renderShop(){
+    document.getElementById('shopCoins').textContent = coins|0;
+    const grid = document.getElementById('shopGrid');
+    grid.innerHTML = UPMETA.map(m=>{
+      const lvl = up[m.key].lvl, maxed = lvl>=m.max, cost = upCost(m.key);
+      const can = !maxed && coins>=cost;
+      const right = maxed ? '<span class="umax">MAX</span>' : '<span class="ucost">'+cost+' 🪙</span>';
+      return '<button class="upg" data-key="'+m.key+'"'+(can?'':' disabled')+'>'
+        + '<div class="un">'+m.label+'</div>'
+        + '<div class="ud">'+m.desc+'</div>'
+        + '<div class="ur"><span class="pips">'+pips(lvl,m.max)+'</span>'+right+'</div>'
+        + '</button>';
+    }).join('');
+    const rgrid = document.getElementById('recruitGrid');
+    rgrid.innerHTML = RECRUITS.filter(r=>r.need()).map(r=>{
+      const cost = recruitCost(r.key);
+      const can = coins>=cost;
+      return '<button class="upg" data-rkey="'+r.key+'"'+(can?'':' disabled')+'>'
+        + '<div class="un">'+r.label+'</div>'
+        + '<div class="ur"><span class="ud">marches out now</span><span class="ucost">'+cost+' 🪙</span></div>'
+        + '</button>';
+    }).join('');
+  }
+  function buyUpgrade(key){
+    const m = UPMETA.find(x=>x.key===key); if(!m) return;
+    const u = up[key]; if(u.lvl>=m.max) return;
+    const cost = upCost(key); if(coins<cost) return;
+    coins -= cost; u.lvl++;
+    if(key==='flanks') flanks.push(makeFlank());   // a new flank fighter to place
+    recomputeStats();
+    beep(880,0.06,'square',0.05); beep(1320,0.08,'square',0.04);
+    updateHUD(); renderShop();
+  }
+  function recruitCost(key){
+    const r = RECRUITS.find(x=>x.key===key);
+    return Math.round(r.cost * Math.pow(2, recruitBought[key]||0));
+  }
+  function buyRecruit(key){
+    const r = RECRUITS.find(x=>x.key===key); if(!r || !r.need()) return;
+    const cost = recruitCost(key); if(coins < cost) return;
+    coins -= cost;
+    recruitBought[key] = (recruitBought[key]||0) + 1;   // each buy doubles the next price
+    for(let i=0;i<r.n;i++) r.make();
+    beep(660,0.06,'square',0.05); beep(990,0.07,'square',0.04);
+    updateHUD(); renderShop();
+  }
+  function nextWave(){
+    document.getElementById('shopScreen').classList.add('hidden');
+    state='playing';
+    startWave();
+  }
+  document.getElementById('shopGrid').addEventListener('click', e=>{
+    const b = e.target.closest('.upg'); if(b && !b.disabled) buyUpgrade(b.dataset.key);
+  });
+  document.getElementById('recruitGrid').addEventListener('click', e=>{
+    const b = e.target.closest('.upg'); if(b && !b.disabled) buyRecruit(b.dataset.rkey);
+  });
+  document.getElementById('nextWaveBtn').addEventListener('click', nextWave);
+
+  document.getElementById('toBattleBtn').addEventListener('click', beginBattle);
+  document.getElementById('startBtn').addEventListener('click', showHistory);
+  document.getElementById('againBtn').addEventListener('click', showHistory);
+
+  // ---------- Loop ----------
+  let last = performance.now();
+  function loop(now){
+    let dt = (now-last)/1000; last=now;
+    if(dt>0.05) dt=0.05;
+    if(state==='playing') update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pew Pew Palace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #150c30;
+    --bg-2: #1f1348;
+    --cream: #f4efff;
+    --dim: #b6a8e0;
+    --gold: #ffd166;
+    --magenta: #ff2e63;
+    --cyan: #08f7fe;
+
+    --cab-body: #201533;
+    --cab-body-dark: #150d24;
+    --cab-metal: #35284d;
+    --screen-bg: #0b0620;
+
+    --c-war: #ff5a5a;
+    --c-tower: #b073ff;
+    --c-artillery: #ff9d3d;
+    --c-racers: #24e0ff;
+    --c-pet: #59e28e;
+    --c-lemon: #ffd93d;
+    --c-potato: #ff6fae;
+    --c-soccer: #4ade80;
+    --c-ducks: #ffc23d;
+    --c-wild: #8dff1f;
+    --c-cup: #00e5d4;
+    --c-chicken: #ff5f45;
+    --c-village: #e0a96d;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, #3a2470 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 0%, #2a1a5c 0%, transparent 50%),
+      var(--bg);
+    color:var(--cream);
+    font-family:'Baloo 2', system-ui, sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  .stars{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,.5), transparent),
+      radial-gradient(2px 2px at 80% 10%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 40% 60%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1.5px 1.5px at 65% 80%, rgba(255,255,255,.3), transparent),
+      radial-gradient(2px 2px at 90% 55%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 25% 85%, rgba(255,255,255,.3), transparent);
+    background-repeat:repeat;
+    background-size: 600px 600px;
+    opacity:.6;
+  }
+
+  main{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:0 24px 90px;}
+
+  /* ---------- Marquee header ---------- */
+  header{
+    padding:48px 20px 40px;
+    text-align:center;
+    position:relative;
+  }
+
+  .marquee{
+    display:inline-block;
+    position:relative;
+    padding:28px 44px;
+    border-radius:18px;
+    background: linear-gradient(180deg, var(--bg-2), var(--cab-body));
+    box-shadow: 0 0 0 2px rgba(255,255,255,.06), 0 20px 50px -20px rgba(0,0,0,.7);
+  }
+
+  .bulbs{ position:absolute; inset:0; border-radius:18px; pointer-events:none; }
+  .bulb{
+    position:absolute; width:9px; height:9px; border-radius:50%;
+    background: var(--gold);
+    box-shadow: 0 0 8px 2px rgba(255,209,102,.8);
+    animation: blink 1.6s infinite ease-in-out;
+  }
+  @keyframes blink{ 0%, 100%{ opacity:1; } 50%{ opacity:.25; } }
+
+  h1{
+    font-family:'Press Start 2P', monospace;
+    font-size: clamp(22px, 5vw, 38px);
+    line-height:1.5;
+    margin:0;
+    color: var(--cream);
+    text-shadow: 0 0 10px var(--magenta), 0 0 26px rgba(255,46,99,.5);
+    letter-spacing:1px;
+  }
+  h1 span{ color: var(--cyan); text-shadow: 0 0 10px var(--cyan), 0 0 26px rgba(8,247,254,.5); }
+
+  .tagline{ margin-top:14px; color: var(--dim); font-size: 17px; font-weight:600; }
+
+  /* ---------- Cabinet grid ---------- */
+  .grid{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:28px;
+    margin-top:52px;
+  }
+
+  .cabinet{
+    --accent: var(--cream);
+    position:relative;
+    text-decoration:none;
+    color:inherit;
+    flex:1 1 250px;
+    max-width:300px;
+    display:flex;
+    flex-direction:column;
+    border-radius:14px 14px 8px 8px;
+    background:
+      linear-gradient(180deg, var(--cab-metal) 0%, var(--cab-body) 10%, var(--cab-body) 78%, var(--cab-body-dark) 100%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.05) inset,
+      0 18px 40px -18px rgba(0,0,0,.8);
+    padding:12px 12px 16px;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .cabinet:hover{
+    transform: translateY(-6px);
+    box-shadow:
+      0 0 0 1px var(--accent) inset,
+      0 22px 46px -16px var(--accent);
+  }
+  .cabinet:focus-visible{ outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* marquee topper on each cabinet */
+  .cab-marquee{
+    border-radius:10px 10px 4px 4px;
+    padding:9px 10px;
+    text-align:center;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 35%, var(--cab-body)) 0%, color-mix(in srgb, var(--accent) 18%, var(--cab-body)) 100%);
+    box-shadow: 0 0 16px -2px var(--accent), 0 1px 0 rgba(255,255,255,.15) inset;
+    position:relative;
+  }
+  .genre{
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color: var(--cab-body-dark);
+    background: var(--accent);
+    padding:3px 8px;
+    border-radius:999px;
+    display:inline-block;
+  }
+
+  /* the "screen" */
+  .cab-screen{
+    margin-top:10px;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 3px),
+      radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 14%, var(--screen-bg)) 0%, var(--screen-bg) 65%);
+    border-radius:8px;
+    padding:16px 14px 14px;
+    box-shadow:
+      0 0 0 6px var(--cab-body),
+      0 0 0 7px rgba(0,0,0,.4),
+      inset 0 2px 10px rgba(0,0,0,.6);
+    flex-grow:1;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height:150px;
+  }
+
+  .cab-screen h2{
+    margin:0;
+    font-size:19px;
+    font-weight:800;
+    color: var(--cream);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  .cab-screen p{
+    margin:0;
+    color: var(--dim);
+    font-size:13.5px;
+    line-height:1.5;
+    flex-grow:1;
+  }
+
+  .insert-coin{
+    margin-top:2px;
+    font-family:'Press Start 2P', monospace;
+    font-size:10px;
+    color: var(--accent);
+    letter-spacing:.04em;
+    animation: coinBlink 1.3s infinite steps(1);
+  }
+  @keyframes coinBlink{ 0%, 55%{ opacity:1; } 56%, 100%{ opacity:.15; } }
+
+  /* control deck: joystick + buttons */
+  .deck{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    background: linear-gradient(180deg, var(--cab-metal), var(--cab-body));
+    border-radius:8px;
+  }
+
+  .joystick{
+    position:relative;
+    width:34px; height:34px;
+  }
+  .joystick .base{
+    position:absolute; inset:0;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #4a3d68, #241733 70%);
+    box-shadow: 0 2px 4px rgba(0,0,0,.5);
+  }
+  .joystick .stick{
+    position:absolute;
+    left:50%; top:50%;
+    width:9px; height:9px;
+    border-radius:50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px 1px var(--accent);
+    transform: translate(-50%, -80%);
+  }
+  .joystick .stick::after{
+    content:"";
+    position:absolute;
+    left:50%; top:100%;
+    width:3px; height:11px;
+    background: linear-gradient(180deg, var(--accent), transparent);
+    transform: translateX(-50%);
+  }
+
+  .buttons{ display:flex; gap:7px; }
+  .btn-dot{
+    width:16px; height:16px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 85%, white 15%), color-mix(in srgb, var(--accent) 60%, black 25%));
+    box-shadow: 0 2px 3px rgba(0,0,0,.5), 0 0 6px -1px var(--accent);
+  }
+
+  .play-plate{
+    font-weight:800;
+    font-size:12.5px;
+    letter-spacing:.03em;
+    color: var(--cab-body-dark);
+    background: var(--accent);
+    padding:7px 14px;
+    border-radius:6px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .play-plate::after{ content:"▶"; font-size:9px; }
+
+  .cabinet.war      { --accent: var(--c-war); }
+  .cabinet.tower    { --accent: var(--c-tower); }
+  .cabinet.artillery{ --accent: var(--c-artillery); }
+  .cabinet.racers   { --accent: var(--c-racers); }
+  .cabinet.pet      { --accent: var(--c-pet); }
+  .cabinet.lemon    { --accent: var(--c-lemon); }
+  .cabinet.potato   { --accent: var(--c-potato); }
+  .cabinet.soccer   { --accent: var(--c-soccer); }
+  .cabinet.ducks    { --accent: var(--c-ducks); }
+  .cabinet.wild     { --accent: var(--c-wild); }
+  .cabinet.cup      { --accent: var(--c-cup); }
+  .cabinet.chicken  { --accent: var(--c-chicken); }
+  .cabinet.village  { --accent: var(--c-village); }
+
+  /* ---------- Section headings + NEW row ---------- */
+  .section-title{
+    margin:56px 0 0;
+    text-align:center;
+    font-family:'Press Start 2P', monospace;
+    font-size:clamp(13px, 2.4vw, 17px);
+    letter-spacing:.06em;
+    line-height:1.6;
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(255,209,102,.55);
+  }
+  .section-title.all{ color: var(--dim); text-shadow:none; }
+  .section-title + .grid{ margin-top:28px; }
+  .new-row{
+    position:relative;
+    margin-top:22px;
+    padding:6px 0 4px;
+  }
+  .new-badge{
+    position:absolute;
+    top:-12px; right:-10px;
+    z-index:2;
+    font-family:'Press Start 2P', monospace;
+    font-size:10px;
+    color: var(--cab-body-dark);
+    background: var(--gold);
+    padding:7px 8px;
+    border-radius:6px;
+    transform: rotate(8deg);
+    box-shadow: 0 0 12px 2px rgba(255,209,102,.7), 0 3px 0 rgba(0,0,0,.4);
+    animation: badgePulse 1.4s infinite ease-in-out;
+  }
+  @keyframes badgePulse{ 0%,100%{ transform: rotate(8deg) scale(1); } 50%{ transform: rotate(8deg) scale(1.1); } }
+
+  footer{ text-align:center; margin-top:64px; color: var(--dim); font-size:13px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .bulb, .insert-coin, .new-badge{ animation:none; opacity:1; }
+    .cabinet{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+
+<main>
+  <header>
+    <div class="marquee">
+      <div class="bulbs" id="bulbs"></div>
+      <h1>PEW PEW <span>PALACE</span></h1>
+    </div>
+    <p class="tagline">Devin's arcade — walk up to a cabinet and press play</p>
+  </header>
+
+  <h2 class="section-title">&#9733; NEW AT THE PALACE &#9733;</h2>
+  <section class="grid new-row">
+    <a class="cabinet cup" href="Wacky_Wild_Cup/wacky-wild-cup.html">
+      <span class="new-badge">NEW!</span>
+      <div class="cab-marquee"><span class="genre">Animal Soccer</span></div>
+      <div class="cab-screen">
+        <h2>Wacky Wild Cup!</h2>
+        <p>Devin, Julian, Ghjuvan and a chicken goalie take on the cartoon animal World Cup. Watch out for volcanoes!</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet ducks" href="Lord_of_the_Ducks/lord-of-the-ducks.html">
+      <span class="new-badge">NEW!</span>
+      <div class="cab-marquee"><span class="genre">Duck Empire</span></div>
+      <div class="cab-screen">
+        <h2>Lord of the Ducks</h2>
+        <p>Start as a broke duck doing odd jobs. Climb to Duckingham Palace, then conquer all of France.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet wild" href="Call_of_the_Wild/call-of-the-wild.html">
+      <span class="new-badge">NEW!</span>
+      <div class="cab-marquee"><span class="genre">Side-Scroller</span></div>
+      <div class="cab-screen">
+        <h2>Call of the Wild!</h2>
+        <p>Pick a wolf, a hawk, or a piranha and chomp the robots out of three kingdoms.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet chicken" href="Power_of_the_Chicken/power-of-the-chicken.html">
+      <span class="new-badge">NEW!</span>
+      <div class="cab-marquee"><span class="genre">Platformer</span></div>
+      <div class="cab-screen">
+        <h2>Power of the Chicken!</h2>
+        <p>Spell a word, power up your corn cannon, and raise an army of chicks to conquer the galaxy.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet village" href="Build_Your_Own_Village/build-your-own-village.html">
+      <span class="new-badge">NEW!</span>
+      <div class="cab-marquee"><span class="genre">Village Defense</span></div>
+      <div class="cab-screen">
+        <h2>Build Your Own Village</h2>
+        <p>Start from scratch. Build walls and towers, hire archers and swordsmen, survive 20 waves.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+  </section>
+
+  <h2 class="section-title all">ALL THE CLASSICS</h2>
+  <section class="grid">
+
+    <a class="cabinet artillery" href="The_Artillery/the-artillery.html">
+      <div class="cab-marquee"><span class="genre">Artillery</span></div>
+      <div class="cab-screen">
+        <h2>The Artillery</h2>
+        <p>Line up the perfect shot — angle, power, and a little bit of luck.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet potato" href="Potato_Madness/potato-madness.html">
+      <div class="cab-marquee"><span class="genre">Tower Defense</span></div>
+      <div class="cab-screen">
+        <h2>Potato Madness</h2>
+        <p>Line up your spuds and hold the road — waves get wilder every round.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet lemon" href="Lemonade_Empire/lemonade-empire.html">
+      <div class="cab-marquee"><span class="genre">Tycoon</span></div>
+      <div class="cab-screen">
+        <h2>Lemonade Empire</h2>
+        <p>Start with a stand and a dream. Build a lemonade empire.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet pet" href="PetQuest/petquest.html">
+      <div class="cab-marquee"><span class="genre">Pet Adventure</span></div>
+      <div class="cab-screen">
+        <h2>PetQuest</h2>
+        <p>Hatch, raise, and explore with your very own companion.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet racers" href="Star_Racers/star-traders_8.html">
+      <div class="cab-marquee"><span class="genre">Space Racing</span></div>
+      <div class="cab-screen">
+        <h2>Star Racers</h2>
+        <p>Trade, race, and battle your way across the galaxy map.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet war" href="War_Of_The_Animals/war-of-the-animals.html">
+      <div class="cab-marquee"><span class="genre">Lane Battle</span></div>
+      <div class="cab-screen">
+        <h2>War of the Animals</h2>
+        <p>Build up your army and push the enemy base back, one lane at a time.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet tower" href="Tower_of_Eras/tower-of-eras.html">
+      <div class="cab-marquee"><span class="genre">Tower Defense</span></div>
+      <div class="cab-screen">
+        <h2>Tower of Eras</h2>
+        <p>Defend your tower through the ages with the right mix of firepower.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+    <a class="cabinet soccer" href="Richland_Kids_FC/RICHLAND_KIDS_FC.html">
+      <div class="cab-marquee"><span class="genre">Soccer</span></div>
+      <div class="cab-screen">
+        <h2>Richland Kids FC</h2>
+        <p>3v3 arcade soccer. Beat a country, recruit their star, take on the world.</p>
+        <span class="insert-coin">INSERT COIN</span>
+      </div>
+      <div class="deck">
+        <div class="joystick"><div class="base"></div><div class="stick"></div></div>
+        <div class="buttons"><span class="btn-dot"></span><span class="btn-dot"></span></div>
+        <span class="play-plate">Play</span>
+      </div>
+    </a>
+
+  </section>
+
+  <footer>Pew Pew Palace &middot; pewpewpalace.net</footer>
+</main>
+
+<script>
+  const bulbs = document.getElementById('bulbs');
+  const perimeterPositions = [];
+  const cols = 10, rows = 4;
+  for(let i=0;i<cols;i++){
+    perimeterPositions.push({x: (i/(cols-1))*100, y: 0});
+    perimeterPositions.push({x: (i/(cols-1))*100, y: 100});
+  }
+  for(let i=1;i<rows-1;i++){
+    perimeterPositions.push({x: 0, y: (i/(rows-1))*100});
+    perimeterPositions.push({x: 100, y: (i/(rows-1))*100});
+  }
+  perimeterPositions.forEach((pos, idx) => {
+    const b = document.createElement('div');
+    b.className = 'bulb';
+    b.style.left = `calc(${pos.x}% - 4.5px)`;
+    b.style.top = `calc(${pos.y}% - 4.5px)`;
+    b.style.animationDelay = `${(idx % 6) * 0.18}s`;
+    bulbs.appendChild(b);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Tower of Eras">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#241c14">
+<title>Tower of Eras</title>
+<style>
+  :root{
+    --ink:#241c14;
+    --paper:#efe6d2;
+    --gold:#f5c518;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
+    color:var(--paper);
+    background:#0c0a08;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100%; padding:10px;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  #stage{
+    width:min(96vw, 720px);
+    background:#111;
+    border:4px solid #000;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+  }
+  .topbar{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 12px;
+    background:var(--ink);
+    flex-wrap:wrap;
+  }
+  .title{
+    font-family:Georgia, 'Times New Roman', serif;
+    font-weight:900;
+    font-size:clamp(16px,3.2vw,22px);
+    color:var(--gold);
+    margin-right:auto;
+    letter-spacing:0.5px;
+  }
+  .stat{
+    font-size:13px;
+    font-weight:700;
+    background:rgba(255,255,255,.08);
+    padding:4px 8px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .barWrap{
+    padding:6px 12px 0;
+    background:var(--ink);
+  }
+  .bar{
+    height:10px;
+    background:#3a2f22;
+    border-radius:6px;
+    overflow:hidden;
+    border:1px solid #000;
+  }
+  .barFill{
+    height:100%;
+    background:linear-gradient(90deg,#e0413b,#f5c518);
+    transition:width .2s;
+  }
+  .barLabel{
+    font-size:10px;
+    opacity:.75;
+    padding:2px 0 6px;
+  }
+  #canvasWrap{ position:relative; width:100%; aspect-ratio: 4/3; background:#87ceeb; }
+  canvas{ position:absolute; top:0; left:0; width:100%; height:100%; display:block; touch-action:none; }
+  #overlay{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px;
+    background:rgba(10,8,6,.88);
+    padding:24px;
+    text-align:center;
+  }
+  #overlay.hidden{ display:none; }
+  #overlay h1{ font-family:Georgia,serif; color:var(--gold); font-size:clamp(22px,5vw,32px); }
+  #overlay p{ font-size:14px; line-height:1.5; max-width:520px; opacity:.9; }
+  .btn{
+    font-family:system-ui,sans-serif;
+    font-weight:800;
+    font-size:15px;
+    padding:12px 22px;
+    border-radius:10px;
+    border:none;
+    background:var(--gold);
+    color:#241c14;
+    cursor:pointer;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn.secondary{ background:#3a2f22; color:var(--paper); }
+  #shop{
+    position:absolute; inset:0;
+    background:rgba(10,8,6,.94);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; padding:16px;
+  }
+  #shop.hidden{ display:none; }
+  #shop h2{ color:var(--gold); font-family:Georgia,serif; }
+  .shopGrid{ display:flex; flex-direction:column; gap:8px; width:100%; max-width:420px; }
+  .shopItem{
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:10px;
+    padding:8px 12px;
+    gap:10px;
+  }
+  .shopItem .info{ text-align:left; }
+  .shopItem .name{ font-weight:800; font-size:13px; }
+  .shopItem .desc{ font-size:11px; opacity:.7; }
+  .shopBtn{
+    font-weight:800; font-size:13px;
+    padding:8px 12px;
+    border-radius:8px; border:none;
+    background:var(--gold); color:#241c14;
+    white-space:nowrap;
+  }
+  .shopBtn:disabled{ opacity:.35; }
+  #floorFlash{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0);
+    pointer-events:none;
+    font-family:Georgia,serif; color:var(--gold);
+    font-size:clamp(20px,5vw,30px);
+    text-shadow:2px 2px 0 #000;
+    opacity:0;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="topbar">
+    <div class="title" id="eraTitle">Stone Age</div>
+    <div class="stat">🪙 <span id="coinCount">0</span></div>
+    <div class="stat">🌊 Wave <span id="waveCount">1</span>/2</div>
+  </div>
+  <div class="barWrap">
+    <div class="bar"><div class="barFill" id="fortBar" style="width:100%"></div></div>
+    <div class="barLabel">Fort Health</div>
+  </div>
+  <div id="canvasWrap">
+    <canvas id="game"></canvas>
+    <div id="floorFlash"></div>
+    <div id="overlay">
+      <h1>🏛️ Tower of Eras</h1>
+      <p>Build a tower that climbs through history. <b>Drag back anywhere and release</b> to fire the sling — your defenders will hold the flanks, but your aim wins the battle. Tap empty circles to redeploy fallen defenders.</p>
+      <button class="btn" id="startBtn">Begin the Stone Age</button>
+    </div>
+    <div id="shop" class="hidden">
+      <h2>🛠️ Upgrade Shop</h2>
+      <div style="font-size:13px;opacity:.8;">🪙 <span id="shopCoins">0</span> coins</div>
+      <div class="shopGrid" id="shopGrid"></div>
+      <button class="btn" id="shopContinue">Continue to Wave 2</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ---------------- Audio (WebAudio synth, no assets) ----------------
+let actx;
+function ensureAudio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+function beep(freq, dur, type, vol){
+  if(!actx) return;
+  const t = actx.currentTime;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type||'square'; o.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(vol||0.06, t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, t+(dur||0.15));
+  o.connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t+(dur||0.15)+0.02);
+}
+const sfx = {
+  throw(){ beep(320,0.12,'triangle',0.05); },
+  hit(){ beep(180,0.08,'square',0.05); },
+  hurt(){ beep(110,0.15,'sawtooth',0.06); },
+  coin(){ beep(880,0.08,'square',0.04); setTimeout(()=>beep(1200,0.08,'square',0.04),60); },
+  place(){ beep(500,0.08,'triangle',0.05); },
+  wave(){ beep(220,0.2,'sawtooth',0.06); setTimeout(()=>beep(330,0.2,'sawtooth',0.06),150); },
+  win(){ [440,554,659,880].forEach((f,i)=>setTimeout(()=>beep(f,0.2,'triangle',0.06), i*120)); },
+  lose(){ beep(200,0.4,'sawtooth',0.08); }
+};
+
+// ---------------- Era data table ----------------
+// Only Era 0 (Stone Age) has fully unique behavior implemented.
+// Eras 1-2 are stubbed here for the data architecture; they currently
+// reuse the sling mechanic with a reskin until we lock their unique weapons.
+const ERAS = [
+  {
+    id:0, name:'Stone Age',
+    sky:'#87ceeb', ground:'#8a7a52', groundDark:'#6b5d3d',
+    floorColor:'#9c8a63', floorEdge:'#6b5d3d',
+    weaponName:'Sling',
+    flankName:'Spear Thrower',
+    enemyNames:['Club Caveman','Sabertooth Tiger'],
+    weaponType:'arc', // lobbed projectile affected by gravity
+    projectileColor:'#5a4a35',
+    slotsStart:2
+  },
+  {
+    id:1, name:'Wooden Age',
+    sky:'#a9d1a0', ground:'#5b4530', groundDark:'#40311f',
+    floorColor:'#7a5a36', floorEdge:'#40311f',
+    weaponName:'Longbow',
+    flankName:'Archer',
+    enemyNames:['Raider','Battering Ram'],
+    weaponType:'arc',
+    projectileColor:'#3d2a15',
+    slotsStart:3
+  },
+  {
+    id:2, name:'Bronze Age',
+    sky:'#cbb27a', ground:'#8c6a3f', groundDark:'#5e4527',
+    floorColor:'#b5843e', floorEdge:'#5e4527',
+    weaponName:'Spear Chariot',
+    flankName:'Hoplite',
+    enemyNames:['Hoplite Raider','Bronze Guard'],
+    weaponType:'arc',
+    projectileColor:'#8a6a2f',
+    slotsStart:3
+  }
+];
+const WAVES_PER_ERA = 2;
+
+// ---------------- Canvas / camera setup ----------------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvasWrap');
+const W = 800, H = 600; // logical resolution
+canvas.width = W; canvas.height = H;
+
+function resize(){
+  const r = wrap.getBoundingClientRect();
+  canvas.style.width = r.width+'px';
+  canvas.style.height = r.height+'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Camera: zooms out as floors stack. floorIndex 0 = ground floor.
+let camera = { zoom:1, targetZoom:1, offsetY:0, targetOffsetY:0 };
+const FLOOR_H = 130; // pixel height of one floor at zoom=1
+
+function updateCameraTarget(floorIndex){
+  // Show all locked floors + current floor. Zoom out as tower grows.
+  const visibleFloors = floorIndex + 1;
+  camera.targetZoom = Math.min(1, 1.6 - visibleFloors*0.18);
+  camera.targetZoom = Math.max(0.55, camera.targetZoom);
+  camera.targetOffsetY = 0;
+}
+
+// ---------------- Game state ----------------
+let state = null;
+
+function freshFloorState(eraIdx){
+  const era = ERAS[eraIdx];
+  const slots = [];
+  const slotCount = era.slotsStart;
+  const spacing = 170; // wider gap so circles flank the builder clearly
+  const startX = W/2 - ((slotCount-1)*spacing)/2;
+  for(let i=0;i<slotCount;i++){
+    // starting slots come pre-deployed so wave 1 isn't already lost
+    // while the player is still figuring out how to tap circles
+    slots.push({ x: startX + i*spacing, y: H-150, occupied:true, hp:80, maxhp:80, cd:0 });
+  }
+  return {
+    eraIdx,
+    wave: 1,
+    fortHP: 100, maxFortHP: 100,
+    coins: 40,
+    builderProgress: 0, // 0..1 across the 2 waves
+    enemies: [],
+    projectiles: [],
+    fx: [],
+    slots,
+    weaponCd: 0,
+    weaponInterval: 1.0,
+    weaponDamage: 26,
+    weaponRange: 620,
+    flankDamage: 7,
+    flankRange: 130,
+    flankInterval: 1.1,
+    spawnTimer: 0,
+    spawnQueue: [],
+    waveActive:false,
+    running:false
+  };
+}
+
+let lockedFloors = []; // eraIdx of each completed floor, bottom to top
+
+const FORT = { x: W/2, y: H-190 };
+
+// ---------------- Invisible rubber-band difficulty ----------------
+// skill drifts 0..1 based on how cleanly waves are cleared; it tightens or
+// relaxes spawn pacing so the game stays challenging but never impossible.
+let skill = 0.4;
+
+// ---------------- Enemy spawn ----------------
+function buildWaveQueue(eraIdx, wave){
+  const q = [];
+  const baseCount = 5 + wave*3;
+  const gap = 1.1 - 0.5*skill; // good players see tighter waves
+  for(let i=0;i<baseCount;i++){
+    const fromLeft = Math.random()<0.5;
+    const tough = wave===2 && i%4===0; // sabertooth-tier every 4th enemy on wave 2
+    q.push({
+      side: fromLeft?-1:1,
+      type: tough?1:0,
+      delay: i*gap + Math.random()*0.4
+    });
+  }
+  return q;
+}
+
+function spawnEnemy(spec){
+  const era = ERAS[state.eraIdx];
+  const tough = spec.type===1;
+  const y = H-150 + (Math.random()*10-5);
+  const x = spec.side<0 ? -30 : W+30;
+  state.enemies.push({
+    x, y, side:spec.side,
+    hp: tough? 45:26, maxhp: tough?45:26,
+    speed: tough? 46:60,
+    dmg: tough? 12:8,
+    atkCd:0,
+    coinValue: tough? 5:1,
+    type: spec.type
+  });
+}
+
+// ---------------- Main weapon (auto-aim, arcing lob) ----------------
+function nearestEnemy(fromX, fromY, range){
+  let best=null, bestD=Infinity;
+  for(const e of state.enemies){
+    const dx=e.x-fromX, dy=e.y-fromY, d=dx*dx+dy*dy;
+    if(d<bestD && d<range*range){ best=e; bestD=d; }
+  }
+  return best;
+}
+
+// The outermost occupied slot on an enemy's approach side blocks that enemy.
+// Once that defender falls, the next-nearest occupied slot on that side
+// takes over; only with no defenders left on that side can enemies reach the fort.
+function frontlineTarget(e){
+  if(e.side<0){
+    const candidates = state.slots.filter(s=>s.occupied && s.x < FORT.x);
+    if(candidates.length){
+      candidates.sort((a,b)=>a.x-b.x);
+      return { type:'slot', slot:candidates[0] };
+    }
+  } else {
+    const candidates = state.slots.filter(s=>s.occupied && s.x > FORT.x);
+    if(candidates.length){
+      candidates.sort((a,b)=>b.x-a.x);
+      return { type:'slot', slot:candidates[0] };
+    }
+  }
+  return { type:'fort' };
+}
+
+// Manual slingshot: player drags back, releases to fire.
+const G = 700; // gravity for player shots and preview
+function launchShot(dx, dy){
+  const era = ERAS[state.eraIdx];
+  let vx = -dx*3.2, vy = -dy*3.2;
+  const sp = Math.hypot(vx,vy);
+  const maxSp = 950, minSp = 220;
+  if(sp>maxSp){ vx = vx/sp*maxSp; vy = vy/sp*maxSp; }
+  if(sp<minSp) return false; // too weak a pull — ignore
+  state.projectiles.push({
+    x: FORT.x, y: FORT.y-60, vx, vy, gravity: G,
+    r: 8, color: era.projectileColor, dmg: state.weaponDamage, life: 4,
+    splash: 65, groundY: H-170, playerShot:true
+  });
+  ensureAudio(); sfx.throw();
+  return true;
+}
+
+function fireFlank(slot){
+  // spear sweep: guaranteed hit on ALL enemies within reach (no whiffing)
+  const targets = state.enemies.filter(e=>!e.dead && Math.hypot(e.x-slot.x, e.y-20-slot.y) < state.flankRange);
+  if(targets.length===0) return;
+  ensureAudio(); sfx.throw();
+  for(const e of targets){
+    spawnHitFx(e.x, e.y-20);
+    damageEnemy(e, state.flankDamage);
+  }
+}
+
+// ---------------- Input: tap a circle to deploy, drag anywhere else to aim ----------------
+const aim = { active:false, sx:0, sy:0, cx:0, cy:0 };
+
+function toWorld(e){
+  const r = canvas.getBoundingClientRect();
+  const t = e.changedTouches ? e.changedTouches[0] : (e.touches? e.touches[0] : e);
+  const cx = t.clientX - r.left;
+  const cy = t.clientY - r.top;
+  return { x: cx/r.width*W, y: cy/r.height*H };
+}
+
+function pressStart(pt){
+  if(!state || !state.running) return;
+  for(const slot of state.slots){
+    const d = Math.hypot(pt.x-slot.x, pt.y-slot.y);
+    if(d<34){
+      if(!slot.occupied){
+        slot.occupied = true;
+        slot.hp = slot.maxhp = 80;
+        slot.cd = 0;
+        ensureAudio(); sfx.place();
+      }
+      return;
+    }
+  }
+  // anywhere else: start aiming the sling
+  aim.active = true;
+  aim.sx = aim.cx = pt.x; aim.sy = aim.cy = pt.y;
+}
+
+function pressMove(pt){
+  if(aim.active){ aim.cx = pt.x; aim.cy = pt.y; }
+}
+
+function pressEnd(){
+  if(!aim.active) return;
+  aim.active = false;
+  if(!state || !state.running) return;
+  if(state.weaponCd > 0) return; // still reloading
+  const dx = aim.cx - aim.sx, dy = aim.cy - aim.sy;
+  if(launchShot(dx, dy)){
+    state.weaponCd = state.weaponInterval;
+  }
+}
+
+canvas.addEventListener('mousedown', e=>{ ensureAudio(); pressStart(toWorld(e)); });
+canvas.addEventListener('mousemove', e=>{ pressMove(toWorld(e)); });
+window.addEventListener('mouseup', ()=>{ pressEnd(); });
+canvas.addEventListener('touchstart', e=>{ ensureAudio(); pressStart(toWorld(e)); e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchmove', e=>{ pressMove(toWorld(e)); e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchend', e=>{ pressEnd(); e.preventDefault(); }, {passive:false});
+
+// ---------------- Update loop ----------------
+let lastT = performance.now();
+function tick(now){
+  const dt = Math.min(0.05, (now-lastT)/1000);
+  lastT = now;
+  if(state && state.running) update(dt);
+  render();
+  requestAnimationFrame(tick);
+}
+
+function update(dt){
+  const era = ERAS[state.eraIdx];
+
+  // camera smoothing
+  camera.zoom += (camera.targetZoom-camera.zoom)*Math.min(1,dt*4);
+  camera.offsetY += (camera.targetOffsetY-camera.offsetY)*Math.min(1,dt*4);
+
+  // builder works steadily whenever the wave is live
+  if(state.waveActive){
+    state.builderProgress = Math.min(1, state.builderProgress + dt*0.028);
+  }
+
+  // spawn queue
+  state.spawnTimer += dt;
+  state.spawnQueue = state.spawnQueue.filter(spec=>{
+    if(state.spawnTimer >= spec.delay){ spawnEnemy(spec); return false; }
+    return true;
+  });
+  if(state.spawnQueue.length===0 && state.enemies.length===0 && state.waveActive){
+    onWaveClear();
+  }
+
+  // weapon cooldown (gates manual shots)
+  state.weaponCd -= dt;
+
+  // flank fighters
+  for(const slot of state.slots){
+    if(!slot.occupied) continue;
+    slot.cd -= dt;
+    if(slot.cd<=0){ fireFlank(slot); slot.cd = state.flankInterval; }
+  }
+
+  // enemies move + attack — they must fight through whichever defender
+  // stands between them and the fort before they can reach the builder.
+  // Enemies queue up: each ranks behind the one ahead so they can't all
+  // pile onto the defender at once.
+  const rankCount = { left:0, right:0 };
+  // mercy: when the fort is badly hurt, enemies press a little less hard
+  const mercy = state.fortHP < 35 ? 0.7 : 1;
+  state.enemies.sort((a,b)=> a.side<0 ? b.x-a.x : a.x-b.x); // closest-to-fort first per side mix
+  for(const e of state.enemies){
+    const target = frontlineTarget(e);
+    const targetX = target.type==='slot' ? target.slot.x : FORT.x;
+    const dir = targetX>e.x?1:-1;
+    const key = e.side<0 ? 'left':'right';
+    const rank = rankCount[key]++;
+    const stopBase = target.type==='slot' ? 44 : 70;
+    const stopDist = stopBase + rank*30; // queue spacing
+    const dist = Math.abs(targetX-e.x);
+    if(dist>stopDist){
+      e.x += dir*e.speed*mercy*dt;
+    } else if(rank < 2){ // only the front two on each side can attack
+      e.atkCd -= dt;
+      if(e.atkCd<=0){
+        if(target.type==='slot'){
+          target.slot.hp -= e.dmg;
+          ensureAudio(); sfx.hurt();
+          if(target.slot.hp<=0){
+            target.slot.hp = 0;
+            target.slot.occupied = false;
+            spawnHitFx(target.slot.x, target.slot.y-14);
+          }
+        } else {
+          state.fortHP -= e.dmg;
+          state.builderProgress = Math.max(0, state.builderProgress - 0.01);
+          ensureAudio(); sfx.hurt();
+          updateHUD();
+          if(state.fortHP<=0){ state.fortHP=0; onFortDown(); }
+        }
+        e.atkCd = 0.9;
+      }
+    }
+  }
+
+  // projectiles
+  for(const p of state.projectiles){
+    p.life -= dt;
+    p.x += p.vx*dt;
+    p.vy += (p.gravity||0)*dt;
+    p.y += p.vy*dt;
+  }
+  // collisions
+  for(const p of state.projectiles){
+    if(p.hit) continue;
+    if(p.splash){
+      // arcing splash shot: detonate when it descends to the enemy plane
+      if(p.vy>0 && p.y >= p.groundY){
+        p.hit = true;
+        spawnHitFx(p.x, p.y);
+        ensureAudio(); sfx.hit();
+        for(const e of state.enemies){
+          if(e.dead) continue;
+          const dx = Math.abs(e.x - p.x);
+          if(dx < p.splash){
+            // bullseye bonus: direct hits pay double coins
+            if(p.playerShot && dx < 20) e.coinValue *= 2;
+            damageEnemy(e, p.dmg);
+          }
+        }
+      }
+      continue;
+    }
+    for(const e of state.enemies){
+      if(e.dead) continue;
+      const d = Math.hypot(p.x-e.x, p.y-(e.y-20));
+      if(d < 22){
+        p.hit = true;
+        spawnHitFx(e.x, e.y-20);
+        ensureAudio(); sfx.hit();
+        damageEnemy(e, p.dmg);
+        break;
+      }
+    }
+  }
+  state.projectiles = state.projectiles.filter(p=>!p.hit && p.life>0 && p.y<H+50);
+  state.enemies = state.enemies.filter(e=>!e.dead);
+
+  // fx
+  state.fx.forEach(f=>{ f.life-=dt; f.x+=f.vx*dt; f.y+=f.vy*dt; });
+  state.fx = state.fx.filter(f=>f.life>0);
+}
+
+function spawnHitFx(x,y){
+  for(let i=0;i<5;i++){
+    state.fx.push({ x,y, vx:(Math.random()-0.5)*120, vy:(Math.random()-0.5)*120, life:0.3, r:3 });
+  }
+}
+
+function damageEnemy(e, dmg){
+  e.hp -= dmg;
+  if(e.hp<=0 && !e.dead){
+    e.dead = true;
+    state.coins += e.coinValue;
+    state.builderProgress = Math.min(1, state.builderProgress + 0.02);
+    ensureAudio(); sfx.coin();
+    updateHUD();
+  }
+}
+
+function onWaveClear(){
+  state.waveActive = false;
+  // rubber-band: clean clears raise skill, scrapes lower it
+  const cleanness = state.fortHP/state.maxFortHP;
+  skill = Math.max(0, Math.min(1, skill + (cleanness - 0.65)*0.35));
+  ensureAudio(); sfx.wave();
+  if(state.wave >= WAVES_PER_ERA){
+    onFloorComplete();
+  } else {
+    openShop();
+  }
+}
+
+function onFortDown(){
+  // Forgiving design: no permanent loss, just reset the current wave.
+  skill = Math.max(0, skill - 0.25); // ease off after a loss
+  state.running = false;
+  ensureAudio(); sfx.lose();
+  showOverlay(
+    `The ${ERAS[state.eraIdx].name} fort has fallen!`,
+    `Don't worry — no progress lost. Reinforce and try wave ${state.wave} again.`,
+    'Try Again',
+    ()=>{ retryWave(); }
+  );
+}
+
+function retryWave(){
+  state.fortHP = state.maxFortHP;
+  state.enemies = [];
+  state.projectiles = [];
+  // defenders stay deployed on retry — no need to re-place them
+  startWave(state.wave);
+}
+
+function startWave(waveNum){
+  state.wave = waveNum;
+  state.spawnTimer = 0;
+  state.spawnQueue = buildWaveQueue(state.eraIdx, waveNum);
+  state.waveActive = true;
+  state.running = true;
+  updateHUD();
+}
+
+function onFloorComplete(){
+  lockedFloors.push(state.eraIdx);
+  flashText(`🏗️ Floor Complete!`);
+  updateCameraTarget(lockedFloors.length);
+  const nextEra = state.eraIdx+1;
+  setTimeout(()=>{
+    if(nextEra < ERAS.length){
+      beginEra(nextEra);
+    } else {
+      state.running = false;
+      ensureAudio(); sfx.win();
+      showOverlay('🏆 Vertical Slice Complete!', 'You\'ve carried the tower through the Stone, Wooden, and Bronze Ages. More eras are on the way.', 'Play Again', ()=>{ lockedFloors=[]; beginEra(0); });
+    }
+  }, 1400);
+}
+
+function flashText(txt){
+  const el = document.getElementById('floorFlash');
+  el.textContent = txt;
+  el.style.transition='none';
+  el.style.opacity='1';
+  requestAnimationFrame(()=>{
+    el.style.transition='opacity 1.2s';
+    el.style.opacity='0';
+  });
+}
+
+// ---------------- Shop ----------------
+function shopItems(){
+  const era = ERAS[state.eraIdx];
+  return [
+    { key:'weaponDmg', name:`${era.weaponName} Power`, desc:'+6 damage', cost: 12,
+      apply(){ state.weaponDamage += 6; } },
+    { key:'weaponSpeed', name:`${era.weaponName} Reload`, desc:'Fires faster', cost: 14,
+      apply(){ state.weaponInterval = Math.max(0.5, state.weaponInterval-0.2); } },
+    { key:'flankDmg', name:`${era.flankName} Power`, desc:'+4 damage', cost: 10,
+      apply(){ state.flankDamage += 4; } },
+    { key:'fortHeal', name:'Repair Fort', desc:'Fully restore fort health', cost: 8,
+      apply(){ state.fortHP = state.maxFortHP; } },
+    { key:'extraSlot', name:`Extra ${era.flankName}`, desc:'Add a flank slot', cost: 26, max:1,
+      apply(){
+        const spacing = 90;
+        const i = state.slots.length;
+        state.slots.push({ x: W/2 + (i%2===0? -1:1)*Math.ceil(i/2)*spacing, y:H-150, occupied:false, hp:0, maxhp:0, cd:0 });
+      } }
+  ];
+}
+
+function openShop(){
+  document.getElementById('shop').classList.remove('hidden');
+  document.getElementById('shopCoins').textContent = state.coins;
+  const grid = document.getElementById('shopGrid');
+  grid.innerHTML = '';
+  shopItems().forEach(item=>{
+    const div = document.createElement('div');
+    div.className='shopItem';
+    div.innerHTML = `<div class="info"><div class="name">${item.name}</div><div class="desc">${item.desc} · 🪙${item.cost}</div></div>`;
+    const btn = document.createElement('button');
+    btn.className='shopBtn'; btn.textContent='Buy';
+    btn.disabled = state.coins < item.cost;
+    btn.onclick = ()=>{
+      if(state.coins < item.cost) return;
+      state.coins -= item.cost;
+      item.apply();
+      document.getElementById('shopCoins').textContent = state.coins;
+      btn.disabled = state.coins < item.cost;
+      ensureAudio(); sfx.coin();
+    };
+    div.appendChild(btn);
+    grid.appendChild(div);
+  });
+}
+document.getElementById('shopContinue').onclick = ()=>{
+  document.getElementById('shop').classList.add('hidden');
+  updateHUD();
+  startWave(state.wave+1);
+};
+
+// ---------------- HUD ----------------
+function updateHUD(){
+  document.getElementById('eraTitle').textContent = ERAS[state.eraIdx].name;
+  document.getElementById('coinCount').textContent = state.coins;
+  document.getElementById('waveCount').textContent = Math.min(state.wave, WAVES_PER_ERA);
+  document.getElementById('fortBar').style.width = Math.max(0,(state.fortHP/state.maxFortHP*100))+'%';
+}
+
+// ---------------- Overlay ----------------
+function showOverlay(title, text, btnLabel, onClick){
+  const ov = document.getElementById('overlay');
+  ov.innerHTML = `<h1>${title}</h1><p>${text}</p><button class="btn" id="ovBtn">${btnLabel}</button>`;
+  ov.classList.remove('hidden');
+  document.getElementById('ovBtn').onclick = ()=>{ ov.classList.add('hidden'); onClick(); };
+}
+
+function beginEra(eraIdx){
+  state = freshFloorState(eraIdx);
+  updateCameraTarget(lockedFloors.length);
+  updateHUD();
+  startWave(1);
+}
+
+document.getElementById('startBtn').onclick = ()=>{
+  document.getElementById('overlay').classList.add('hidden');
+  ensureAudio();
+  beginEra(0);
+};
+
+// ---------------- Render ----------------
+function drawFloor(ctx, eraIdx, floorIndexFromBottom, builderProgress){
+  const era = ERAS[eraIdx];
+  const y0 = H-150 - floorIndexFromBottom*FLOOR_H;
+  const y1 = y0 + FLOOR_H - 8;
+  // built portion (grows with builderProgress if this is the active top floor)
+  const progress = builderProgress===undefined ? 1 : builderProgress;
+  const wallW = 260;
+  const x0 = W/2 - wallW/2;
+  ctx.fillStyle = era.floorColor;
+  const builtH = (FLOOR_H-8) * Math.max(0.15, progress);
+  ctx.fillRect(x0, y1-builtH, wallW, builtH);
+  ctx.strokeStyle = era.floorEdge;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x0, y1-builtH, wallW, builtH);
+  // simple crenellation on top of locked floors
+  if(progress>=1){
+    ctx.fillStyle = era.floorEdge;
+    for(let i=0;i<7;i++){
+      ctx.fillRect(x0+8+i*36, y1-builtH-10, 20, 10);
+    }
+  }
+}
+
+function drawBuilder(ctx, x, y){
+  ctx.fillStyle = '#e0a469';
+  ctx.beginPath(); ctx.arc(x, y-26, 8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#7a5230';
+  ctx.fillRect(x-6, y-18, 12, 18);
+}
+
+function drawWeapon(ctx){
+  const era = ERAS[state.eraIdx];
+  // sling base
+  ctx.fillStyle = '#5a4a35';
+  ctx.beginPath(); ctx.arc(FORT.x, FORT.y-60, 16, 0, Math.PI*2); ctx.fill();
+  // reload ring
+  const pct = 1 - Math.max(0, state.weaponCd)/state.weaponInterval;
+  ctx.strokeStyle = pct>=1 ? '#f5c518' : 'rgba(255,255,255,.5)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(FORT.x, FORT.y-60, 22, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
+  ctx.stroke();
+  ctx.fillStyle = era.projectileColor;
+  ctx.beginPath(); ctx.arc(FORT.x, FORT.y-60, 6, 0, Math.PI*2); ctx.fill();
+
+  // aiming: draw stretch band + dotted trajectory
+  if(aim.active && state.weaponCd<=0){
+    const dx = aim.cx-aim.sx, dy = aim.cy-aim.sy;
+    // band from sling toward pull direction (visual only, capped)
+    const bandLen = Math.min(60, Math.hypot(dx,dy)*0.4);
+    const ang = Math.atan2(dy,dx);
+    ctx.strokeStyle = 'rgba(90,74,53,.9)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(FORT.x, FORT.y-60);
+    ctx.lineTo(FORT.x + Math.cos(ang)*bandLen, FORT.y-60 + Math.sin(ang)*bandLen);
+    ctx.stroke();
+    // dotted arc preview using the exact launch physics
+    let vx = -dx*3.2, vy = -dy*3.2;
+    const sp = Math.hypot(vx,vy), maxSp=950;
+    if(sp>maxSp){ vx=vx/sp*maxSp; vy=vy/sp*maxSp; }
+    if(sp>=220){
+      let px=FORT.x, py=FORT.y-60, pvy=vy;
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      const step = 0.055;
+      for(let i=0;i<40;i++){
+        px += vx*step; pvy += G*step; py += pvy*step;
+        if(py > H-140) break;
+        ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+}
+
+function drawSlots(ctx){
+  for(const slot of state.slots){
+    ctx.save();
+    ctx.globalAlpha = slot.occupied?1:0.55;
+    ctx.beginPath();
+    ctx.arc(slot.x, slot.y, 26, 0, Math.PI*2);
+    ctx.strokeStyle = slot.occupied? '#f5c518':'#ffffff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    if(slot.occupied){
+      ctx.fillStyle = '#c94b3a';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y-14, 7, 0, Math.PI*2); ctx.fill();
+      ctx.fillRect(slot.x-6, slot.y-8, 12, 16);
+      const pct = Math.max(0, slot.hp/slot.maxhp);
+      ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(slot.x-18, slot.y-52, 36, 4);
+      ctx.fillStyle= pct>0.5? '#5bc93a' : (pct>0.25? '#e0b93a':'#d8412f');
+      ctx.fillRect(slot.x-18, slot.y-52, 36*pct, 4);
+    }
+    ctx.restore();
+  }
+}
+
+function drawEnemy(ctx, e){
+  const era = ERAS[state.eraIdx];
+  const tough = e.type===1;
+  ctx.fillStyle = tough? '#e08a2c' : '#8a3a2c';
+  const r = tough? 16:11;
+  ctx.beginPath(); ctx.arc(e.x, e.y-14, r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#3a2418';
+  ctx.fillRect(e.x-6, e.y-4, 12, 18);
+  // hp bar
+  const pct = e.hp/e.maxhp;
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(e.x-16, e.y-14-r-10, 32, 4);
+  ctx.fillStyle= pct>0.5? '#5bc93a' : (pct>0.25? '#e0b93a':'#d8412f');
+  ctx.fillRect(e.x-16, e.y-14-r-10, 32*pct, 4);
+}
+
+function render(){
+  ctx.save();
+  ctx.clearRect(0,0,W,H);
+  if(!state){ ctx.restore(); return; }
+  const era = ERAS[state.eraIdx];
+
+  // apply camera zoom around bottom-center
+  ctx.translate(W/2, H);
+  ctx.scale(camera.zoom, camera.zoom);
+  ctx.translate(-W/2, -H+camera.offsetY);
+
+  // sky
+  ctx.fillStyle = era.sky;
+  ctx.fillRect(0,0,W,H);
+  // ground
+  ctx.fillStyle = era.ground;
+  ctx.fillRect(0,H-150,W,150);
+  ctx.fillStyle = era.groundDark;
+  ctx.fillRect(0,H-20,W,20);
+
+  // locked floors (bottom to top)
+  lockedFloors.forEach((eraIdx, i)=>{
+    drawFloor(ctx, eraIdx, i, 1);
+  });
+  // active floor
+  drawFloor(ctx, state.eraIdx, lockedFloors.length, state.builderProgress);
+
+  // builder character stands centered between the flank circles
+  drawBuilder(ctx, W/2, H-150 - lockedFloors.length*FLOOR_H - 4);
+
+  // weapon
+  drawWeapon(ctx);
+  // slots
+  drawSlots(ctx);
+  // enemies
+  state.enemies.forEach(e=>drawEnemy(ctx,e));
+  // projectiles
+  state.projectiles.forEach(p=>{
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  });
+  // fx
+  state.fx.forEach(f=>{
+    ctx.fillStyle = 'rgba(255,255,255,'+Math.max(0,f.life/0.3)+')';
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
