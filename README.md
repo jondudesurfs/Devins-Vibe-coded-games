@@ -12,4 +12,4 @@ The arcade at [pewpewpalace.net](https://pewpewpalace.net), games designed by De
 
 1. Create a folder in `public/` (underscores, not spaces), and put the game's HTML file in it.
 2. Add a card for it in `public/index.html`.
-3. Commit to `main`. Once Cloudflare is connected to this repo, the site updates on its own.
+3. Commit to `main`. Cloudflare picks up the change and updates the site on its own.
