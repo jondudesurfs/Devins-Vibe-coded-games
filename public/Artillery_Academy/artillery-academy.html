@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artillery Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a storybook war-room for a 7-year-old commander; bold, warm, never babyish.
+   IDEA: a royal campaign table: parchment-free, painted map board inside a castle-blue frame.
+   PICTURE: the live battle map with hand-drawn sprites is the hero on every screen that matters.
+   COLOUR and TYPE: castle blue frame, meadow board, sunflower-yellow accent (Clucky's banner); Lilita One + Nunito.
+   LAYOUT: board on top, command panel beside it on wide screens, below it on narrow ones. */
+:root{color-scheme:light dark;
+  --bg:light-dark(#e9eef7,#0f1626);--frame:light-dark(#1f3a68,#16294a);--card:light-dark(#ffffff,#1b2740);
+  --ink:light-dark(#1b2433,#e8edf6);--soft:light-dark(#5a6680,#a9b4c9);--line:light-dark(#d5dceb,#2c3b5c);
+  --sun:#f4c430;--sunInk:#3a2a00;--good:#2f8f46;--bad:#c2410c;--fr:#2251a8;--frSoft:light-dark(#e3ebfb,#1d2c4f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Lilita One",Nunito,sans-serif;font-weight:400;line-height:1.05;margin:0;text-wrap:balance}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:12px;min-height:44px;padding:8px 16px;font-weight:800}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.btn{background:var(--sun);color:var(--sunInk);box-shadow:0 3px 0 #b98d10}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #b98d10}
+.btn2{background:var(--card);color:var(--ink);border:2px solid var(--line)}
+.btn[disabled],.btn2[disabled]{opacity:.45;cursor:not-allowed}
+header{background:var(--frame);color:#fff;padding:10px max(3vw,12px);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+header h1{font-size:clamp(24px,3.4vw,34px);flex:1 1 auto;color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{background:rgba(255,255,255,.14);border-radius:999px;padding:4px 12px;font-weight:800;font-size:15px;white-space:nowrap}
+.lang{display:flex;background:rgba(255,255,255,.14);border-radius:999px;padding:3px}
+.lang button{min-height:38px;border-radius:999px;padding:4px 14px;background:transparent;color:#fff}
+.lang button[aria-pressed=true]{background:var(--sun);color:var(--sunInk)}
+.bonus{background:var(--fr);color:#fff}
+main{max-width:1240px;margin:0 auto;padding:16px max(3vw,12px) 40px}
+.screen{display:none}.screen.on{display:block}
+.card{background:var(--card);border-radius:18px;padding:clamp(16px,2.4vw,26px);box-shadow:0 2px 0 var(--line)}
+.grid2{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.grid2{grid-template-columns:minmax(0,1fr) 340px}}
+.board{position:relative;border-radius:16px;overflow:hidden;border:6px solid var(--frame);background:#7fb94e;aspect-ratio:5/3}
+.board canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation}
+.panel{display:flex;flex-direction:column;gap:12px}
+.stat{display:flex;justify-content:space-between;gap:8px;font-weight:800}
+.coins{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:30px}
+.c100,.c10,.c1{display:inline-block;border-radius:6px}
+.c100{width:30px;height:22px;background:#8a5a2b;border:3px solid var(--sun)}
+.c10{width:16px;height:16px;border-radius:50% 50% 40% 40%;background:#d9a441}
+.c1{width:10px;height:10px;border-radius:50%;background:var(--sun);border:1px solid #b98d10}
+.shop{display:grid;gap:8px}
+.tw{display:flex;align-items:center;gap:10px;text-align:left;background:var(--card);border:2px solid var(--line);color:var(--ink);padding:8px 10px}
+.tw[aria-pressed=true]{border-color:var(--sun);background:color-mix(in srgb,var(--sun) 18%,var(--card))}
+.tw .ic{width:38px;height:38px;flex:none}
+.tw b{display:block}.tw small{color:var(--soft);font-weight:700;font-size:13px}
+.tw .pr{margin-left:auto;font-family:"Lilita One";font-size:22px;white-space:nowrap}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.say{display:flex;gap:8px;align-items:flex-start}
+.say>div{flex:1}
+.say .en{display:none;color:var(--soft);font-style:italic;margin-top:4px}
+.say.show .en{display:block}
+.mini{min-height:36px;padding:4px 10px;font-size:14px;border-radius:999px;background:var(--frSoft);color:var(--fr);flex:none}
+.hero{display:grid;gap:18px;align-items:center;grid-template-columns:minmax(0,1fr)}
+@media(min-width:820px){.hero{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}}
+.hero h2{font-size:clamp(32px,4.4vw,48px)}
+.menuBtns{display:grid;gap:10px}
+.menuBtns button{font-size:20px;min-height:56px}
+.medals{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.medals div{background:var(--bg);border-radius:14px;padding:10px 12px}
+.medals b{font-family:"Lilita One";font-size:28px;display:block;line-height:1}
+.medals span{font-size:14px;color:var(--soft);font-weight:700}
+.beast{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.beast{grid-template-columns:220px minmax(0,1fr)}}
+.beast canvas{width:100%;max-width:220px;aspect-ratio:1;background:#7fb94e;border-radius:16px;border:5px solid var(--frame)}
+.weak{display:inline-block;background:var(--sun);color:var(--sunInk);border-radius:999px;padding:4px 12px;font-weight:800}
+#modal{position:fixed;inset:0;background:rgba(10,16,30,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#modal.on{display:flex}
+#modal .card{max-width:560px;width:100%;max-height:92vh;overflow:auto}
+#modal h3{font-size:28px;margin-bottom:10px}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.opts button{font-size:20px}
+input.num{width:9ch;font-size:28px;font-family:"Lilita One";text-align:center;border:3px solid var(--line);border-radius:12px;padding:4px;background:var(--bg)}
+.msg{min-height:26px;font-weight:800;margin-top:8px}
+.msg.good{color:var(--good)}.msg.bad{color:var(--bad)}
+.eq{font-family:"Lilita One";font-size:30px;white-space:nowrap}
+.logbox{display:grid;gap:14px}
+.logbox label{font-weight:800;display:block;margin-bottom:4px}
+.logbox textarea{width:100%;min-height:76px;border:3px solid var(--line);border-radius:12px;padding:10px;background:var(--bg);font-size:18px;resize:vertical}
+.check{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.check li::before{content:"○ ";color:var(--soft)}
+.check li.ok::before{content:"✓ ";color:var(--good)}
+.spot{background:color-mix(in srgb,var(--sun) 25%,var(--card));border-radius:10px;padding:6px 10px;font-weight:700}
+.bosses{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.boss{border:3px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:8px;background:var(--card);text-align:left;color:var(--ink)}
+.boss b{font-family:"Lilita One";font-size:30px;font-weight:400}
+.boss.def{opacity:.6}
+.arena{display:grid;gap:14px;justify-items:center;text-align:center}
+.shield{font-family:"Lilita One";font-size:44px;background:var(--frame);color:#fff;border-radius:50% 50% 40% 40%/40% 40% 60% 60%;width:170px;height:190px;display:grid;place-items:center;transition:transform .2s}
+.shield.hit{transform:rotate(-8deg) scale(.94)}
+.hp{display:flex;gap:6px}.hp i{width:34px;height:12px;border-radius:6px;background:var(--bad)}.hp i.gone{background:var(--line)}
+.sentence{font-size:24px;font-weight:800}
+.tricky{font-family:"Lilita One";font-size:44px;letter-spacing:2px}
+.tricky em{font-style:normal;color:var(--bad);text-decoration:underline}
+textarea.out{width:100%;min-height:200px;font:14px/1.4 ui-monospace,monospace;border:2px solid var(--line);border-radius:10px;padding:10px;background:var(--bg)}
+.note{font-size:14px;color:var(--soft)}
+table{border-collapse:collapse;width:100%;font-size:15px}td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.scroll{overflow-x:auto}
+@media(prefers-reduced-motion:reduce){.shield{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <a id="arcade" href="../index.html" hidden style="color:#fff;font-weight:800;text-decoration:none;white-space:nowrap">← Pew Pew Palace</a>
+  <h1 id="gameName">Artillery Academy</h1>
+  <div class="chips">
+    <span class="chip" id="rankChip">Recruit</span>
+    <span class="chip" id="treasChip">Treasury 0</span>
+    <span class="chip bonus" id="bonusChip" hidden>Bonus de bravoure +25%</span>
+    <div class="lang" role="group" aria-label="Language">
+      <button id="lEn" aria-pressed="true">English</button>
+      <button id="lFr" aria-pressed="false">Français</button>
+    </div>
+  </div>
+</header>
+<main>
+  <section class="screen on" id="sMenu"></section>
+  <section class="screen" id="sScout"></section>
+  <section class="screen" id="sBattle">
+    <div class="grid2">
+      <div class="board"><canvas id="cv" width="800" height="480" aria-label="Battle map"></canvas></div>
+      <div class="panel card" id="panel"></div>
+    </div>
+  </section>
+  <section class="screen" id="sLog"></section>
+  <section class="screen" id="sBoss"></section>
+  <section class="screen" id="sDad"></section>
+</main>
+<div id="modal"><div class="card" id="mcard" role="dialog" aria-modal="true"></div></div>
+<script>
+{
+/* ---------- text (English and French) ---------- */
+const NB = ' ';
+const S = {
+  start:['To battle!','À la bataille'+NB+'!'], bossBtn:['Boss Words','Les mots-boss'], dadBtn:["Dad's corner","Dad's corner"],
+  treasury:['Treasury','Trésor'], gold:['gold','écus'],
+  menuTitle:['Defend Clucky’s Land','Défends le pays de Clucky'],
+  menuIntro:['Monsters are marching on the castle. Scout them, buy towers with smart math, and report to the King after every battle.','Des monstres marchent vers le château. Observe-les, achète des tours avec des calculs malins et fais ton rapport au roi après chaque bataille.'],
+  frPitch:['Play in French for the Bonus de bravoure: every reward is worth 25% more, and 10 French battles unlock the secret Lightning Tower.','Joue en français pour le Bonus de bravoure'+NB+': chaque récompense vaut 25'+NB+'% de plus, et 10 batailles en français débloquent la Tour Éclair secrète.'],
+  battles:['battles','batailles'], frBattles:['in French','en français'], medals:['medals','médailles'], stars:['stars','étoiles'],
+  scoutTitle:['Scout report','Rapport de l’éclaireur'], newFoe:['New enemy spotted!','Nouvel ennemi en vue'+NB+'!'], knownFoe:['Enemy to watch','Ennemi à surveiller'],
+  weakTo:['Weak to','Point faible'], toWalls:['To the walls!','Aux remparts'+NB+'!'],
+  listen:['Listen','Écouter'], wave:['Wave','Vague'], of3:['of 3','sur 3'], startWave:['Start wave','Lancer la vague'], lives:['Lives','Vies'],
+  fast:['Fast','Rapide'], shop:['Shop','Boutique'], building:['Battle in progress…','Bataille en cours…'],
+  place:['Click a grass square to build:','Clique sur une case d’herbe pour construire'+NB+':'], cancel:['Cancel','Annuler'],
+  broke:['Not enough gold yet. Defeat enemies to earn more.','Pas assez d’écus pour l’instant. Bats des ennemis pour en gagner.'],
+  est1:['You have {g} gold. {T} costs {p}. About how much will you have left?','Tu as {g} écus. {T} coûte {p} écus. Il t’en restera environ combien'+NB+'?'],
+  about:['about {x}','environ {x}'],
+  estGood:['Good scouting! Now the exact amount:','Bien vu'+NB+'! Maintenant, le nombre exact'+NB+':'],
+  estOff:['Hmm, let’s see. Work out the exact amount:','Voyons voir. Calcule le nombre exact'+NB+':'],
+  check:['Check','Vérifier'],
+  mismatch:['Hmm, that doesn’t match your scouting (about {e}). Check again?','Hmm, ça ne correspond pas à ton estimation (environ {e}). Vérifie encore'+NB+'?'],
+  tryAgain:['Not quite. Try again!','Pas tout à fait. Essaie encore'+NB+'!'],
+  hintRound:['Friendly-number trick: {p} is {P} − {d}. So {g} − {P} = {gP}, then add back {d}.','Astuce du nombre rond'+NB+': {p}, c’est {P} − {d}. Donc {g} − {P} = {gP}, puis rajoute {d}.'],
+  hintSplit:['Break it apart: {g} − {t} = {gt}, then take away {o}.','Décompose'+NB+': {g} − {t} = {gt}, puis enlève {o}.'],
+  reveal:['It’s {r}. {g} − {p} = {r}. You’ll get the next one!','C’est {r}. {g} − {p} = {r}. Tu auras le prochain'+NB+'!'],
+  rightBuy:['Correct! You’ll have {r} gold left. Now pick a spot.','Bravo'+NB+'! Il te restera {r} écus. Choisis un endroit.'],
+  okBtn:['OK','OK'],
+  supply:['Supply wagon!','Chariot de ravitaillement'+NB+'!'], supplyWhy:['Solve it to win +15 gold.','Résous-le pour gagner 15 écus.'],
+  skip:['Skip','Passer'], supOk:['The wagon is yours: +15 gold!','Le chariot est à toi'+NB+': +15 écus'+NB+'!'],
+  supReveal:['The answer was {r}. The wagon rolls on. Next time!','La réponse était {r}. Le chariot repart. La prochaine fois'+NB+'!'],
+  win:['Victory! The castle held.','Victoire'+NB+'! Le château a tenu bon.'],
+  lose:['The castle fell this time. Every commander loses sometimes.','Le château est tombé cette fois. Tous les commandants perdent parfois.'],
+  toLog:['Write your report','Écrire ton rapport'],
+  logTitle:['Commander’s Log','Journal du commandant'],
+  logIntro:['Report to the King. Use a number from your battle.','Fais ton rapport au roi. Utilise un nombre de ta bataille.'],
+  b1:['What worked: “The ___ tower worked because ___.”','Ce qui a marché'+NB+': «'+NB+'La tour ___ a marché parce que ___.'+NB+'»'],
+  b2:['Evidence: “I know because ___.” Use a number.','La preuve'+NB+': «'+NB+'Je le sais parce que ___.'+NB+'» Utilise un nombre.'],
+  b3:['Next time: “I would change ___ so that ___.”','La prochaine fois'+NB+': «'+NB+'Je vais changer ___ pour que ___.'+NB+'»'],
+  ph1:['The archer tower worked because…','La tour d’archers a marché parce que…'],
+  ph2:['I know because…','Je le sais parce que…'], ph3:['I would change…','Je vais changer…'],
+  c1:['A “because” in box 1','«'+NB+'parce que'+NB+'» dans la case 1'],
+  c2:['A number from the battle in box 2','Un nombre de la bataille dans la case 2'],
+  c3:['Your plan in box 3','Ton plan dans la case 3'],
+  forMedal:['For a medal:','Pour une médaille'+NB+':'],
+  send:['Send to the King','Envoyer au roi'], skipLog:['Skip report','Passer le rapport'], speak:['Speak','Parler'], stopSpk:['Stop','Arrêter'],
+  defeated:['Enemies defeated','Ennemis vaincus'], livesLeft:['Lives left','Vies restantes'], goldLeft:['Gold left','Écus restants'],
+  spotted:['Boss word spotted: “{bad}” → {good}?','Mot-boss repéré'+NB+': «'+NB+'{bad}'+NB+'» → {good}'+NB+'?'],
+  medal:['Medal earned!','Médaille gagnée'+NB+'!'], dmedal:['Double medal for a French report!','Double médaille pour un rapport en français'+NB+'!'],
+  noMedal:['Report sent. Add the missing parts next time for a medal.','Rapport envoyé. Ajoute les parties qui manquent la prochaine fois pour une médaille.'],
+  reward:['+{n} to the Royal Treasury','+{n} au Trésor royal'],
+  seul:['Seul! No English hints: +1 star','Seul'+NB+'! Aucun indice en anglais'+NB+': +1 étoile'],
+  newRank:['New title: {r}!','Nouveau titre'+NB+': {r}'+NB+'!'],
+  eclairOpen:['The Lightning Tower is unlocked for French battles!','La Tour Éclair est débloquée pour les batailles en français'+NB+'!'],
+  backMenu:['Back to the castle','Retour au château'],
+  bossTitle:['Boss Words','Les mots-boss'],
+  bossIntro:['Type the word you hear to crack the boss’s shield. Three hits wins.','Écris le mot que tu entends pour fendre le bouclier du boss. Trois coups pour gagner.'],
+  ready:['Ready to fight','Prêt au combat'], beaten:['Defeated','Vaincu'], returns:['Returns in {d} days','Revient dans {d} jours'], rematch:['Rematch!','Revanche'+NB+'!'],
+  hearAgain:['Hear it again','Réécouter'], hit:['Hit!','Touché'+NB+'!'],
+  lookTricky:['Look closely at the tricky part, then type it again.','Regarde bien la partie difficile, puis réécris-le.'],
+  bossWin:['Defeated! +20 gold for your next battle.','Vaincu'+NB+'! +20 écus pour ta prochaine bataille.'],
+  back:['Back','Retour'], hintBtn:['English?','English?'],
+  warChest:['War chest from bosses: +{n}','Trésor de guerre des boss'+NB+': +{n}']
+};
+const RANKS = [[0,'Recruit','Recrue'],[3,'Knight','Chevalier'],[6,'Captain','Capitaine'],[10,'General','Général']];
+const TOWERS = {
+  archer:{n:['Archer Tower','Tour d’archers'],art:['The Archer Tower','La tour d’archers'],d:['Fast arrows. Hits flyers.','Flèches rapides. Touche les volants.'],range:115,dmg:6,rate:.55,air:true,lo:26,hi:34},
+  cannon:{n:['Cannon','Canon'],art:['The Cannon','Le canon'],d:['Big splash. Cannot hit flyers.','Grosse explosion. Ne touche pas les volants.'],range:100,dmg:20,rate:1.5,air:false,splash:46,lo:43,hi:58},
+  frost:{n:['Frost Tower','Tour de givre'],art:['The Frost Tower','La tour de givre'],d:['Slows enemies. Hits flyers.','Ralentit les ennemis. Touche les volants.'],range:95,dmg:4,rate:1,air:true,slow:true,lo:35,hi:49},
+  eclair:{n:['Lightning Tower','Tour Éclair'],art:['The Lightning Tower','La tour Éclair'],d:['Chains to 3 enemies. French only.','Frappe 3 ennemis en chaîne. En français seulement.'],range:125,dmg:11,rate:1.2,air:true,chain:3,lo:61,hi:69}
+};
+const FOES = {
+  goblin:{n:['Goblin Raider','Pillard gobelin'],hp:20,sp:72,gold:3,weak:'archer',
+    txt:['Small, green and very fast, goblin raiders run in packs and try to slip past your walls before you notice. Their leather armor is thin, so arrows stop them easily. Watch out: they move so quickly that slow towers often miss them.',
+         'Petit, vert et très rapide, le pillard gobelin court en bande et essaie de passer tes murs avant que tu le remarques. Son armure de cuir est mince, alors les flèches l’arrêtent facilement. Attention'+NB+': il va si vite que les tours lentes le ratent souvent.']},
+  troll:{n:['Shield Troll','Troll à bouclier'],hp:95,sp:34,gold:7,weak:'cannon',
+    txt:['This enormous troll carries a stone shield as big as a door. Arrows bounce off it and do very little damage. Only the heavy blast of a cannonball can crack the shield. Trolls are slow, so you have time to aim.',
+         'Cet énorme troll porte un bouclier de pierre aussi grand qu’une porte. Les flèches rebondissent dessus et font très peu de dégâts. Seul le choc lourd d’un boulet de canon peut fendre le bouclier. Les trolls sont lents, alors tu as le temps de viser.']},
+  imp:{n:['Fire Imp','Diablotin de feu'],hp:36,sp:55,gold:4,weak:'frost',
+    txt:['A crackling creature made of living flame. Cannonballs pass right through its fiery body and only do half damage. But cold is its greatest enemy: Frost Towers hit fire imps twice as hard.',
+         'Une créature qui crépite, faite de flammes vivantes. Les boulets de canon traversent son corps brûlant et ne font que la moitié des dégâts. Mais le froid est son pire ennemi'+NB+': les tours de givre frappent les diablotins deux fois plus fort.']},
+  crow:{n:['Storm Crow','Corbeau de tempête'],hp:26,sp:80,gold:5,weak:'archer',fly:true,
+    txt:['These giant crows fly high above the battlefield, far out of reach. Cannons cannot hit them at all. Archers and Frost Towers can shoot into the sky, so build them along the crows’ path.',
+         'Ces corbeaux géants volent très haut au-dessus du champ de bataille, hors de portée. Les canons ne peuvent pas du tout les toucher. Les archers et les tours de givre peuvent tirer vers le ciel, alors construis-les le long du chemin des corbeaux.']}
+};
+const FOE_ORDER = ['goblin','troll','imp','crow'];
+const BOSSES = {
+  en:[
+    {w:'when',tr:[1,2],v:['wen','wehn','whn'],s:['When does the battle start?','We cheer when the castle holds.','When will the trolls come back?']},
+    {w:'was',tr:[1,2],v:['wus','wuz','waz'],s:['The goblin was very fast.','It was a long battle.','The tower was made of stone.']},
+    {w:'what',tr:[1,2],v:['wat','waat','wate','wute','whut'],s:['What is the troll’s weakness?','I know what the crows want.','What a great shot!']},
+    {w:'with',tr:[2,4],v:['wiht','wif','whith','wit'],s:['The archer fights with a bow.','Come with me to the wall.','The cannon is filled with iron.']}
+  ],
+  fr:[
+    {w:'parce que',tr:[3,5],v:['parece que','parse que','pars que','parsque','parceque'],s:['Je gagne parce que ma tour est forte.','Le dragon a peur parce qu’il fait froid.','Nous chantons parce que nous sommes contents.'],en:['I win because my tower is strong.','The dragon is scared because it is cold.','We sing because we are happy.']},
+    {w:'autres',tr:[0,2],v:['otres','aotres','otre'],s:['Les autres soldats arrivent demain.','Je veux voir les autres cartes.','Où sont les autres chevaliers'+NB+'?'],en:['The other soldiers arrive tomorrow.','I want to see the other maps.','Where are the other knights?']},
+    {w:'deux',tr:[1,3],v:['dex','deu','deus'],s:['Il y a deux dragons dans le ciel.','Le roi a deux couronnes.','Nous avons deux heures pour construire.'],en:['There are two dragons in the sky.','The king has two crowns.','We have two hours to build.']},
+    {w:'peut',tr:[1,3],v:['pex','peux','peu'],s:['Le chevalier peut gagner la bataille.','Le corbeau peut voler très haut.','Qui peut m’aider'+NB+'?'],en:['The knight can win the battle.','The crow can fly very high.','Who can help me?']}
+  ]
+};
+/* extra common-word variants spotted in his writing (checked in reports) */
+const EXTRA_SPOT = {en:{shud:'should',cud:'could',abot:'about',befor:'before',wich:'which',yor:'your',thar:'their/there',ther:'their/there'},fr:{dex:'deux',otres:'autres',aotres:'autres',pex:'peut'}};
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const L = () => save.lang === 'fr' ? 1 : 0;
+function T(k, v){ let s = (S[k]||[k,k])[L()]; return fill(s, v); }
+function TE(k, v){ return fill((S[k]||[k,k])[0], v); }
+function fill(s, v){ if(v) for(const x in v) s = s.split('{'+x+'}').join(v[x]); return s; }
+const U = ['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize'];
+function fr2(n){
+  if(n<17) return U[n];
+  if(n<20) return 'dix-'+U[n-10];
+  const TT = {2:'vingt',3:'trente',4:'quarante',5:'cinquante',6:'soixante'};
+  const t = Math.floor(n/10), u = n%10;
+  if(t<=6) return u===0 ? TT[t] : u===1 ? TT[t]+' et un' : TT[t]+'-'+U[u];
+  if(t===7) return n===71 ? 'soixante et onze' : 'soixante-'+fr2(n-60);
+  if(n===80) return 'quatre-vingts';
+  return 'quatre-vingt-'+fr2(n-80);
+}
+function frNum(n){
+  if(n<100) return fr2(n);
+  const h = Math.floor(n/100), r = n%100;
+  const c = h===1 ? 'cent' : U[h]+' cent';
+  if(r===0) return h>1 ? c+'s' : c;
+  return c+' '+fr2(r);
+}
+const numW = n => L() ? frNum(n) : String(n);
+
+/* ---------- save data ---------- */
+const KEY = 'artilleryAcademy.v1';
+const fresh = () => ({v:1,name:'',lang:'en',battles:0,frBattles:0,medals:0,stars:0,treasury:0,warChest:0,known:[],bosses:{},log:[],bossLog:[],savedAt:0});
+let save = fresh();
+try { const raw = localStorage.getItem(KEY); if(raw) save = Object.assign(fresh(), JSON.parse(raw)); } catch(e) {}
+let dbRef = null, dbBusy = false, dbAgain = false;
+function persist(){
+  save.savedAt = Date.now();
+  if(save.log.length > 200) save.log = save.log.slice(-200);
+  if(save.bossLog.length > 300) save.bossLog = save.bossLog.slice(-300);
+  try { localStorage.setItem(KEY, JSON.stringify(save)); } catch(e) {}
+  pushDb();
+}
+async function pushDb(){
+  if(!dbRef) return;
+  if(dbBusy){ dbAgain = true; return; }
+  dbBusy = true;
+  try { await dbRef.set(JSON.parse(JSON.stringify(save))); } catch(e) {}
+  dbBusy = false;
+  if(dbAgain){ dbAgain = false; pushDb(); }
+}
+
+/* ---------- platform capabilities (all optional) ---------- */
+const CL = (window.claude && typeof window.claude.use === 'function') ? window.claude : null;
+let tts = null, dict = null;
+if(CL){
+  CL.use('tts').then(t => { tts = t; }).catch(()=>{});
+  CL.use('dictation').then(d => { dict = d; if(d){ setupDict(); } refreshMics(); }).catch(()=>{});
+  CL.use('db').then(async db => {
+    if(!db) return;
+    try {
+      const ref = db.doc('academy/devin');
+      const snap = await ref.get();
+      dbRef = ref;
+      if(snap.exists){
+        const remote = snap.data();
+        if((remote.savedAt||0) > (save.savedAt||0)){ save = Object.assign(fresh(), JSON.parse(JSON.stringify(remote))); try{localStorage.setItem(KEY, JSON.stringify(save));}catch(e){} renderAll(); }
+        else if((save.savedAt||0) > (remote.savedAt||0)) pushDb();
+      } else if(save.savedAt) pushDb();
+    } catch(e) {}
+  }).catch(()=>{});
+}
+function speak(text, lang){
+  const lg = lang || save.lang;
+  if(tts){ tts.speak(text, {language: lg==='fr'?'fr':'en', rate: lg==='fr'?.9:1}).catch(()=>browserSpeak(text, lg)); return; }
+  browserSpeak(text, lg);
+}
+function browserSpeak(text, lg){
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lg==='fr' ? 'fr-FR' : 'en-US'; u.rate = lg==='fr' ? .9 : 1;
+    const v = speechSynthesis.getVoices().find(x => x.lang && x.lang.toLowerCase().startsWith(lg==='fr'?'fr':'en'));
+    if(v) u.voice = v;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch(e) {}
+}
+/* a paragraph with a speaker, and in French an English hint */
+function say(fr, en, cls){
+  const txt = L() ? fr : en;
+  const hint = L() ? `<button class="mini" data-hint>English?</button>` : '';
+  return `<div class="say ${cls||''}"><div><div>${esc(txt)}</div>${L()?`<div class="en">${esc(en)}</div>`:''}</div><button class="mini" data-speak="${esc(txt)}" aria-label="${esc(T('listen'))}">\u{1F50A}</button>${hint}</div>`;
+}
+document.addEventListener('click', e => {
+  const sp = e.target.closest('[data-speak]');
+  if(sp){ speak(sp.dataset.speak); return; }
+  const h = e.target.closest('[data-hint]');
+  if(h){ const box = h.closest('.say'); box.classList.toggle('show'); markAided(); }
+});
+function markAided(){ if(bt && bt.phase !== 'done') bt.aided = true; }
+
+/* ---------- header ---------- */
+function rankOf(n){ let r = RANKS[0]; for(const x of RANKS) if(n >= x[0]) r = x; return r; }
+function renderHeader(){
+  document.documentElement.lang = save.lang;
+  $('gameName').textContent = save.name || (L() ? 'Académie d’artillerie' : 'Artillery Academy');
+  document.title = save.name || 'Artillery Academy';
+  const r = rankOf(save.frBattles);
+  $('rankChip').textContent = L() ? r[2] : r[1];
+  $('treasChip').textContent = T('treasury') + ' ' + save.treasury;
+  $('bonusChip').hidden = !L();
+  $('lEn').setAttribute('aria-pressed', !L()); $('lEn').disabled = $('lFr').disabled = !!bt;
+  $('lFr').setAttribute('aria-pressed', !!L());
+}
+function setLang(l){
+  if(bt) return; // language is fixed for the whole battle
+  save.lang = l; persist(); renderAll();
+}
+$('lEn').onclick = () => setLang('en');
+$('lFr').onclick = () => setLang('fr');
+
+/* ---------- screens ---------- */
+let screen = 'sMenu';
+function show(id){ screen = id; document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0,0); }
+function renderAll(){
+  renderHeader();
+  if(screen === 'sMenu') renderMenu();
+  else if(screen === 'sScout') renderScout();
+  else if(screen === 'sBattle') renderPanel();
+  else if(screen === 'sLog') renderLog();
+  else if(screen === 'sBoss') renderBossList();
+  else if(screen === 'sDad') renderDad();
+}
+
+function renderMenu(){
+  const fr = L();
+  $('sMenu').innerHTML = `<div class="card hero">
+    <div class="board" style="aspect-ratio:5/3"><canvas id="menuCv" width="800" height="480"></canvas></div>
+    <div style="display:grid;gap:14px">
+      <h2>${esc(T('menuTitle'))}</h2>
+      ${say(S.menuIntro[1], S.menuIntro[0])}
+      <div class="menuBtns">
+        <button class="btn" id="goBattle">${esc(T('start'))}</button>
+        <button class="btn2" id="goBoss">${esc(T('bossBtn'))}</button>
+        <button class="btn2" id="goDad">Grown-ups’ corner</button>
+      </div>
+      <div class="medals">
+        <div><b>${save.battles}</b><span>${esc(T('battles'))}</span></div>
+        <div><b>${save.frBattles}</b><span>${esc(T('frBattles'))}</span></div>
+        <div><b>${save.medals}</b><span>${esc(T('medals'))}</span></div>
+        <div><b>${save.stars}</b><span>${esc(T('stars'))}</span></div>
+      </div>
+      <p class="note" style="margin:0">${esc(fr ? S.frPitch[1] : S.frPitch[0])}</p>
+    </div></div>`;
+  $('goBattle').onclick = newBattle;
+  $('goBoss').onclick = () => { show('sBoss'); renderBossList(); };
+  $('goDad').onclick = () => { show('sDad'); renderDad(); };
+  drawMenuScene();
+}
+
+/* ---------- map ---------- */
+const TS = 40, CW = 800, CH = 480;
+const WP = [[-1,2],[4,2],[4,8],[10,8],[10,3],[15,3],[15,9],[18,9]].map(p => [p[0]*TS+TS/2, p[1]*TS+TS/2]);
+const pathSet = new Set();
+for(let i=0;i<WP.length-1;i++){
+  const [x1,y1] = WP[i].map(v => Math.floor(v/TS)), [x2,y2] = WP[i+1].map(v => Math.floor(v/TS));
+  const dx = Math.sign(x2-x1), dy = Math.sign(y2-y1); let x = x1, y = y1;
+  while(true){ pathSet.add(x+','+y); if(x===x2 && y===y2) break; x += dx; y += dy; }
+}
+const castleTile = (x,y) => x>=17 && y>=7 && y<=11;
+const segLen = []; let totalLen = 0;
+for(let i=0;i<WP.length-1;i++){ const l = Math.hypot(WP[i+1][0]-WP[i][0], WP[i+1][1]-WP[i][1]); segLen.push(l); totalLen += l; }
+function posAt(d){
+  let s = 0;
+  for(let i=0;i<segLen.length;i++){
+    if(d <= s + segLen[i]){ const f = (d-s)/segLen[i]; return [WP[i][0] + (WP[i+1][0]-WP[i][0])*f, WP[i][1] + (WP[i+1][1]-WP[i][1])*f]; }
+    s += segLen[i];
+  }
+  return WP[WP.length-1].slice();
+}
+const deco = []; { let seed = 7; const r = () => (seed = (seed*9301+49297)%233280)/233280;
+  for(let i=0;i<70;i++){ const x = Math.floor(r()*20), y = Math.floor(r()*12); if(!pathSet.has(x+','+y) && !castleTile(x,y)) deco.push([x*TS+r()*TS, y*TS+r()*TS, r()<.25?'f':'g']); } }
+
+function drawGround(g){
+  g.fillStyle = '#7fb94e'; g.fillRect(0,0,CW,CH);
+  for(const [x,y,k] of deco){
+    if(k==='f'){ g.fillStyle = '#fff6c9'; g.beginPath(); g.arc(x,y,3,0,7); g.fill(); g.fillStyle='#f4c430'; g.beginPath(); g.arc(x,y,1.4,0,7); g.fill(); }
+    else { g.strokeStyle = '#6aa63e'; g.lineWidth = 2; g.beginPath(); g.moveTo(x,y); g.lineTo(x-3,y-6); g.moveTo(x,y); g.lineTo(x+3,y-7); g.stroke(); }
+  }
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  g.strokeStyle = '#c9a868'; g.lineWidth = 34; g.beginPath(); WP.forEach((p,i) => i ? g.lineTo(p[0],p[1]) : g.moveTo(p[0],p[1])); g.stroke();
+  g.strokeStyle = '#e8cf97'; g.lineWidth = 26; g.stroke();
+  drawCastle(g, 742, 372);
+}
+function drawCastle(g, x, y){
+  g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x-48, y+30, 100, 10);
+  g.fillStyle = '#9aa3b2'; g.fillRect(x-44, y-30, 88, 64);
+  g.fillStyle = '#b8c0cc'; g.fillRect(x-44, y-30, 88, 10);
+  for(const tx of [-50, 30]){ g.fillStyle = '#8a93a3'; g.fillRect(x+tx, y-54, 22, 88); g.fillStyle = '#b8c0cc'; for(let i=0;i<3;i++) g.fillRect(x+tx+i*8, y-62, 6, 8); }
+  g.fillStyle = '#5b3b1f'; g.beginPath(); g.moveTo(x-12, y+34); g.lineTo(x-12, y+8); g.arc(x, y+8, 12, Math.PI, 0); g.lineTo(x+12, y+34); g.fill();
+  g.strokeStyle = '#3b2a1a'; g.lineWidth = 3; g.beginPath(); g.moveTo(x-39, y-54); g.lineTo(x-39, y-92); g.stroke();
+  g.fillStyle = '#f4c430'; g.beginPath(); g.moveTo(x-39, y-92); g.lineTo(x-6, y-84); g.lineTo(x-39, y-74); g.fill();
+  g.fillStyle = '#d23b2a'; g.beginPath(); g.arc(x-24, y-86, 3, 0, 7); g.fill();
+}
+function drawFoe(g, type, x, y, t, s, slowed){
+  s = s || 1;
+  g.save(); g.translate(x, y); g.scale(s, s);
+  if(type === 'crow'){ g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(0, 14, 12, 4, 0, 0, 7); g.fill(); g.translate(0, -16); }
+  else { g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(0, type==='troll'?17:11, type==='troll'?16:10, 4, 0, 0, 7); g.fill(); }
+  const bob = Math.sin(t*10)*1.5;
+  if(type === 'goblin'){
+    g.fillStyle = '#4f8f2f'; g.beginPath(); g.arc(0, bob, 10, 0, 7); g.fill();
+    g.fillStyle = '#6fb544'; g.beginPath(); g.arc(-3, bob-3, 5, 0, 7); g.fill();
+    g.fillStyle = '#4f8f2f'; g.beginPath(); g.moveTo(-8,bob-4); g.lineTo(-17,bob-9); g.lineTo(-8,bob+1); g.moveTo(8,bob-4); g.lineTo(17,bob-9); g.lineTo(8,bob+1); g.fill();
+    g.fillStyle = '#ffe14d'; g.fillRect(-5, bob-3, 3, 3); g.fillRect(2, bob-3, 3, 3);
+    g.fillStyle = '#7a4a22'; g.fillRect(-7, bob+5, 14, 4);
+  } else if(type === 'troll'){
+    g.fillStyle = '#7d8691'; g.beginPath(); g.arc(0, bob-2, 16, 0, 7); g.fill();
+    g.fillStyle = '#98a1ab'; g.beginPath(); g.arc(-4, bob-8, 7, 0, 7); g.fill();
+    g.fillStyle = '#2b2b2b'; g.fillRect(-7, bob-7, 3, 3); g.fillRect(-1, bob-7, 3, 3);
+    g.fillStyle = '#6b5a45'; g.fillRect(4, bob-12, 14, 26); g.strokeStyle = '#4b3f30'; g.lineWidth = 2; g.strokeRect(4, bob-12, 14, 26);
+    g.fillStyle = '#b8a27f'; g.beginPath(); g.arc(11, bob+1, 3, 0, 7); g.fill();
+  } else if(type === 'imp'){
+    const f = Math.sin(t*16)*2;
+    g.fillStyle = '#e8590c'; g.beginPath(); g.moveTo(0, bob-18-f); g.quadraticCurveTo(13, bob-2, 9, bob+8); g.quadraticCurveTo(0, bob+14, -9, bob+8); g.quadraticCurveTo(-13, bob-2, 0, bob-18-f); g.fill();
+    g.fillStyle = '#ffd43b'; g.beginPath(); g.moveTo(0, bob-8+f); g.quadraticCurveTo(6, bob+2, 4, bob+7); g.quadraticCurveTo(0, bob+10, -4, bob+7); g.quadraticCurveTo(-6, bob+2, 0, bob-8+f); g.fill();
+    g.fillStyle = '#3b1500'; g.fillRect(-5, bob-2, 3, 3); g.fillRect(2, bob-2, 3, 3);
+  } else if(type === 'crow'){
+    const w = Math.sin(t*14)*8;
+    g.fillStyle = '#2a2f45'; g.beginPath(); g.moveTo(-4,0); g.lineTo(-22,-6-w); g.lineTo(-6,6); g.fill(); g.beginPath(); g.moveTo(4,0); g.lineTo(22,-6-w); g.lineTo(6,6); g.fill();
+    g.fillStyle = '#353b56'; g.beginPath(); g.ellipse(0, 2, 8, 11, 0, 0, 7); g.fill();
+    g.fillStyle = '#f4c430'; g.beginPath(); g.moveTo(-3,-6); g.lineTo(0,-12); g.lineTo(3,-6); g.fill();
+    g.fillStyle = '#fff'; g.fillRect(-4,-4,2,2); g.fillRect(2,-4,2,2);
+  }
+  if(slowed){ g.strokeStyle = 'rgba(160,220,255,.9)'; g.lineWidth = 3; g.beginPath(); g.arc(0, bob, type==='troll'?20:14, 0, 7); g.stroke(); }
+  g.restore();
+}
+function drawTower(g, type, x, y, ang, t){
+  g.fillStyle = 'rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(x, y+15, 17, 5, 0, 0, 7); g.fill();
+  g.fillStyle = '#a7aebb'; g.fillRect(x-15, y-6, 30, 20); g.fillStyle = '#c7cdd6'; g.fillRect(x-15, y-6, 30, 5);
+  g.fillStyle = '#8b93a1'; for(let i=0;i<3;i++) g.fillRect(x-15+i*11, y-11, 8, 6);
+  if(type === 'archer'){
+    g.fillStyle = '#8a5a2b'; g.fillRect(x-9, y-26, 18, 16);
+    g.fillStyle = '#b5452a'; g.beginPath(); g.moveTo(x-13, y-26); g.lineTo(x, y-38); g.lineTo(x+13, y-26); g.fill();
+    g.strokeStyle = '#3b2a1a'; g.lineWidth = 2; g.beginPath(); g.arc(x+2, y-18, 6, -1.2, 1.2); g.stroke();
+  } else if(type === 'cannon'){
+    g.save(); g.translate(x, y-14); g.rotate(ang||0);
+    g.fillStyle = '#2f3440'; g.fillRect(-4, -6, 24, 12); g.fillStyle = '#4a5161'; g.fillRect(-4, -6, 24, 4);
+    g.restore(); g.fillStyle = '#3a3f4b'; g.beginPath(); g.arc(x, y-14, 9, 0, 7); g.fill();
+  } else if(type === 'frost'){
+    g.fillStyle = '#7cc7f2'; g.beginPath(); g.moveTo(x, y-42); g.lineTo(x+10, y-20); g.lineTo(x, y-10); g.lineTo(x-10, y-20); g.fill();
+    g.fillStyle = '#d6f1ff'; g.beginPath(); g.moveTo(x, y-42); g.lineTo(x+4, y-22); g.lineTo(x, y-12); g.fill();
+  } else if(type === 'eclair'){
+    g.fillStyle = '#6741d9'; g.beginPath(); g.arc(x, y-24, 11, 0, 7); g.fill();
+    g.fillStyle = '#f4c430'; g.beginPath(); g.moveTo(x+2, y-34); g.lineTo(x-5, y-22); g.lineTo(x, y-22); g.lineTo(x-3, y-13); g.lineTo(x+6, y-26); g.lineTo(x+1, y-26); g.fill();
+  }
+}
+function drawMenuScene(){
+  const c = $('menuCv'); if(!c) return; const g = c.getContext('2d');
+  drawGround(g);
+  drawTower(g,'archer',180,140,0); drawTower(g,'cannon',300,260,.4); drawTower(g,'frost',460,220,0); drawTower(g,'archer',540,380,0);
+  drawFoe(g,'goblin',WP[1][0]-60,WP[1][1],0,1.4); drawFoe(g,'troll',WP[2][0],WP[2][1]-90,.3,1.4); drawFoe(g,'imp',WP[3][0]-40,WP[3][1],.2,1.4); drawFoe(g,'crow',WP[5][0]-60,WP[5][1]+10,.1,1.4);
+}
+
+/* ---------- battle state ---------- */
+let bt = null;
+function priceFor(type){
+  const tw = TOWERS[type]; const opts = [];
+  for(let p = tw.lo; p <= tw.hi; p++){ const u = p%10; if(u===7||u===8||u===9||u===1||u===2) opts.push(p); }
+  return pick(opts);
+}
+function newBattle(){
+  const n = save.battles + 1;
+  let foe = FOE_ORDER.find(f => !save.known.includes(f));
+  const isNew = !!foe;
+  if(!foe) foe = pick(FOE_ORDER);
+  const prices = {}; for(const k in TOWERS) prices[k] = priceFor(k);
+  bt = {n, foe, isNew, lang: save.lang, aided: false, gold: rnd(150,195) + save.warChest, chest: save.warChest,
+        prices, lives: 10, wave: 0, phase: 'scout', towers: [], foes: [], shots: [], fx: [], queue: [], spawnT: 0,
+        placing: null, buys: [], sups: [], kills: {archer:0,cannon:0,frost:0,eclair:0}, killed: 0, leaked: 0, fast: false, paused: false,
+        supT: 18, supOn: null, supCount: 0, t: 0, hover: null};
+  save.warChest = 0;
+  renderHeader(); show('sScout'); renderScout();
+}
+function renderScout(){
+  if(!bt) { show('sMenu'); renderMenu(); return; }
+  const f = FOES[bt.foe];
+  $('sScout').innerHTML = `<div class="card" style="display:grid;gap:16px">
+    <h2 style="font-size:clamp(30px,4vw,44px)">${esc(T('scoutTitle'))}</h2>
+    <div class="beast"><canvas id="beastCv" width="220" height="220"></canvas>
+      <div style="display:grid;gap:10px;align-content:start">
+        <p class="note" style="margin:0;font-weight:800">${esc(bt.isNew ? T('newFoe') : T('knownFoe'))}</p>
+        <h3 style="font-size:34px">${esc(f.n[L()])}</h3>
+        ${say(f.txt[1], f.txt[0])}
+        <div><span class="weak">${esc(T('weakTo'))}: ${esc(TOWERS[f.weak].n[L()])}</span></div>
+      </div></div>
+    <div class="row"><button class="btn" id="toWalls" style="font-size:20px">${esc(T('toWalls'))}</button></div>
+  </div>`;
+  const g = $('beastCv').getContext('2d'); g.fillStyle = '#7fb94e'; g.fillRect(0,0,220,220);
+  g.fillStyle = '#e8cf97'; g.fillRect(0,140,220,50);
+  drawFoe(g, bt.foe, 110, bt.foe==='crow'?140:150, .2, 4);
+  $('toWalls').onclick = () => {
+    if(!save.known.includes(bt.foe)) { save.known.push(bt.foe); persist(); }
+    bt.phase = 'build'; bt.wave = 1; show('sBattle'); renderPanel(); startLoop();
+  };
+}
+
+function shopTypes(){ const t = ['archer','cannon','frost']; if(save.frBattles >= 10 && bt.lang === 'fr') t.push('eclair'); return t; }
+function coinHTML(n){
+  const h = Math.floor(n/100), te = Math.floor((n%100)/10), o = n%10;
+  return '<i class="c100"></i>'.repeat(h) + '<i class="c10"></i>'.repeat(te) + '<i class="c1"></i>'.repeat(o);
+}
+function towerIcon(type){
+  const c = document.createElement('canvas'); c.width = 76; c.height = 76; const g = c.getContext('2d');
+  g.scale(2,2); drawTower(g, type, 19, 26, -.4, 0); return c.toDataURL();
+}
+const iconCache = {};
+function renderPanel(){
+  if(!bt) return;
+  const busy = bt.phase === 'wave';
+  const cur = T('gold');
+  const shop = shopTypes().map(k => {
+    const tw = TOWERS[k]; iconCache[k] = iconCache[k] || towerIcon(k);
+    return `<button class="tw" data-buy="${k}" aria-pressed="${bt.placing===k}" ${busy?'disabled':''}>
+      <img class="ic" src="${iconCache[k]}" alt=""><span><b>${esc(tw.n[L()])}</b><small>${esc(tw.d[L()])}</small></span><span class="pr">${bt.prices[k]}</span></button>`;
+  }).join('');
+  $('panel').innerHTML = `
+    <div class="stat"><span>${esc(T('wave'))} ${Math.min(bt.wave,3)} ${esc(T('of3'))}</span><span>❤️ ${esc(T('lives'))} ${bt.lives}</span></div>
+    <div><div class="stat"><span style="text-transform:capitalize">${esc(cur)}</span><span style="font-family:'Lilita One';font-size:28px">${bt.gold}</span></div>
+      <div class="coins" aria-hidden="true">${coinHTML(bt.gold)}</div></div>
+    ${bt.chest && bt.wave===1 && !busy ? `<div class="spot">${esc(T('warChest',{n:bt.chest}))}</div>` : ''}
+    <h3 style="font-size:22px">${esc(T('shop'))}</h3>
+    <div class="shop">${shop}</div>
+    ${bt.placing ? `<div class="spot">${esc(T('place'))} ${esc(TOWERS[bt.placing].n[L()])} <button class="btn2" id="cancelPlace" style="min-height:36px;margin-left:6px">${esc(T('cancel'))}</button></div>` : ''}
+    <div class="row">
+      ${busy ? `<span class="note" style="font-weight:800">${esc(T('building'))}</span>` : `<button class="btn" id="startWave" ${bt.placing?'disabled':''}>${esc(T('startWave'))} ${bt.wave}</button>`}
+      <button class="btn2" id="fastBtn" aria-pressed="${bt.fast}">${bt.fast?'⏩':'▶️'} ${esc(T('fast'))}</button>
+    </div>
+    <div class="msg bad" id="pmsg"></div>`;
+  $('panel').querySelectorAll('[data-buy]').forEach(b => b.onclick = () => tryBuy(b.dataset.buy));
+  if($('startWave')) $('startWave').onclick = startWave;
+  $('fastBtn').onclick = () => { bt.fast = !bt.fast; renderPanel(); };
+  if($('cancelPlace')) $('cancelPlace').onclick = () => { bt.placing = null; bt.pendingPay = null; renderPanel(); };
+}
+
+/* ---------- buying: estimate, then exact ---------- */
+function openModal(html){ $('mcard').innerHTML = html; $('modal').classList.add('on'); if(bt) bt.paused = true; }
+function closeModal(){ $('modal').classList.remove('on'); if(bt) bt.paused = false; }
+function tryBuy(type){
+  if(bt.phase === 'wave') return;
+  const p = bt.prices[type];
+  if(bt.gold < p){ $('pmsg').textContent = T('broke'); return; }
+  const g = bt.gold, r = g - p, near = Math.round(r/10)*10;
+  const offs = pick([[-40,40],[-50,30],[30,60],[-60,-30],[40,-30]]);
+  let opts = [near, near+offs[0], near+offs[1]].filter((x,i,a) => x >= 0 && a.indexOf(x) === i);
+  while(opts.length < 3){ const x = near + 10*rnd(3,8)*(Math.random()<.5?-1:1); if(x>=0 && !opts.includes(x)) opts.push(x); }
+  opts.sort((a,b) => a-b);
+  const rec = {g, p, est: 0, tries: 0, flagged: 0, ok: 0};
+  const tw = TOWERS[type];
+  const q = fill(S.est1[L()], {g, p, T: tw.art[L()]});
+  const qEn = fill(S.est1[0], {g, p, T: tw.art[0]});
+  openModal(`<h3>\u{1F52D} ${esc(L()?'L’éclaireur':'The Scout')}</h3>${say(q, qEn)}
+    <div class="opts">${opts.map(x => `<button class="btn2" data-est="${x}">${esc(T('about',{x}))}</button>`).join('')}</div>`);
+  $('mcard').querySelectorAll('[data-est]').forEach(b => b.onclick = () => {
+    const chosen = +b.dataset.est; rec.est = Math.abs(chosen - r) <= 6 ? 1 : 0; rec.chosen = chosen;
+    exactStep(type, rec);
+  });
+}
+function exactStep(type, rec){
+  const {g, p} = rec; const r = g - p;
+  const lead = rec.est ? S.estGood : S.estOff;
+  openModal(`<h3>\u{1F4B0} ${esc(T('treasury'))}</h3>${say(lead[1], lead[0])}
+    <p class="eq">${g} − ${p} = <input class="num" id="ans" inputmode="numeric" autocomplete="off" aria-label="answer"></p>
+    <div class="row"><button class="btn" id="chk">${esc(T('check'))}</button><button class="btn2" id="cx">${esc(T('cancel'))}</button></div>
+    <div class="msg" id="amsg"></div><div id="ahint"></div>`);
+  const inp = $('ans'); setTimeout(() => inp.focus(), 30);
+  const go = () => {
+    const v = parseInt(inp.value, 10); if(isNaN(v)) return;
+    rec.tries++;
+    if(v === r){
+      rec.ok = 1; bt.buys.push([rec.g, rec.p, rec.est, rec.tries, rec.flagged]);
+      bt.placing = type; bt.pendingPay = r;
+      $('mcard').innerHTML = `<h3>✅</h3>${say(fill(S.rightBuy[1],{r}), fill(S.rightBuy[0],{r}))}<div class="row" style="margin-top:12px"><button class="btn" id="okb">${esc(T('okBtn'))}</button></div>`;
+      $('okb').onclick = () => { closeModal(); renderPanel(); }; $('okb').focus();
+      return;
+    }
+    const m = $('amsg');
+    if(Math.abs(v - (rec.chosen ?? r)) > 20 && rec.est){ rec.flagged = 1; m.className = 'msg bad'; m.textContent = T('mismatch',{e:rec.chosen}); }
+    else { m.className = 'msg bad'; m.textContent = T('tryAgain'); }
+    if(rec.tries === 2){
+      const u = p % 10; let h;
+      if(u >= 7){ const P = p + (10-u), d = 10-u; h = [fill(S.hintRound[1],{p,P,d,g,gP:g-P}), fill(S.hintRound[0],{p,P,d,g,gP:g-P})]; }
+      else { const t = p - u; h = [fill(S.hintSplit[1],{g,t,gt:g-t,o:u}), fill(S.hintSplit[0],{g,t,gt:g-t,o:u})]; }
+      $('ahint').innerHTML = say(h[0], h[1]);
+    }
+    if(rec.tries >= 4){
+      bt.buys.push([rec.g, rec.p, rec.est, rec.tries, rec.flagged]);
+      bt.placing = type; bt.pendingPay = r;
+      $('mcard').innerHTML = `<h3>\u{1F6E1}️</h3>${say(fill(S.reveal[1],{r,g,p}), fill(S.reveal[0],{r,g,p}))}<div class="row" style="margin-top:12px"><button class="btn" id="okb">${esc(T('okBtn'))}</button></div>`;
+      $('okb').onclick = () => { closeModal(); renderPanel(); };
+      return;
+    }
+    inp.select();
+  };
+  $('chk').onclick = go; inp.onkeydown = e => { if(e.key === 'Enter') go(); };
+  $('cx').onclick = () => { closeModal(); };
+}
+
+/* ---------- canvas input ---------- */
+const cv = $('cv'), g = cv.getContext('2d');
+function tileFromEvent(e){
+  const r = cv.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * CW, y = (e.clientY - r.top) / r.height * CH;
+  return [Math.floor(x/TS), Math.floor(y/TS)];
+}
+function canBuild(tx, ty){
+  if(tx<0||ty<0||tx>19||ty>11) return false;
+  if(pathSet.has(tx+','+ty) || castleTile(tx,ty)) return false;
+  return !bt.towers.some(t => t.tx===tx && t.ty===ty);
+}
+cv.addEventListener('mousemove', e => { if(bt) bt.hover = tileFromEvent(e); });
+cv.addEventListener('mouseleave', () => { if(bt) bt.hover = null; });
+cv.addEventListener('click', e => {
+  if(!bt || !bt.placing) return;
+  const [tx, ty] = tileFromEvent(e);
+  if(!canBuild(tx, ty)) return;
+  const type = bt.placing;
+  bt.gold = bt.pendingPay; bt.pendingPay = null; bt.placing = null;
+  bt.towers.push({type, tx, ty, x: tx*TS+TS/2, y: ty*TS+TS/2, cd: 0, ang: 0});
+  bt.fx.push({k:'txt', x: tx*TS+TS/2, y: ty*TS, s: '−'+bt.prices[type], c:'#fff', life: 1});
+  renderPanel();
+});
+
+/* ---------- waves ---------- */
+function startWave(){
+  if(bt.phase !== 'build' || bt.placing) return;
+  const known = save.known.slice();
+  const count = Math.min(6 + 2*bt.wave + Math.min(bt.n, 6), 20);
+  const scale = 1 + .1*(Math.min(bt.n, 12) - 1) + .12*(bt.wave - 1);
+  bt.queue = [];
+  for(let i=0;i<count;i++){
+    const type = (i % 3 === 0 || known.length === 1) ? bt.foe : pick(known);
+    bt.queue.push({type, scale});
+  }
+  bt.spawnT = .5; bt.phase = 'wave'; renderPanel();
+}
+function spawn(q){
+  const f = FOES[q.type];
+  bt.foes.push({type:q.type, hp:Math.round(f.hp*q.scale), max:Math.round(f.hp*q.scale), d:0, slow:0, x:WP[0][0], y:WP[0][1]});
+}
+function mult(tw, foe){
+  if(foe === 'troll') return tw==='archer'?.35 : tw==='frost'?.5 : tw==='eclair'?.7 : 1.4;
+  if(foe === 'imp') return tw==='cannon'?.5 : tw==='frost'?2.2 : 1;
+  return 1;
+}
+function hurt(f, dmg, tw){
+  if(f.hp <= 0) return;
+  f.hp -= dmg * mult(tw, f.type);
+  if(f.hp <= 0){
+    const gold = FOES[f.type].gold; bt.gold += gold; bt.kills[tw]++; bt.killed++;
+    bt.fx.push({k:'txt', x:f.x, y:f.y-18, s:'+'+gold, c:'#ffe14d', life:.9});
+    bt.fx.push({k:'puff', x:f.x, y:f.y, life:.4});
+  }
+}
+function step(dt){
+  bt.t += dt;
+  for(const fx of bt.fx) fx.life -= dt;
+  bt.fx = bt.fx.filter(f => f.life > 0);
+  if(bt.phase !== 'wave') return;
+  if(bt.queue.length){ bt.spawnT -= dt; if(bt.spawnT <= 0){ const q = bt.queue.shift(); spawn(q); bt.spawnT = q.type==='troll' ? 1.5 : .85; } }
+  for(const f of bt.foes){
+    if(f.hp <= 0) continue;
+    const sp = FOES[f.type].sp * (f.slow > 0 ? .5 : 1); f.slow -= dt;
+    f.d += sp*dt; const [x,y] = posAt(f.d); f.x = x; f.y = y;
+    if(f.d >= totalLen){ f.hp = 0; f.leak = true; bt.lives--; bt.leaked++; bt.fx.push({k:'txt', x:735, y:330, s:'−1 ❤️', c:'#ffb4a8', life:1}); renderPanel(); }
+  }
+  for(const tw of bt.towers){
+    const st = TOWERS[tw.type]; tw.cd -= dt; if(tw.cd > 0) continue;
+    let best = null;
+    for(const f of bt.foes){
+      if(f.hp <= 0) continue;
+      if(FOES[f.type].fly && !st.air) continue;
+      if(Math.hypot(f.x-tw.x, f.y-tw.y) <= st.range && (!best || f.d > best.d)) best = f;
+    }
+    if(!best) continue;
+    tw.cd = st.rate; tw.ang = Math.atan2(best.y-tw.y, best.x-tw.x);
+    if(st.chain){
+      let pts = [[tw.x, tw.y-24]], cur = best, hit = [];
+      for(let i=0;i<st.chain && cur;i++){ hit.push(cur); pts.push([cur.x, cur.y]); hurt(cur, st.dmg, tw.type);
+        cur = bt.foes.filter(o => o.hp>0 && !hit.includes(o) && Math.hypot(o.x-cur.x,o.y-cur.y) < 80).sort((a,b)=>b.d-a.d)[0]; }
+      bt.fx.push({k:'bolt', pts, life:.18});
+    } else bt.shots.push({type:tw.type, x:tw.x, y:tw.y-18, tgt:best, sp: tw.type==='cannon'?320:460});
+  }
+  for(const s of bt.shots){
+    const t = s.tgt; const dx = t.x - s.x, dy = (t.y - (FOES[t.type].fly?16:0)) - s.y; const d = Math.hypot(dx, dy);
+    if(d < 8 || t.hp <= 0){
+      s.done = true; if(t.hp <= 0 && !t.leak && d >= 8) continue;
+      const st = TOWERS[s.type];
+      if(st.splash){ for(const f of bt.foes) if(f.hp>0 && !FOES[f.type].fly && Math.hypot(f.x-t.x,f.y-t.y) <= st.splash) hurt(f, st.dmg, s.type); bt.fx.push({k:'boom', x:t.x, y:t.y, life:.3}); }
+      else { hurt(t, st.dmg, s.type); if(st.slow) t.slow = 1.6; }
+      continue;
+    }
+    s.x += dx/d * s.sp*dt; s.y += dy/d * s.sp*dt;
+  }
+  bt.shots = bt.shots.filter(s => !s.done);
+  bt.foes = bt.foes.filter(f => f.hp > 0);
+  if(!bt.supOn && bt.supCount < 2){ bt.supT -= dt; if(bt.supT <= 0){ bt.supOn = {life: 9}; bt.supT = 22; } }
+  if(bt.supOn){ bt.supOn.life -= dt; if(bt.supOn.life <= 0) bt.supOn = null; }
+  if(bt.lives <= 0){ endBattle(false); return; }
+  if(!bt.queue.length && !bt.foes.length){
+    if(bt.wave >= 3){ endBattle(true); return; }
+    bt.wave++; bt.phase = 'build'; bt.shots = []; renderPanel();
+  }
+}
+
+/* ---------- supply wagon riddles ---------- */
+const RID = [
+  {k:'more', make:()=>{ const a=rnd(21,68), b=rnd(12,39); return {a,b,ans:a+b}; },
+   en:'The archers have {a} arrows. The cannon crew has {b} more cannonballs than arrows. How many cannonballs?',
+   fr:'Les archers ont {a} flèches. Les canonniers ont {b} boulets de plus que de flèches. Combien de boulets ont-ils'+NB+'?'},
+  {k:'fewer', make:()=>{ const a=rnd(21,64), b=rnd(11,29); return {a,b,ans:a+b}; },
+   en:'There are {a} knights. There are {b} fewer knights than horses. How many horses are there?',
+   fr:'Il y a {a} chevaliers. Il y a {b} chevaliers de moins que de chevaux. Combien y a-t-il de chevaux'+NB+'?'},
+  {k:'left', make:()=>{ const a=rnd(52,98), b=rnd(17,a-12); return {a,b,ans:a-b}; },
+   en:'The wagon held {a} carrots. The horses ate {b}. How many carrots are left?',
+   fr:'Le chariot avait {a} carottes. Les chevaux en ont mangé {b}. Combien de carottes reste-t-il'+NB+'?'},
+  {k:'compare', make:()=>{ const a=rnd(55,99), b=rnd(18,a-11); return {a,b,ans:a-b}; },
+   en:'The north tower has {a} stones. The south tower has {b}. How many more stones does the north tower have?',
+   fr:'La tour du nord a {a} pierres. La tour du sud en a {b}. Combien de pierres de plus la tour du nord a-t-elle'+NB+'?'}
+];
+function openSupply(){
+  if(!bt.supOn) return;
+  bt.supOn = null; bt.supCount++;
+  const R = pick(RID), v = R.make(), rec = {k:R.k, tries:0, ok:0};
+  const fr = fill(R.fr, {a:frNum(v.a), b:frNum(v.b)}), en = fill(R.en, {a:v.a, b:v.b});
+  openModal(`<h3>\u{1F6D2} ${esc(T('supply'))}</h3>${say(fr, en)}<p class="note">${esc(T('supplyWhy'))}</p>
+    <p class="eq"><input class="num" id="ans" inputmode="numeric" autocomplete="off" aria-label="answer"></p>
+    <div class="row"><button class="btn" id="chk">${esc(T('check'))}</button><button class="btn2" id="cx">${esc(T('skip'))}</button></div><div class="msg" id="amsg"></div>`);
+  const inp = $('ans'); setTimeout(() => inp.focus(), 30);
+  const done = () => { bt.sups.push([rec.k, rec.tries, rec.ok]); };
+  const go = () => {
+    const x = parseInt(inp.value, 10); if(isNaN(x)) return; rec.tries++;
+    if(x === v.ans){ rec.ok = 1; bt.gold += 15; done(); $('mcard').innerHTML = `<h3>✅</h3>${say(S.supOk[1], S.supOk[0])}<div class="row" style="margin-top:12px"><button class="btn" id="okb">${esc(T('okBtn'))}</button></div>`; $('okb').onclick = () => { closeModal(); renderPanel(); }; return; }
+    if(rec.tries >= 3){ done(); $('mcard').innerHTML = `<h3>\u{1F6D2}</h3>${say(fill(S.supReveal[1],{r:v.ans}), fill(S.supReveal[0],{r:v.ans}))}<div class="row" style="margin-top:12px"><button class="btn" id="okb">${esc(T('okBtn'))}</button></div>`; $('okb').onclick = closeModal; return; }
+    $('amsg').className = 'msg bad'; $('amsg').textContent = T('tryAgain'); inp.select();
+  };
+  $('chk').onclick = go; inp.onkeydown = e => { if(e.key === 'Enter') go(); };
+  $('cx').onclick = () => { done(); closeModal(); };
+}
+cv.addEventListener('click', e => {
+  if(!bt || !bt.supOn || bt.placing) return;
+  const r = cv.getBoundingClientRect(); const x = (e.clientX-r.left)/r.width*CW, y = (e.clientY-r.top)/r.height*CH;
+  if(Math.hypot(x-400, y-36) < 44) openSupply();
+});
+
+/* ---------- drawing the battle ---------- */
+function draw(){
+  drawGround(g);
+  if(bt.placing && bt.hover){
+    const [tx,ty] = bt.hover; const ok = canBuild(tx,ty);
+    g.fillStyle = ok ? 'rgba(255,255,255,.35)' : 'rgba(194,65,12,.35)'; g.fillRect(tx*TS, ty*TS, TS, TS);
+    if(ok){ g.strokeStyle = 'rgba(255,255,255,.7)'; g.setLineDash([6,6]); g.beginPath(); g.arc(tx*TS+TS/2, ty*TS+TS/2, TOWERS[bt.placing].range, 0, 7); g.stroke(); g.setLineDash([]); }
+  }
+  const items = [...bt.towers.map(t => ({y:t.y, f:() => drawTower(g, t.type, t.x, t.y, t.ang, bt.t)})),
+                 ...bt.foes.map(f => ({y:f.y, f:() => { drawFoe(g, f.type, f.x, f.y, bt.t + f.d*.01, 1, f.slow>0);
+                   const fy = FOES[f.type].fly ? f.y-40 : f.y-(f.type==='troll'?28:22);
+                   g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(f.x-14, fy, 28, 4); g.fillStyle = '#4ade80'; g.fillRect(f.x-14, fy, 28*Math.max(0,f.hp)/f.max, 4); }}))];
+  items.sort((a,b) => a.y-b.y).forEach(i => i.f());
+  for(const s of bt.shots){
+    if(s.type === 'cannon'){ g.fillStyle = '#1f232b'; g.beginPath(); g.arc(s.x, s.y, 5, 0, 7); g.fill(); }
+    else if(s.type === 'frost'){ g.fillStyle = '#bfe9ff'; g.beginPath(); g.arc(s.x, s.y, 4, 0, 7); g.fill(); }
+    else { const a = Math.atan2(s.tgt.y-s.y, s.tgt.x-s.x); g.strokeStyle = '#5b3b1f'; g.lineWidth = 2; g.beginPath(); g.moveTo(s.x, s.y); g.lineTo(s.x-Math.cos(a)*10, s.y-Math.sin(a)*10); g.stroke(); }
+  }
+  for(const fx of bt.fx){
+    g.globalAlpha = Math.max(0, Math.min(1, fx.life*2));
+    if(fx.k === 'txt'){ g.font = '700 18px Nunito, sans-serif'; g.textAlign = 'center'; g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.55)'; g.strokeText(fx.s, fx.x, fx.y - (1-fx.life)*20); g.fillStyle = fx.c; g.fillText(fx.s, fx.x, fx.y - (1-fx.life)*20); }
+    else if(fx.k === 'boom'){ g.fillStyle = 'rgba(255,170,60,.6)'; g.beginPath(); g.arc(fx.x, fx.y, 46*(1-fx.life/.3)+8, 0, 7); g.fill(); }
+    else if(fx.k === 'puff'){ g.fillStyle = 'rgba(255,255,255,.7)'; g.beginPath(); g.arc(fx.x, fx.y, 18*(1-fx.life/.4)+4, 0, 7); g.fill(); }
+    else if(fx.k === 'bolt'){ g.strokeStyle = '#ffe14d'; g.lineWidth = 3; g.beginPath(); fx.pts.forEach((p,i) => i ? g.lineTo(p[0]+rnd(-4,4), p[1]+rnd(-4,4)) : g.moveTo(p[0],p[1])); g.stroke(); }
+    g.globalAlpha = 1;
+  }
+  if(bt.supOn){
+    const y = 36 + Math.sin(bt.t*4)*3;
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.roundRect ? g.roundRect(330, y-26, 140, 52, 14) : g.rect(330, y-26, 140, 52); g.fill();
+    g.fillStyle = '#8a5a2b'; g.fillRect(350, y-14, 40, 20); g.fillStyle = '#f4c430'; g.fillRect(354, y-18, 32, 6);
+    g.fillStyle = '#2b2b2b'; g.beginPath(); g.arc(358, y+8, 6, 0, 7); g.arc(382, y+8, 6, 0, 7); g.fill();
+    g.fillStyle = '#fff'; g.font = '800 16px Nunito, sans-serif'; g.textAlign = 'left'; g.fillText(L()?'Clique !':'Click!', 400, y+6);
+  }
+  if(bt.phase === 'build' && !bt.placing){
+    g.fillStyle = 'rgba(31,58,104,.85)'; g.fillRect(0, CH-34, CW, 34);
+    g.fillStyle = '#fff'; g.font = '800 16px Nunito, sans-serif'; g.textAlign = 'center';
+    g.fillText((L()?'Vague ':'Wave ')+bt.wave+(L()?' sur 3 — achète des tours, puis lance la vague.':' of 3 — buy towers, then start the wave.'), CW/2, CH-12);
+  }
+}
+let last = 0, looping = false;
+function frame(ts){
+  if(!bt || screen !== 'sBattle'){ looping = false; return; }
+  const dt = Math.min(.05, (ts - last)/1000 || 0); last = ts;
+  if(!bt.paused){ const n = bt.fast ? 2 : 1; for(let i=0;i<n && bt && screen==='sBattle';i++) step(dt); }
+  if(bt && screen === 'sBattle') draw();
+  requestAnimationFrame(frame);
+}
+function startLoop(){ if(looping) return; looping = true; last = performance.now(); requestAnimationFrame(frame); }
+
+/* ---------- end of battle ---------- */
+function endBattle(won){
+  bt.phase = 'done'; bt.won = won;
+  const msg = won ? S.win : S.lose;
+  openModal(`<h3>${won ? '\u{1F3C6}' : '\u{1F3F0}'}</h3>${say(msg[1], msg[0])}<div class="row" style="margin-top:14px"><button class="btn" id="toLog">${esc(T('toLog'))}</button></div>`);
+  $('toLog').onclick = () => { closeModal(); show('sLog'); renderLog(); };
+}
+
+/* ---------- Commander's Log ---------- */
+let dictTarget = null;
+function wordsIn(s){ return (s.trim().match(/[\p{L}\p{N}'’-]+/gu) || []); }
+function hasNum(s){ return /\d/.test(s) || /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|vingt|trente|quarante|cinquante)\b/i.test(s); }
+function hasBecause(s){ return /\bbecause\b|\bparce qu|\bcar\b|\bsince\b/i.test(s); }
+function spotBoss(text){
+  const lg = bt ? bt.lang : save.lang; const out = []; const lower = ' '+text.toLowerCase().replace(/[^\p{L}\s']/gu,' ')+' ';
+  for(const b of BOSSES[lg]) for(const v of b.v) if(lower.includes(' '+v+' ') && !out.some(o=>o.bad===v)) out.push({bad:v, good:b.w});
+  for(const [bad, good] of Object.entries(EXTRA_SPOT[lg])) if(lower.includes(' '+bad+' ') && !out.some(o=>o.bad===bad)) out.push({bad, good});
+  return out;
+}
+function renderLog(){
+  if(!bt){ show('sMenu'); renderMenu(); return; }
+  const killRows = shopTypes().map(k => `<li>${esc(TOWERS[k].n[L()])}: <b>${bt.kills[k]||0}</b></li>`).join('');
+  const box = (i, lab, ph) => `<div><label for="lb${i}">${esc(T(lab))}</label>
+     <div class="row" style="flex-wrap:nowrap;align-items:stretch"><textarea id="lb${i}" placeholder="${esc(T(ph))}">${esc((bt.draft||[])[i-1]||'')}</textarea>
+     <button class="btn2 mic" data-mic="${i}" hidden style="flex:none">\u{1F3A4}</button></div></div>`;
+  $('sLog').innerHTML = `<div class="card" style="display:grid;gap:16px">
+    <h2 style="font-size:clamp(30px,4vw,44px)">\u{1F4DC} ${esc(T('logTitle'))}</h2>
+    ${say(S.logIntro[1], S.logIntro[0])}
+    <div class="grid2">
+      <div class="logbox">${box(1,'b1','ph1')}${box(2,'b2','ph2')}${box(3,'b3','ph3')}<div id="spots" style="display:grid;gap:6px"></div></div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="medals"><div><b>${bt.killed}</b><span>${esc(T('defeated'))}</span></div><div><b>${Math.max(0,bt.lives)}</b><span>${esc(T('livesLeft'))}</span></div><div><b>${bt.gold}</b><span>${esc(T('goldLeft'))}</span></div></div>
+        <ul style="margin:0">${killRows}</ul>
+        <div><b>${esc(T('forMedal'))}</b><ul class="check" id="chkl"><li id="k1">${esc(T('c1'))}</li><li id="k2">${esc(T('c2'))}</li><li id="k3">${esc(T('c3'))}</li></ul></div>
+      </div>
+    </div>
+    <div class="row"><button class="btn" id="sendLog" style="font-size:20px">${esc(T('send'))}</button><button class="btn2" id="skipLog">${esc(T('skipLog'))}</button></div>
+  </div>`;
+  const upd = () => {
+    const v = [1,2,3].map(i => $('lb'+i).value); bt.draft = v;
+    $('k1').classList.toggle('ok', hasBecause(v[0]) && wordsIn(v[0]).length >= 4);
+    $('k2').classList.toggle('ok', hasNum(v[1]));
+    $('k3').classList.toggle('ok', wordsIn(v[2]).length >= 3);
+    $('spots').innerHTML = spotBoss(v.join(' ')).map(s => `<div class="spot">${esc(T('spotted', s))}</div>`).join('');
+  };
+  [1,2,3].forEach(i => $('lb'+i).addEventListener('input', upd)); upd();
+  $('sendLog').onclick = () => finishBattle(false);
+  $('skipLog').onclick = () => finishBattle(true);
+  refreshMics();
+}
+function refreshMics(){
+  document.querySelectorAll('[data-mic]').forEach(b => {
+    b.hidden = !dict;
+    b.onclick = () => {
+      if(!dict) return;
+      if(dictTarget){ dict.stop().catch(()=>{}); return; }
+      dictTarget = $('lb'+b.dataset.mic);
+      dict.start().catch(() => { dictTarget = null; });
+    };
+  });
+}
+function setupDict(){
+  dict.onFinal(({text}) => { if(dictTarget){ dictTarget.value = (dictTarget.value ? dictTarget.value.trimEnd()+' ' : '') + text; dictTarget.dispatchEvent(new Event('input')); } });
+  dict.onState(({state}) => {
+    document.querySelectorAll('[data-mic]').forEach(b => b.textContent = state === 'listening' && dictTarget && b.dataset.mic === dictTarget.id.slice(2) ? '⏹' : '\u{1F3A4}');
+    if(state === 'idle') dictTarget = null;
+  });
+}
+function finishBattle(skipped){
+  const v = skipped ? ['','',''] : [1,2,3].map(i => $('lb'+i).value);
+  const words = wordsIn(v.join(' ')).length;
+  const b = hasBecause(v[0]) && wordsIn(v[0]).length >= 4 ? 1 : 0, num = hasNum(v[1]) ? 1 : 0, nx = wordsIn(v[2]).length >= 3 ? 1 : 0;
+  const medal = !skipped && b && num && nx ? 1 : 0;
+  const fr = bt.lang === 'fr';
+  const seul = fr && !bt.aided ? 1 : 0;
+  const before = rankOf(save.frBattles);
+  let reward = (bt.won ? 50 : 20) + (medal ? 20 : 0);
+  if(fr) reward = Math.round(reward * 1.25);
+  save.battles++; if(fr) save.frBattles++;
+  save.medals += medal ? (fr ? 2 : 1) : 0; save.stars += seul; save.treasury += reward;
+  const spots = skipped ? [] : spotBoss(v.join(' ')).map(s => s.bad);
+  save.log.push({d:new Date().toISOString().slice(0,10), n:bt.n, lang:bt.lang, won:bt.won?1:0, lives:Math.max(0,bt.lives), aided:fr?(bt.aided?1:0):null,
+    foe:bt.foe, buys:bt.buys, sups:bt.sups, kills:bt.kills, report:{skipped:skipped?1:0, words, because:b, number:num, next:nx, medal, spots, text: skipped ? '' : v.join(' | ').slice(0,600)}});
+  const after = rankOf(save.frBattles);
+  const lines = [];
+  if(medal) lines.push(fr ? S.dmedal : S.medal); else if(!skipped) lines.push(S.noMedal);
+  lines.push([fill(S.reward[0],{n:reward}), fill(S.reward[1],{n:reward})]);
+  if(seul) lines.push(S.seul);
+  if(after !== before) lines.push([fill(S.newRank[0],{r:after[1]}), fill(S.newRank[1],{r:after[2]})]);
+  if(fr && save.frBattles === 10) lines.push(S.eclairOpen);
+  persist();
+  bt = null;
+  openModal(`<h3>${medal ? '\u{1F3C5}' : '\u{1F4DC}'}</h3><div style="display:grid;gap:8px">${lines.map(l => say(l[1], l[0])).join('')}</div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="okb">${esc(T('backMenu'))}</button></div>`);
+  $('okb').onclick = () => { closeModal(); show('sMenu'); renderAll(); };
+}
+
+/* ---------- Boss Words ---------- */
+const DAY = 864e5;
+function bossState(w){
+  const b = save.bosses[save.lang+':'+w];
+  if(!b || !b.def) return ['ready', 0];
+  const left = Math.ceil((b.def + 7*DAY - Date.now())/DAY);
+  return left > 0 ? ['beaten', left] : ['rematch', 0];
+}
+function renderBossList(){
+  const list = BOSSES[save.lang];
+  $('sBoss').innerHTML = `<div class="card" style="display:grid;gap:16px">
+    <h2 style="font-size:clamp(30px,4vw,44px)">\u{1F6E1}️ ${esc(T('bossTitle'))}</h2>
+    ${say(S.bossIntro[1], S.bossIntro[0])}
+    <div class="bosses">${list.map(b => { const [st, d] = bossState(b.w);
+      const lab = st==='ready' ? T('ready') : st==='rematch' ? T('rematch') : T('beaten')+' · '+T('returns',{d});
+      return `<button class="boss ${st==='beaten'?'def':''}" data-boss="${esc(b.w)}" ${st==='beaten'?'disabled':''}><b>${'?'.repeat(b.w.replace(' ','').length)}</b><span>${esc(lab)}</span></button>`; }).join('')}</div>
+    <div class="row"><button class="btn2" id="bBack">${esc(T('back'))}</button></div></div>`;
+  $('sBoss').querySelectorAll('[data-boss]').forEach(b => b.onclick = () => bossFight(b.dataset.boss));
+  $('bBack').onclick = () => { show('sMenu'); renderMenu(); };
+}
+function blankOut(sent, w){ const i = sent.toLowerCase().indexOf(w); return i < 0 ? sent : sent.slice(0,i) + '_____' + sent.slice(i+w.length); }
+function bossFight(w){
+  const lg = save.lang, B = BOSSES[lg].find(b => b.w === w); let hits = 0, tries = 0, round = 0;
+  const draw = (msg, cls, tricky) => {
+    const sent = B.s[round];
+    const en = B.en ? B.en[round] : '';
+    $('sBoss').innerHTML = `<div class="card arena">
+      <div class="shield ${cls==='good'?'hit':''}">\u{1F479}</div>
+      <div class="hp">${[0,1,2].map(i => `<i class="${i<hits?'gone':''}"></i>`).join('')}</div>
+      <div class="say sentence"><div><div>${esc(blankOut(sent, w))}</div>${lg==='fr'?`<div class="en">${esc(en)}</div>`:''}</div>${lg==='fr'?'<button class="mini" data-hint>English?</button>':''}</div>
+      <button class="btn2" id="again">\u{1F50A} ${esc(T('hearAgain'))}</button>
+      ${tricky ? `<div class="tricky">${tricky}</div>` : ''}
+      <div class="row" style="justify-content:center"><input class="num" id="bw" style="width:12ch" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="word"><button class="btn" id="bgo">${esc(T('check'))}</button></div>
+      <div class="msg ${cls||''}">${esc(msg||'')}</div>
+      <button class="btn2" id="bQuit">${esc(T('back'))}</button></div>`;
+    $('again').onclick = () => speak(sent, lg);
+    $('bQuit').onclick = () => { show('sBoss'); renderBossList(); };
+    const inp = $('bw'); inp.focus();
+    const go = () => {
+      const val = inp.value.trim().toLowerCase().replace(/\s+/g,' ').replace(/[’]/g,"'");
+      if(!val) return; tries++;
+      if(val === w){
+        hits++; round++;
+        if(hits >= 3){
+          save.bosses[lg+':'+w] = {def: Date.now(), wins: ((save.bosses[lg+':'+w]||{}).wins||0)+1};
+          save.warChest += 20; save.bossLog.push({d:new Date().toISOString().slice(0,10), lang:lg, w, tries}); persist();
+          $('sBoss').innerHTML = `<div class="card arena"><div class="shield hit">\u{1F4A5}</div><h2 style="font-size:40px">${esc(w)}</h2>${say(S.bossWin[1], S.bossWin[0])}<button class="btn" id="bDone">${esc(T('back'))}</button></div>`;
+          $('bDone').onclick = () => { show('sBoss'); renderBossList(); };
+          return;
+        }
+        draw(T('hit'), 'good'); speak(B.s[round], lg);
+      } else {
+        const [a, z] = B.tr; const tw = esc(w.slice(0,a)) + '<em>' + esc(w.slice(a,z)) + '</em>' + esc(w.slice(z));
+        draw(T('lookTricky'), 'bad', tw);
+        setTimeout(() => { const t = document.querySelector('.tricky'); if(t) t.style.visibility = 'hidden'; }, 2600);
+      }
+    };
+    $('bgo').onclick = go; inp.onkeydown = e => { if(e.key === 'Enter') go(); };
+  };
+  show('sBoss'); draw(''); speak(B.s[0], lg);
+}
+
+/* ---------- Dad's corner (English only; it's for Dad) ---------- */
+function summary(){
+  const lg = save.log; const n = lg.length;
+  const fr = lg.filter(x => x.lang==='fr'); const seul = fr.filter(x => x.aided===0).length;
+  const reps = lg.filter(x => !x.report.skipped); const avgW = reps.length ? Math.round(reps.reduce((a,x)=>a+x.report.words,0)/reps.length) : 0;
+  const buys = lg.flatMap(x => x.buys); const est = buys.filter(b => b[2]).length; const first = buys.filter(b => b[3]===1).length; const flag = buys.filter(b => b[4]).length;
+  const sups = lg.flatMap(x => x.sups); const supOk = sups.filter(s => s[2]).length;
+  const byKind = k => { const s = sups.filter(x => x[0]===k); return s.length ? `${s.filter(x=>x[2]).length}/${s.length}` : '–'; };
+  const spots = {}; reps.forEach(x => x.report.spots.forEach(s => spots[s] = (spots[s]||0)+1));
+  const pct = (a,b) => b ? Math.round(100*a/b)+'%' : '–';
+  const lines = [
+    `${save.name || 'Artillery Academy'}: play summary (as of ${new Date().toISOString().slice(0,10)})`,
+    `Battles: ${n} (won ${lg.filter(x=>x.won).length}); in French: ${fr.length} (${pct(fr.length,n)}), seul: ${seul} of ${fr.length}`,
+    `Commander's Logs written: ${reps.length} of ${n}; medals: ${reps.filter(x=>x.report.medal).length}; average words: ${avgW}`,
+    `  with "because": ${reps.filter(x=>x.report.because).length}, with a number: ${reps.filter(x=>x.report.number).length}, with a plan: ${reps.filter(x=>x.report.next).length}`,
+    `Shop math: ${buys.length} purchases; estimate right ${pct(est,buys.length)}; exact on first try ${pct(first,buys.length)}; slips the Scout caught: ${flag}`,
+    `Supply riddles: ${supOk}/${sups.length} solved (more-than ${byKind('more')}, fewer-than trap ${byKind('fewer')}, take-away ${byKind('left')}, compare ${byKind('compare')})`,
+    `Boss words defeated: ${save.bossLog.map(b => b.w + (b.lang==='fr'?' (FR)':'')).join(', ') || 'none yet'}`,
+    `Boss-word misspellings spotted in his reports: ${Object.entries(spots).map(([k,v])=>k+' x'+v).join(', ') || 'none'}`,
+    '', 'Recent battles (newest first):',
+    ...lg.slice(-12).reverse().map(x => `${x.d} | ${x.lang.toUpperCase()}${x.lang==='fr'?(x.aided?' aidé':' seul'):''} | ${x.won?'won':'lost'} | buys ${x.buys.map(b=>`${b[0]}-${b[1]}${b[3]>1?' ('+b[3]+' tries)':''}`).join(', ')||'none'} | log ${x.report.skipped?'skipped':x.report.words+' words'+(x.report.medal?', medal':'')}`)
+  ];
+  return lines.join('\n');
+}
+let resetArmed = false;
+function renderDad(){
+  $('sDad').innerHTML = `<div class="card" style="display:grid;gap:16px">
+    <h2 style="font-size:clamp(30px,4vw,44px)">Grown-ups’ corner</h2>
+    <div><label for="gname" style="font-weight:800">Name of the game (let your player choose)</label>
+      <div class="row"><input id="gname" value="${esc(save.name)}" placeholder="Artillery Academy" style="flex:1;min-height:44px;border:2px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--bg)"><button class="btn2" id="saveName">Save name</button></div></div>
+    <div><b>Play summary</b> <span class="note">Copy it into your notes to see progress over time.</span>
+      <textarea class="out" id="sumOut" readonly>${esc(summary())}</textarea>
+      <div class="row"><button class="btn" id="copySum">Copy summary</button><button class="btn2" id="copyJson">Copy full data (JSON)</button><span class="msg good" id="cmsg"></span></div></div>
+    <p class="note" style="margin:0">Progress saves to this browser${dbRef ? ' and to the page’s storage, so it follows your claude.ai account' : ' on this device'}. The French text was drafted with AI help: a fluent speaker should check it.</p>
+    <div class="row"><button class="btn2" id="reset" style="border-color:var(--bad);color:var(--bad)">Reset all progress</button><span class="msg bad" id="rmsg"></span></div>
+    <div class="row"><button class="btn2" id="dBack">Back</button></div></div>`;
+  $('saveName').onclick = () => { save.name = $('gname').value.trim().slice(0,40); persist(); renderHeader(); $('cmsg').textContent = 'Saved.'; };
+  const copy = txt => { (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => $('cmsg').textContent = 'Copied.').catch(() => { $('sumOut').value = txt; $('sumOut').select(); $('cmsg').textContent = 'Selected: press Ctrl+C or Cmd+C.'; }); };
+  $('copySum').onclick = () => copy(summary());
+  $('copyJson').onclick = () => copy(JSON.stringify(save, null, 1));
+  $('reset').onclick = () => {
+    if(!resetArmed){ resetArmed = true; $('rmsg').textContent = 'Click again to erase everything.'; setTimeout(() => { resetArmed = false; const m = $('rmsg'); if(m) m.textContent = ''; }, 4000); return; }
+    const lang = save.lang; save = fresh(); save.lang = lang; persist(); resetArmed = false; renderAll();
+  };
+  $('dBack').onclick = () => { show('sMenu'); renderMenu(); };
+}
+
+/* outside claude.ai: browser speech recognition and a link back to the arcade */
+function browserDict(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return null;
+  let rec = null; const fin = [], st = [];
+  return {
+    onFinal(f){ fin.push(f); }, onState(f){ st.push(f); },
+    start(){ return new Promise((res, rej) => { try {
+      rec = new SR(); rec.lang = (bt ? bt.lang : save.lang) === 'fr' ? 'fr-FR' : 'en-US'; rec.continuous = true; rec.interimResults = false;
+      rec.onresult = e => { for(let i = e.resultIndex; i < e.results.length; i++) if(e.results[i].isFinal) fin.forEach(f => f({text: e.results[i][0].transcript.trim()})); };
+      rec.onstart = () => { st.forEach(f => f({state:'listening'})); res(); };
+      rec.onend = () => st.forEach(f => f({state:'idle'}));
+      rec.onerror = ev => rej(ev.error);
+      rec.start(); } catch(e) { rej(e); } }); },
+    stop(){ try { if(rec) rec.stop(); } catch(e) {} return Promise.resolve(); }
+  };
+}
+if(!CL){ dict = browserDict(); if(dict) setupDict(); $('arcade').hidden = false; }
+
+/* debug hook for automated tests only */
+window.__aa = { get bt(){ return bt; }, get save(){ return save; }, step, frNum, summary };
+
+renderAll();
+}
+</script>
+</body>
+</html>
